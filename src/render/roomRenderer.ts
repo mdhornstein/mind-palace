@@ -109,8 +109,7 @@ export class RoomRenderer {
 
   public render(
     state: WorldState,
-    isMoving: boolean,
-    walkFrame: number,
+    player: { x: number; y: number; facing: WorldState['player']['facing']; isMoving: boolean; walkFrame: number },
     activeZone: InteractiveZone | null,
     timeMs: number
   ) {
@@ -203,15 +202,15 @@ export class RoomRenderer {
           ),
       },
       {
-        y: state.player.y,
+        y: player.y,
         draw: () =>
           drawPlayerSprite(
             ctx,
-            state.player.x,
-            state.player.y,
-            state.player.facing,
-            isMoving,
-            walkFrame
+            player.x,
+            player.y,
+            player.facing,
+            player.isMoving,
+            player.walkFrame
           ),
       },
     ];

@@ -145,23 +145,16 @@ class MindPalaceApp {
       const clickedZone = this.getClickedZone(clickX, clickY);
 
       if (clickedZone) {
+        // Instantly face and trigger the interaction at the station's approach spot!
         const approach = APPROACH_POINTS[clickedZone.id] || { x: clickedZone.x, y: clickedZone.y };
-        const distToApproach = Math.hypot(this.player.x - approach.x, this.player.y - approach.y);
-
-        // If player is already standing right next to the object or in its zone:
-        if (distToApproach < 45 || (this.activeZone && this.activeZone.id === clickedZone.id)) {
-          this.triggerZoneInteraction(clickedZone);
-          return;
-        }
-
-        // Otherwise: walk over smoothly and automatically trigger encounter upon arrival!
-        this.player.walkToAndInteract(approach.x, approach.y, clickedZone, (zone) => {
-          this.triggerZoneInteraction(zone);
-        });
+        this.player.x = approach.x;
+        this.player.y = approach.y;
+        this.stateManager.syncPlayerPosition(this.player.x, this.player.y, this.player.facing);
+        this.triggerZoneInteraction(clickedZone);
         return;
       }
 
-      // Click on open floor: walk to location
+      // Click on open floor: walk smoothly to location
       this.player.setTargetPosition(clickX, clickY);
     });
   }
@@ -198,10 +191,13 @@ class MindPalaceApp {
         const { changed, activeZone } = this.player.update(dt);
         this.activeZone = activeZone;
 
+        // Synchronize live player position to in-memory state every single frame!
+        this.stateManager.syncPlayerPosition(this.player.x, this.player.y, this.player.facing);
+
         if (changed) {
           const nowMs = Date.now();
-          if (nowMs - this.lastSaveTime > 1500) {
-            this.stateManager.updatePlayer(this.player.x, this.player.y, this.player.facing);
+          if (nowMs - this.lastSaveTime > 2000) {
+            this.stateManager.persist();
             this.lastSaveTime = nowMs;
           }
         }
@@ -210,10 +206,10 @@ class MindPalaceApp {
       }
 
       const state = this.stateManager.getState();
+      // Render player with LIVE coordinates every frame (60fps)
       this.renderer.render(
         state,
-        this.player.isMoving,
-        this.player.walkFrame,
+        this.player,
         this.activeZone,
         now
       );

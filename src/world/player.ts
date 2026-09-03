@@ -60,8 +60,11 @@ export class PlayerController {
         return;
       }
       this.keys[e.code] = true;
-      // Also track WASD and arrow keys
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD'].includes(e.code)) {
+      if (e.key) {
+        this.keys[e.key.toLowerCase()] = true;
+      }
+      const moveKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'w', 's', 'a', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'];
+      if (moveKeys.includes(e.code) || (e.key && moveKeys.includes(e.key.toLowerCase()))) {
         this.targetPos = null; // Keyboard cancels click-to-move
         this.pendingInteraction = null;
       }
@@ -69,6 +72,13 @@ export class PlayerController {
 
     window.addEventListener('keyup', (e) => {
       this.keys[e.code] = false;
+      if (e.key) {
+        this.keys[e.key.toLowerCase()] = false;
+      }
+    });
+
+    window.addEventListener('blur', () => {
+      this.keys = {};
     });
   }
 
@@ -94,20 +104,20 @@ export class PlayerController {
     let dx = 0;
     let dy = 0;
 
-    // 1. Keyboard Input
-    if (this.keys['KeyW'] || this.keys['ArrowUp']) {
+    // 1. Keyboard Input (supports both code and key)
+    if (this.keys['KeyW'] || this.keys['ArrowUp'] || this.keys['w'] || this.keys['arrowup']) {
       dy -= 1;
       this.facing = 'up';
     }
-    if (this.keys['KeyS'] || this.keys['ArrowDown']) {
+    if (this.keys['KeyS'] || this.keys['ArrowDown'] || this.keys['s'] || this.keys['arrowdown']) {
       dy += 1;
       this.facing = 'down';
     }
-    if (this.keys['KeyA'] || this.keys['ArrowLeft']) {
+    if (this.keys['KeyA'] || this.keys['ArrowLeft'] || this.keys['a'] || this.keys['arrowleft']) {
       dx -= 1;
       this.facing = 'left';
     }
-    if (this.keys['KeyD'] || this.keys['ArrowRight']) {
+    if (this.keys['KeyD'] || this.keys['ArrowRight'] || this.keys['d'] || this.keys['arrowright']) {
       dx += 1;
       this.facing = 'right';
     }

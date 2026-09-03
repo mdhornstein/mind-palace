@@ -171,11 +171,14 @@ export class StateManager {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
   }
 
-  public updatePlayer(x: number, y: number, facing: WorldState['player']['facing']) {
+  public syncPlayerPosition(x: number, y: number, facing: WorldState['player']['facing']) {
     this.state.player.x = x;
     this.state.player.y = y;
     this.state.player.facing = facing;
-    // Debounced or direct persist
+  }
+
+  public updatePlayer(x: number, y: number, facing: WorldState['player']['facing']) {
+    this.syncPlayerPosition(x, y, facing);
     this.persist();
   }
 
