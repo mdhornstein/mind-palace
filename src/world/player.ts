@@ -15,9 +15,11 @@ export class PlayerController {
   public isMoving: boolean = false;
   public walkFrame: number = 0;
 
-  private speed = 2.2;
+  // Speed in pixels per second (brisk and responsive)
+  private speed = 210;
   private keys: Record<string, boolean> = {};
   private targetPos: { x: number; y: number } | null = null;
+  private pendingInteraction: { zone: InteractiveZone; onArrival: (zone: InteractiveZone) => void } | null = null;
 
   // Solid obstacles (in pixels)
   private obstacles: BoundingBox[] = [
@@ -31,11 +33,11 @@ export class PlayerController {
     // East Wall
     { x: 19 * TILE_SIZE, y: 0, w: TILE_SIZE, h: CANVAS_HEIGHT },
     // Library Bookshelf
-    { x: 2 * TILE_SIZE, y: 1.5 * TILE_SIZE, w: 4 * TILE_SIZE, h: 2 * TILE_SIZE },
+    { x: 2 * TILE_SIZE, y: 1.2 * TILE_SIZE, w: 4 * TILE_SIZE, h: 2.2 * TILE_SIZE },
     // Fireplace Mantle
-    { x: 8.5 * TILE_SIZE, y: 1.5 * TILE_SIZE, w: 2.5 * TILE_SIZE, h: 2 * TILE_SIZE },
+    { x: 8.5 * TILE_SIZE, y: 1.2 * TILE_SIZE, w: 2.5 * TILE_SIZE, h: 2 * TILE_SIZE },
     // Fossil Cabinet
-    { x: 14 * TILE_SIZE, y: 1.5 * TILE_SIZE, w: 4 * TILE_SIZE, h: 2 * TILE_SIZE },
+    { x: 14 * TILE_SIZE, y: 1.2 * TILE_SIZE, w: 4 * TILE_SIZE, h: 2.2 * TILE_SIZE },
     // Display Pedestal
     { x: 15 * TILE_SIZE, y: 5 * TILE_SIZE, w: TILE_SIZE, h: TILE_SIZE },
     // Science Workshop Desk
@@ -61,6 +63,7 @@ export class PlayerController {
       // Also track WASD and arrow keys
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD'].includes(e.code)) {
         this.targetPos = null; // Keyboard cancels click-to-move
+        this.pendingInteraction = null;
       }
     });
 
@@ -70,13 +73,24 @@ export class PlayerController {
   }
 
   public setTargetPosition(worldX: number, worldY: number) {
+    this.pendingInteraction = null;
     this.targetPos = {
       x: Math.max(TILE_SIZE + 10, Math.min(CANVAS_WIDTH - TILE_SIZE - 20, worldX)),
       y: Math.max(2 * TILE_SIZE + 10, Math.min(CANVAS_HEIGHT - TILE_SIZE - 20, worldY)),
     };
   }
 
-  public update(): { changed: boolean; activeZone: InteractiveZone | null } {
+  public walkToAndInteract(
+    destX: number,
+    destY: number,
+    zone: InteractiveZone,
+    onArrival: (zone: InteractiveZone) => void
+  ) {
+    this.targetPos = { x: destX, y: destY };
+    this.pendingInteraction = { zone, onArrival };
+  }
+
+  public update(dt: number): { changed: boolean; activeZone: InteractiveZone | null } {
     let dx = 0;
     let dy = 0;
 
@@ -100,11 +114,13 @@ export class PlayerController {
 
     // 2. Click-to-move navigation
     if (this.targetPos && dx === 0 && dy === 0) {
-      const distSq = (this.targetPos.x - this.x) ** 2 + (this.targetPos.y - this.y) ** 2;
-      if (distSq > 16) {
-        const angle = Math.atan2(this.targetPos.y - this.y, this.targetPos.x - this.x);
-        dx = Math.cos(angle);
-        dy = Math.sin(angle);
+      const distX = this.targetPos.x - this.x;
+      const distY = this.targetPos.y - this.y;
+      const distance = Math.hypot(distX, distY);
+
+      if (distance > 6) {
+        dx = distX / distance;
+        dy = distY / distance;
 
         // Determine dominant facing
         if (Math.abs(dx) > Math.abs(dy)) {
@@ -113,11 +129,17 @@ export class PlayerController {
           this.facing = dy > 0 ? 'down' : 'up';
         }
       } else {
+        // Arrived at target
         this.targetPos = null;
+        if (this.pendingInteraction) {
+          const pi = this.pendingInteraction;
+          this.pendingInteraction = null;
+          pi.onArrival(pi.zone);
+        }
       }
     }
 
-    // Normalize diagonal movement
+    // Normalize diagonal movement vector
     if (dx !== 0 && dy !== 0) {
       dx *= 0.7071;
       dy *= 0.7071;
@@ -127,21 +149,56 @@ export class PlayerController {
     this.isMoving = dx !== 0 || dy !== 0;
 
     if (this.isMoving) {
-      this.walkFrame += 1;
-      const nextX = this.x + dx * this.speed;
-      const nextY = this.y + dy * this.speed;
+      this.walkFrame += dt * 10;
+      const moveDist = this.speed * dt;
+      const nextX = this.x + dx * moveDist;
+      const nextY = this.y + dy * moveDist;
 
-      // Check collision on X axis
+      let movedX = false;
+      let movedY = false;
+
+      // Try X axis
       if (!this.checkCollision(nextX, this.y)) {
         this.x = nextX;
+        movedX = true;
       }
-      // Check collision on Y axis
+      // Try Y axis
       if (!this.checkCollision(this.x, nextY)) {
         this.y = nextY;
+        movedY = true;
+      }
+
+      // If clicked into an obstacle and cannot move further, complete or cancel
+      if (this.targetPos && !movedX && !movedY) {
+        // We're stuck against an obstacle
+        if (this.pendingInteraction) {
+          const activeZone = this.detectActiveZone();
+          if (activeZone && activeZone.id === this.pendingInteraction.zone.id) {
+            const pi = this.pendingInteraction;
+            this.pendingInteraction = null;
+            this.targetPos = null;
+            pi.onArrival(pi.zone);
+          } else {
+            this.targetPos = null;
+            this.pendingInteraction = null;
+          }
+        } else {
+          this.targetPos = null;
+        }
       }
     }
 
     const activeZone = this.detectActiveZone();
+
+    // If we're walking toward an interaction and we enter its zone, trigger arrival early!
+    if (this.pendingInteraction && activeZone && activeZone.id === this.pendingInteraction.zone.id) {
+      const pi = this.pendingInteraction;
+      this.pendingInteraction = null;
+      this.targetPos = null;
+      this.isMoving = false;
+      pi.onArrival(pi.zone);
+    }
+
     return {
       changed: this.isMoving || wasMoving,
       activeZone,
@@ -151,17 +208,17 @@ export class PlayerController {
   private checkCollision(x: number, y: number): boolean {
     // Player collision bounding box (feet area)
     const pBox: BoundingBox = {
-      x: x + 2,
-      y: y + 16,
-      w: 12,
+      x: x + 4,
+      y: y + 20,
+      w: 16,
       h: 10,
     };
 
-    // Check bounds
+    // Check world bounds
     if (pBox.x < TILE_SIZE || pBox.x + pBox.w > CANVAS_WIDTH - TILE_SIZE) return true;
     if (pBox.y < 2 * TILE_SIZE || pBox.y + pBox.h > CANVAS_HEIGHT - TILE_SIZE / 2) return true;
 
-    // Check obstacles
+    // Check obstacle bounding boxes
     for (const obs of this.obstacles) {
       if (
         pBox.x < obs.x + obs.w &&
@@ -177,15 +234,15 @@ export class PlayerController {
   }
 
   public detectActiveZone(): InteractiveZone | null {
-    const px = this.x + 8;
-    const py = this.y + 16;
+    const px = this.x + 12;
+    const py = this.y + 20;
 
     for (const zone of INTERACTIVE_ZONES) {
-      // Expanded detection radius around interactive objects
-      const expandedX = zone.x - 18;
-      const expandedY = zone.y - 12;
-      const expandedW = zone.width + 36;
-      const expandedH = zone.height + 28;
+      // Generous proximity detection around interactive stations
+      const expandedX = zone.x - 24;
+      const expandedY = zone.y - 18;
+      const expandedW = zone.width + 48;
+      const expandedH = zone.height + 40;
 
       if (
         px >= expandedX &&

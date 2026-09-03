@@ -585,7 +585,7 @@ export function drawCompanionSprite(
   }
 }
 
-// Draw Player Character with 4-directional walk and idle animation
+// Draw Player Character with high-visibility, 4-directional walk and idle animation
 export function drawPlayerSprite(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -594,45 +594,80 @@ export function drawPlayerSprite(
   isMoving: boolean,
   walkFrame: number
 ) {
-  // Shadow
-  ctx.fillStyle = 'rgba(12, 8, 5, 0.45)';
+  const cx = x + 10;
+  const cy = y + 28;
+
+  // 1. Soft Luminous Player Beacon Ring (ensures immediate visibility)
+  const pulse = Math.sin(walkFrame * 0.15) * 2;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(245, 158, 11, 0.45)';
+  ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.ellipse(x + 8, y + 24, 7, 3, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx, cy, 14 + pulse, 6 + pulse * 0.4, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Soft shadow
+  ctx.fillStyle = 'rgba(10, 6, 4, 0.55)';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, 10, 4.5, 0, 0, Math.PI * 2);
   ctx.fill();
+  ctx.restore();
 
-  const stepOffset = isMoving ? Math.sin(walkFrame * 0.4) * 2 : 0;
+  const step1 = isMoving ? Math.sin(walkFrame * 0.8) * 4 : 0;
+  const step2 = isMoving ? -Math.sin(walkFrame * 0.8) * 4 : 0;
+  const bodyBob = isMoving ? Math.abs(Math.sin(walkFrame * 0.8)) * 1.5 : 0;
 
-  // Hair
-  pRect(ctx, x + 4, y + 2, 8, 6, '#292524'); // dark hair
-  // Face
-  pRect(ctx, x + 5, y + 5, 6, 5, '#ffedd5');
+  const bx = x + 1;
+  const by = y - bodyBob;
 
-  // Eyes according to facing
-  ctx.fillStyle = '#1c1917';
+  // 2. Head & Hair (distinct, clean silhouette)
+  pRect(ctx, bx + 5, by + 1, 10, 8, '#1c1917'); // dark styled hair
+  pRect(ctx, bx + 6, by + 5, 8, 7, '#ffedd5'); // face
+
+  // Eyes and Facing Direction
+  ctx.fillStyle = '#0f172a';
   if (facing === 'down') {
-    ctx.fillRect(x + 6, y + 7, 1, 1);
-    ctx.fillRect(x + 9, y + 7, 1, 1);
+    ctx.fillRect(bx + 7, by + 7, 2, 2);
+    ctx.fillRect(bx + 11, by + 7, 2, 2);
+    // Gold spectacle frames
+    ctx.fillStyle = '#d97706';
+    ctx.fillRect(bx + 6, by + 6, 4, 1);
+    ctx.fillRect(bx + 10, by + 6, 4, 1);
   } else if (facing === 'left') {
-    ctx.fillRect(x + 5, y + 7, 1, 1);
+    ctx.fillRect(bx + 6, by + 7, 2, 2);
+    ctx.fillStyle = '#d97706';
+    ctx.fillRect(bx + 5, by + 6, 4, 1);
   } else if (facing === 'right') {
-    ctx.fillRect(x + 10, y + 7, 1, 1);
-  }
-
-  // Coat / Jacket (Navy scholar coat)
-  pRect(ctx, x + 3, y + 10, 10, 8, '#1e3a8a');
-  pRect(ctx, x + 6, y + 10, 4, 8, '#e2e8f0'); // shirt
-  pRect(ctx, x + 7, y + 11, 2, 4, '#b91c1c'); // scarf/cravat
-
-  // Legs & Walk stride
-  if (isMoving) {
-    pRect(ctx, x + 4, y + 18, 3, 6 + stepOffset, '#1e293b');
-    pRect(ctx, x + 9, y + 18, 3, 6 - stepOffset, '#1e293b');
-    pRect(ctx, x + 4, y + 24 + stepOffset, 3, 2, '#0f172a');
-    pRect(ctx, x + 9, y + 24 - stepOffset, 3, 2, '#0f172a');
+    ctx.fillRect(bx + 12, by + 7, 2, 2);
+    ctx.fillStyle = '#d97706';
+    ctx.fillRect(bx + 11, by + 6, 4, 1);
   } else {
-    pRect(ctx, x + 4, y + 18, 3, 6, '#1e293b');
-    pRect(ctx, x + 9, y + 18, 3, 6, '#1e293b');
-    pRect(ctx, x + 4, y + 24, 3, 2, '#0f172a');
-    pRect(ctx, x + 9, y + 24, 3, 2, '#0f172a');
+    // Up - back of hair
+    pRect(ctx, bx + 5, by + 3, 10, 8, '#1c1917');
   }
+
+  // 3. Vibrant Scholar Coat (Royal Blue + Gold Trim for high visibility)
+  pRect(ctx, bx + 3, by + 12, 14, 11, '#2563eb'); // rich royal blue coat
+  pRect(ctx, bx + 7, by + 12, 6, 11, '#f8fafc'); // crisp white shirt & lapel
+  pRect(ctx, bx + 9, by + 13, 2, 5, '#dc2626'); // red necktie/cravat
+
+  // Gold coat buttons & border trim
+  pRect(ctx, bx + 3, by + 12, 14, 1, '#fbbf24');
+  pRect(ctx, bx + 3, by + 22, 14, 1, '#fbbf24');
+  pRect(ctx, bx + 9, by + 19, 2, 2, '#fbbf24');
+
+  // Coat tails / arms swinging
+  if (isMoving) {
+    pRect(ctx, bx + 1, by + 13 - step1 * 0.5, 3, 9, '#1d4ed8');
+    pRect(ctx, bx + 16, by + 13 - step2 * 0.5, 3, 9, '#1d4ed8');
+  } else {
+    pRect(ctx, bx + 1, by + 13, 3, 9, '#1d4ed8');
+    pRect(ctx, bx + 16, by + 13, 3, 9, '#1d4ed8');
+  }
+
+  // 4. Legs & Boots (animated stride)
+  pRect(ctx, bx + 5, by + 23, 4, 6 + step1, '#1e293b'); // left leg
+  pRect(ctx, bx + 11, by + 23, 4, 6 + step2, '#1e293b'); // right leg
+  pRect(ctx, bx + 4, by + 29 + step1, 5, 3, '#0f172a'); // left boot
+  pRect(ctx, bx + 11, by + 29 + step2, 5, 3, '#0f172a'); // right boot
 }

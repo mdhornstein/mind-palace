@@ -32,10 +32,24 @@ interface DustMote {
 export class RoomRenderer {
   private ctx: CanvasRenderingContext2D;
   private dustMotes: DustMote[] = [];
+  private bgCanvas: HTMLCanvasElement;
+  private bgCtx: CanvasRenderingContext2D;
+  private bgDirty: boolean = true;
+  private lastBookOnRug: boolean = false;
+  private lastPedestalSpecimenId: string | null = null;
 
   constructor(ctx: CanvasRenderingContext2D) {
     this.ctx = ctx;
     this.initDustMotes();
+
+    // Offscreen background canvas for high performance
+    this.bgCanvas = document.createElement('canvas');
+    this.bgCanvas.width = CANVAS_WIDTH;
+    this.bgCanvas.height = CANVAS_HEIGHT;
+    const bgContext = this.bgCanvas.getContext('2d');
+    if (!bgContext) throw new Error('Could not create bg canvas context');
+    this.bgCtx = bgContext;
+    this.bgCtx.imageSmoothingEnabled = false;
   }
 
   private initDustMotes() {
@@ -50,16 +64,8 @@ export class RoomRenderer {
     }
   }
 
-  public render(
-    state: WorldState,
-    isMoving: boolean,
-    walkFrame: number,
-    activeZone: InteractiveZone | null,
-    timeMs: number
-  ) {
-    const ctx = this.ctx;
-
-    ctx.save();
+  private renderStaticBackground(state: WorldState) {
+    const ctx = this.bgCtx;
     ctx.imageSmoothingEnabled = false;
 
     // 1. Clear background
@@ -73,32 +79,64 @@ export class RoomRenderer {
         const y = ty * TILE_SIZE;
 
         if (ty === 0) {
-          // Upper wall
           drawWallTile(ctx, x, y, false);
         } else if (ty === 1) {
-          // Lower wainscot wall
           drawWallTile(ctx, x, y, true);
         } else {
-          // Floor planks with herringbone pseudo-random variance
           const variant = (tx * 3 + ty * 7) % 4;
           drawFloorPlank(ctx, x, y, variant);
         }
       }
     }
 
-    // 3. Architectural Fixtures
+    // 3. Architectural Rug in reading nook
+    drawOrnateRug(ctx, 2 * TILE_SIZE, 4 * TILE_SIZE, 5 * TILE_SIZE, 5 * TILE_SIZE);
+
+    // 4. Fixed Bookshelf (base)
+    drawBookshelf(ctx, 2 * TILE_SIZE, 1 * TILE_SIZE, 4 * TILE_SIZE, 2.5 * TILE_SIZE);
+
+    // 5. Entrance Door Mat
+    ctx.fillStyle = '#291b12';
+    ctx.fillRect(9 * TILE_SIZE, 14 * TILE_SIZE + 10, 2 * TILE_SIZE, 20);
+    ctx.fillStyle = '#452b1b';
+    ctx.font = '7px monospace';
+    ctx.fillText('HOME', 9.4 * TILE_SIZE, 14.5 * TILE_SIZE + 12);
+
+    this.bgDirty = false;
+    this.lastBookOnRug = state.environment.bookOpenOnRug;
+    this.lastPedestalSpecimenId = state.environment.activePedestalSpecimenId;
+  }
+
+  public render(
+    state: WorldState,
+    isMoving: boolean,
+    walkFrame: number,
+    activeZone: InteractiveZone | null,
+    timeMs: number
+  ) {
+    const ctx = this.ctx;
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+
+    // Rebuild background cache if environment changed
+    if (
+      this.bgDirty ||
+      this.lastBookOnRug !== state.environment.bookOpenOnRug ||
+      this.lastPedestalSpecimenId !== state.environment.activePedestalSpecimenId
+    ) {
+      this.renderStaticBackground(state);
+    }
+
+    // Blit pre-rendered background instantly (0ms)
+    ctx.drawImage(this.bgCanvas, 0, 0);
+
+    // Dynamic Architectural Fixtures
     // Arched window on north wall
     drawWindow(ctx, 4 * TILE_SIZE, 6, timeMs);
 
-    // Crackling Stone Fireplace in center of north wall
+    // Crackling Stone Fireplace with animated flames
     drawFireplace(ctx, 8.5 * TILE_SIZE, 6, timeMs);
-
-    // Large Ornate Persian Rug in reading nook / library zone
-    drawOrnateRug(ctx, 2 * TILE_SIZE, 4 * TILE_SIZE, 5 * TILE_SIZE, 5 * TILE_SIZE);
-
-    // 4. Fixed Furniture & Interactive Stations
-    // Library Bookshelf
-    drawBookshelf(ctx, 2 * TILE_SIZE, 1 * TILE_SIZE, 4 * TILE_SIZE, 2.5 * TILE_SIZE);
 
     // Reading Nook (Armchair + Tea Table + optional open book on rug)
     drawReadingNook(
