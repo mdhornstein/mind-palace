@@ -23,15 +23,17 @@ export class DevTray {
     document.body.appendChild(this.el);
 
     this.renderHud();
+    this.hearthAudio.onRoomChange(() => this.renderHud());
     this.setupListeners();
     this.render();
   }
 
   private renderHud() {
     const isPlaying = this.hearthAudio.getIsPlaying();
+    const roomName = this.hearthAudio.getRoomName();
     this.hudEl.innerHTML = `
-      <button id="btn-audio-toggle" class="hud-pill ${isPlaying ? 'active' : ''}" title="Toggle cozy procedural 8-bit chiptune soundtrack (Press M to mute/unmute)">
-        ${isPlaying ? '🎶 8-Bit Music: Playing' : '🔇 8-Bit Music: Muted'}
+      <button id="btn-audio-toggle" class="hud-pill ${isPlaying ? 'active' : ''}" title="Toggle procedural 8-bit soundtrack for ${roomName} (Press M to mute/unmute)">
+        ${isPlaying ? `🎶 8-Bit Music: ${roomName}` : '🔇 8-Bit Music: Muted'}
       </button>
       <button id="btn-time-warp" class="hud-pill highlight" title="Simulate closing the app and returning hours or days later (~ or Shift+D)">
         ⏱️ Time Warp

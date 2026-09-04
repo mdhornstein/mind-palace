@@ -7,6 +7,90 @@ export function pRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: nu
   ctx.fillRect(Math.floor(x), Math.floor(y), Math.floor(w), Math.floor(h));
 }
 
+// Crisp Pixel-Art 3x5 Bitmap Font (100% solid pixels, zero anti-aliasing)
+const FONT_3X5: Record<string, number[]> = {
+  'A': [0b010, 0b101, 0b111, 0b101, 0b101],
+  'B': [0b110, 0b101, 0b110, 0b101, 0b110],
+  'C': [0b011, 0b100, 0b100, 0b100, 0b011],
+  'D': [0b110, 0b101, 0b101, 0b101, 0b110],
+  'E': [0b111, 0b100, 0b110, 0b100, 0b111],
+  'F': [0b111, 0b100, 0b110, 0b100, 0b100],
+  'G': [0b011, 0b100, 0b101, 0b101, 0b011],
+  'H': [0b101, 0b101, 0b111, 0b101, 0b101],
+  'I': [0b111, 0b010, 0b010, 0b010, 0b111],
+  'J': [0b001, 0b001, 0b001, 0b101, 0b010],
+  'K': [0b101, 0b110, 0b100, 0b110, 0b101],
+  'L': [0b100, 0b100, 0b100, 0b100, 0b111],
+  'M': [0b101, 0b111, 0b101, 0b101, 0b101],
+  'N': [0b110, 0b101, 0b101, 0b101, 0b101],
+  'O': [0b010, 0b101, 0b101, 0b101, 0b010],
+  'P': [0b110, 0b101, 0b110, 0b100, 0b100],
+  'Q': [0b010, 0b101, 0b101, 0b110, 0b011],
+  'R': [0b110, 0b101, 0b110, 0b101, 0b101],
+  'S': [0b011, 0b100, 0b010, 0b001, 0b110],
+  'T': [0b111, 0b010, 0b010, 0b010, 0b010],
+  'U': [0b101, 0b101, 0b101, 0b101, 0b010],
+  'V': [0b101, 0b101, 0b101, 0b010, 0b010],
+  'W': [0b101, 0b101, 0b101, 0b111, 0b101],
+  'X': [0b101, 0b101, 0b010, 0b101, 0b101],
+  'Y': [0b101, 0b101, 0b010, 0b010, 0b010],
+  'Z': [0b111, 0b001, 0b010, 0b100, 0b111],
+  '0': [0b010, 0b101, 0b101, 0b101, 0b010],
+  '1': [0b010, 0b110, 0b010, 0b010, 0b111],
+  '2': [0b110, 0b001, 0b010, 0b100, 0b111],
+  '3': [0b110, 0b001, 0b010, 0b001, 0b110],
+  '4': [0b101, 0b101, 0b111, 0b001, 0b001],
+  '5': [0b111, 0b100, 0b110, 0b001, 0b110],
+  '6': [0b011, 0b100, 0b110, 0b101, 0b010],
+  '7': [0b111, 0b001, 0b010, 0b010, 0b010],
+  '8': [0b010, 0b101, 0b010, 0b101, 0b010],
+  '9': [0b010, 0b101, 0b011, 0b001, 0b110],
+  ' ': [0, 0, 0, 0, 0],
+  '.': [0, 0, 0, 0, 0b010],
+  ',': [0, 0, 0, 0b010, 0b100],
+  ':': [0, 0b010, 0, 0b010, 0],
+  ';': [0, 0b010, 0, 0b010, 0b100],
+  '+': [0, 0b010, 0b111, 0b010, 0],
+  '-': [0, 0, 0b111, 0, 0],
+  '=': [0, 0b111, 0, 0b111, 0],
+  '&': [0b010, 0b101, 0b010, 0b101, 0b011],
+  '/': [0b001, 0b001, 0b010, 0b100, 0b100],
+  '✓': [0, 0b001, 0b001, 0b101, 0b010],
+  '·': [0, 0, 0b010, 0, 0],
+  '∇': [0b111, 0b111, 0b101, 0b010, 0b010],
+  'σ': [0b011, 0b101, 0b101, 0b011, 0b000],
+  '_': [0, 0, 0, 0, 0b111],
+  '?': [0b110, 0b001, 0b010, 0, 0b010],
+  '!': [0b010, 0b010, 0b010, 0, 0b010],
+  '(': [0b010, 0b100, 0b100, 0b100, 0b010],
+  ')': [0b010, 0b001, 0b001, 0b001, 0b010],
+};
+
+export function drawPixelText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  startX: number,
+  startY: number,
+  color: string,
+  scale = 1
+) {
+  ctx.fillStyle = color;
+  let curX = Math.round(startX);
+  const curY = Math.round(startY);
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i].toUpperCase();
+    const rows = FONT_3X5[ch] || FONT_3X5[' '];
+    for (let r = 0; r < 5; r++) {
+      const b = rows[r];
+      if ((b & 0b100) !== 0) ctx.fillRect(curX, curY + r * scale, scale, scale);
+      if ((b & 0b010) !== 0) ctx.fillRect(curX + scale, curY + r * scale, scale, scale);
+      if ((b & 0b001) !== 0) ctx.fillRect(curX + scale * 2, curY + r * scale, scale, scale);
+    }
+    curX += (3 + 1) * scale;
+  }
+}
+
 // Draw a cozy herringbone / wooden plank floor tile
 export function drawFloorPlank(ctx: CanvasRenderingContext2D, x: number, y: number, variant: number) {
   const baseTones = ['#3d2817', '#452e1b', '#3f2918', '#49311d'];
@@ -464,22 +548,11 @@ export function drawWorkshop(
   pRect(ctx, ex + 25, ey + eh - 3, 5, 2, '#60a5fa'); // blue chalk
   pRect(ctx, ex + ew - 18, ey + eh - 4, 12, 3, '#78350f'); // felt eraser
 
-  // Chalk text (COMPLETELY UNOBSTRUCTED & 100% LEGIBLE with generous margins!)
-  ctx.fillStyle = '#f8fafc';
-  ctx.font = 'bold 7px monospace';
-  ctx.fillText('∇ · σ + f = 0', ex + 8, ey + 14);
-
-  ctx.fillStyle = '#fde68a';
-  ctx.font = '6px monospace';
-  ctx.fillText('Linear Elasticity', ex + 8, ey + 24);
-
-  ctx.fillStyle = '#93c5fd';
-  ctx.font = '5px monospace';
-  ctx.fillText('FEA Stress Tensor σ_ij', ex + 8, ey + 33);
-
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '5px monospace';
-  ctx.fillText('Equilibrium & Boundary Cond.', ex + 8, ey + 43);
+  // Chalk text (100% crisp solid pixel-art chalk, ZERO anti-aliasing blur!)
+  drawPixelText(ctx, '∇·σ + f = 0', ex + 8, ey + 9, '#f8fafc', 1);
+  drawPixelText(ctx, 'LINEAR ELASTICITY', ex + 8, ey + 18, '#fde68a', 1);
+  drawPixelText(ctx, 'FEA STRESS TENSOR', ex + 8, ey + 27, '#93c5fd', 1);
+  drawPixelText(ctx, 'BOUNDARY COND.', ex + 8, ey + 36, '#94a3b8', 1);
 
   // Isometric 3D Stress Element Cube on Slate (neatly positioned on the right side)
   const cx = ex + ew - 24;
@@ -687,10 +760,8 @@ export function drawWorkshop(
     ctx.lineWidth = 0.5;
     ctx.strokeRect(barX, barY, 3, barH);
 
-    // Status Banner at bottom of CRT
-    ctx.fillStyle = '#10b981';
-    ctx.font = '5px monospace';
-    ctx.fillText('CONV ✓', scrX + 2, scrY + scrH - 2);
+    // Status Banner at bottom of CRT (crisp pixel text)
+    drawPixelText(ctx, 'CONV ✓', scrX + 2, scrY + scrH - 6, '#10b981', 1);
   } else {
     // -----------------------------------------------------------------------
     // STATE: RUNNING -> PULSATING ELECTRIC CYAN WIREFRAME SIMULATION!
@@ -730,10 +801,8 @@ export function drawWorkshop(
     ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
     ctx.fillRect(scrX + scanSweep, scrY, 2, scrH);
 
-    // Running status telemetry
-    ctx.fillStyle = '#38bdf8';
-    ctx.font = '5px monospace';
-    ctx.fillText('FEA SOLV..', scrX + 2, scrY + scrH - 2);
+    // Running status telemetry (crisp pixel text)
+    drawPixelText(ctx, 'FEA SOLV..', scrX + 2, scrY + scrH - 6, '#38bdf8', 1);
   }
 
   // =========================================================================
@@ -972,11 +1041,9 @@ export function drawFossilCabinet(
         ctx.arc(px + 13, py + 7, 5, Math.PI, 0);
         ctx.fill();
 
-        // Pulsating Golden Curiosity Rune ("?")
+        // Pulsating Golden Curiosity Rune ("?" crisp pixel art)
         const pulse = Math.sin(timeMs * 0.007) * 0.35 + 0.65;
-        ctx.fillStyle = `rgba(253, 224, 71, ${pulse})`;
-        ctx.font = 'bold 9px monospace';
-        ctx.fillText('?', px + 11, py + 4);
+        drawPixelText(ctx, '?', px + 11, py, `rgba(253, 224, 71, ${pulse})`, 2);
 
         // Animated Twinkling Constellation Stars
         const starPhase = (timeMs * 0.004) % (Math.PI * 2);
@@ -1601,10 +1668,13 @@ export function drawObservatoryDoorway(
   pRect(ctx, x + Math.floor(w / 2) - 4, y - 8, 8, 5, '#475569');
   pRect(ctx, x + Math.floor(w / 2) - 3, y - 7, 6, 3, '#94a3b8');
 
-  // 4. Carved Inscription Plaque above Doorway
-  ctx.fillStyle = '#f8fafc';
-  ctx.font = 'bold 6px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText(titleText, x + Math.floor(w / 2), y - 10);
-  ctx.textAlign = 'start';
+  // 4. Carved Inscription Plaque above Doorway (crisp 1-bit pixel art plaque)
+  const textW = titleText.length * 4 - 1;
+  const plaqueW = textW + 8;
+  const plaqueX = Math.round(x + w / 2 - plaqueW / 2);
+  const plaqueY = y - 13;
+  pRect(ctx, plaqueX, plaqueY, plaqueW, 9, '#090d16');
+  pRect(ctx, plaqueX + 1, plaqueY + 1, plaqueW - 2, 7, '#1e293b');
+  pRect(ctx, plaqueX + 2, plaqueY + 2, plaqueW - 4, 5, '#0f172a');
+  drawPixelText(ctx, titleText, plaqueX + 4, plaqueY + 2, '#f8fafc', 1);
 }

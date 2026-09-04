@@ -29,12 +29,12 @@ export const studyRoomConfig: RoomConfig = {
   doors: [
     {
       id: 'to_observatory',
-      name: 'The Observatory Portal',
-      prompt: 'Enter the Stargazing Observatory',
-      tileX: 9,
-      tileY: 14,
-      tileWidth: 2,
-      tileHeight: 1,
+      name: 'Portal to The Observatory',
+      prompt: 'Enter The Stargazing Observatory',
+      tileX: 8.5,
+      tileY: 13.8,
+      tileWidth: 3.0,
+      tileHeight: 1.5,
       targetRoomId: 'observatory',
       targetSpawnPoint: {
         x: 10 * TILE_SIZE,

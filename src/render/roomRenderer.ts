@@ -1,4 +1,4 @@
-import { WorldState, InteractiveZone, RoomConfig } from '../core/types';
+import { WorldState, RoomConfig } from '../core/types';
 import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
@@ -92,7 +92,7 @@ export class RoomRenderer {
   public render(
     state: WorldState,
     player: { x: number; y: number; facing: WorldState['player']['facing']; isMoving: boolean; walkFrame: number },
-    activeZone: InteractiveZone | null,
+    _activeZone: any,
     timeMs: number,
     room: RoomConfig
   ) {
@@ -159,112 +159,9 @@ export class RoomRenderer {
     renderables.sort((a, b) => a.y - b.y);
     renderables.forEach((r) => r.draw());
 
-    // 5. Companion Speech Bubble (only active in the room where the companion resides)
-    if (room.id === 'study' && state.companion.speech) {
-      const now = Date.now();
-      const elapsed = now - state.companion.speech.timestamp;
-      if (elapsed < state.companion.speech.durationMs) {
-        const fade = elapsed > state.companion.speech.durationMs - 600
-          ? (state.companion.speech.durationMs - elapsed) / 600
-          : 1;
-
-        this.drawSpeechBubble(
-          ctx,
-          state.companion.x + 8,
-          state.companion.y - 10,
-          state.companion.speech.text,
-          fade
-        );
-      }
-    }
-
-    // 6. Floating Ambient Dust Motes
+    // 5. Floating Ambient Dust Motes
     this.renderDustMotes(ctx, timeMs);
 
-    // 7. Interactive Zone / Station Proximity Cue
-    if (activeZone) {
-      this.drawInteractionPrompt(ctx, activeZone, timeMs);
-    }
-
-    ctx.restore();
-  }
-
-  private drawSpeechBubble(
-    ctx: CanvasRenderingContext2D,
-    bx: number,
-    by: number,
-    text: string,
-    alpha: number
-  ) {
-    ctx.save();
-    ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
-
-    ctx.font = '10px Georgia, serif';
-    const metrics = ctx.measureText(text);
-    const padding = 8;
-    const bw = metrics.width + padding * 2;
-    const bh = 22;
-    const rx = Math.max(10, Math.min(CANVAS_WIDTH - bw - 10, bx - bw / 2));
-    const ry = by - bh - 6;
-
-    // Bubble shadow
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-    ctx.fillRect(rx + 2, ry + 2, bw, bh);
-
-    // Bubble body (warm ivory parchment)
-    ctx.fillStyle = '#fefce8';
-    ctx.strokeStyle = '#78350f';
-    ctx.lineWidth = 1;
-    ctx.fillRect(rx, ry, bw, bh);
-    ctx.strokeRect(rx, ry, bw, bh);
-
-    // Bubble tail
-    ctx.fillStyle = '#fefce8';
-    ctx.beginPath();
-    ctx.moveTo(bx - 3, ry + bh);
-    ctx.lineTo(bx + 3, ry + bh);
-    ctx.lineTo(bx, ry + bh + 5);
-    ctx.closePath();
-    ctx.fill();
-
-    // Text
-    ctx.fillStyle = '#451a03';
-    ctx.fillText(text, rx + padding, ry + 14);
-
-    ctx.restore();
-  }
-
-  private drawInteractionPrompt(
-    ctx: CanvasRenderingContext2D,
-    zone: InteractiveZone,
-    timeMs: number
-  ) {
-    const bob = Math.sin(timeMs * 0.006) * 3;
-    const cx = zone.x + zone.width / 2;
-    const cy = zone.y + zone.height + 6 + bob;
-
-    ctx.save();
-    // Soft glowing prompt capsule
-    const text = `[Space / Click] ${zone.name}`;
-    ctx.font = 'bold 9px monospace';
-    const tw = ctx.measureText(text).width;
-    const bw = tw + 14;
-    const bh = 18;
-
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-    ctx.strokeStyle = '#f59e0b';
-    ctx.lineWidth = 1;
-
-    ctx.beginPath();
-    ctx.roundRect(cx - bw / 2, cy - bh / 2, bw, bh, 4);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = '#fef3c7';
-    ctx.textAlign = 'center';
-    ctx.fillText(text, cx, cy + 3);
-
-    ctx.restore();
   }
 
   private renderDustMotes(ctx: CanvasRenderingContext2D, timeMs: number) {

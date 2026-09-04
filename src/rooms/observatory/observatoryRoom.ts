@@ -26,12 +26,12 @@ export const observatoryRoomConfig: RoomConfig = {
   doors: [
     {
       id: 'to_study',
-      name: 'The Study Portal',
-      prompt: 'Return to the Study',
-      tileX: 9,
-      tileY: 1,
-      tileWidth: 2,
-      tileHeight: 1,
+      name: 'Portal to The Study',
+      prompt: 'Return to The Study',
+      tileX: 8.5,
+      tileY: 1.0,
+      tileWidth: 3.0,
+      tileHeight: 2.5,
       targetRoomId: 'study',
       targetSpawnPoint: {
         x: 10 * TILE_SIZE,
@@ -169,14 +169,75 @@ export const observatoryRoomConfig: RoomConfig = {
     ctx.closePath();
     ctx.fill();
 
-    // 4. North Portal (Arched doorway returning to the Study)
+    // 4. Grand Entrance Terrace, Balustrades & Steps from Study
+    const terrX = 236;
+    const terrW = 168;
+    // Raised stone entrance landing
+    ctx.fillStyle = '#182030';
+    ctx.fillRect(terrX, 34, terrW, 56);
+
+    // Flagstone texture on landing
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 1;
+    for (let lx = terrX + 14; lx < terrX + terrW; lx += 28) {
+      ctx.strokeRect(lx, 34, 28, 28);
+      ctx.strokeRect(lx - 14, 62, 28, 28);
+    }
+
+    // Side stone balustrades / parapets
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(terrX - 6, 32, 12, 60);
+    ctx.fillRect(terrX + terrW - 6, 32, 12, 60);
+    // Brass balustrade top rails
+    ctx.fillStyle = '#d97706';
+    ctx.fillRect(terrX - 7, 30, 14, 3);
+    ctx.fillRect(terrX + terrW - 7, 30, 14, 3);
+
+    // Warm Brass Lanterns on Balustrade Pedestals
+    [terrX, terrX + terrW].forEach((lx) => {
+      ctx.fillStyle = '#b45309';
+      ctx.fillRect(lx - 4, 20, 8, 10);
+      ctx.fillStyle = '#fef08a';
+      ctx.fillRect(lx - 2, 22, 4, 6);
+      // Soft lantern radial glow
+      const lanternGlow = ctx.createRadialGradient(lx, 25, 2, lx, 25, 24);
+      lanternGlow.addColorStop(0, 'rgba(251, 191, 36, 0.45)');
+      lanternGlow.addColorStop(1, 'transparent');
+      ctx.fillStyle = lanternGlow;
+      ctx.beginPath();
+      ctx.arc(lx, 25, 24, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Grand Flagstone Steps descending to main floor (y: 90 to 150)
+    const stairSteps = [
+      { y: 90, h: 14, inset: 4 },
+      { y: 104, h: 14, inset: 2 },
+      { y: 118, h: 14, inset: 0 },
+      { y: 132, h: 18, inset: -4 },
+    ];
+    stairSteps.forEach((st) => {
+      const sx = terrX + st.inset;
+      const sw = terrW - st.inset * 2;
+      // Step riser
+      ctx.fillStyle = '#0a0f1d';
+      ctx.fillRect(sx, st.y, sw, 3);
+      // Step tread
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(sx, st.y + 3, sw, st.h - 3);
+      // Polished brass edge nosing
+      ctx.fillStyle = '#d97706';
+      ctx.fillRect(sx, st.y + st.h - 1, sw, 1);
+    });
+
+    // Arched portal leading to the Study
     drawObservatoryDoorway(
       ctx,
-      9 * TILE_SIZE,
-      1 * TILE_SIZE,
-      2 * TILE_SIZE,
-      44,
-      'THE STUDY',
+      8.5 * TILE_SIZE,
+      0.9 * TILE_SIZE,
+      3.0 * TILE_SIZE,
+      50,
+      'THE STUDY ⮤',
       true
     );
   },

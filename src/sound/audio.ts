@@ -1,29 +1,41 @@
 /**
- * Procedural Web Audio 8-Bit Cozy Chiptune Soundtrack
- * Generates a nostalgic, gentle, looping chiptune music-box lullaby for the Mind Palace:
- * - Voice 1: Soft pulse-wave melodic lead (warm nostalgic melody with subtle vibrato)
- * - Voice 2: Rounded triangle-wave 8-bit bassline (walking root chord progression)
- * - Voice 3: Delicate arpeggio bells (rippling music-box broken chords)
- * - Warm 1600Hz low-pass vintage console filter for cozy warmth
- * Pure Web Audio API: zero audio files, instant loading, seamless procedural looping.
+ * Procedural Web Audio 8-Bit Soundtrack Engine
+ * Generates rich, nostalgic, looping chiptune compositions tailored to each sanctuary room:
+ * 
+ * 1. THE STUDY ("Hearthside Chiptune"):
+ *    - Cozy, warm, reflective lullaby (68 BPM)
+ *    - Chord Progression: Cmaj7 -> Am7 -> Fmaj7 -> G6
+ *    - Voice 1: Warm pulse lead with 4.5Hz vibrato
+ *    - Voice 2: Rounded walking triangle-wave bassline
+ *    - Voice 3: Delicate music-box broken chord arpeggios
+ *    - Lowpass filter: 1750 Hz (warm console character)
+ * 
+ * 2. THE OBSERVATORY ("Starlight Chiptune"):
+ *    - Ethereal, contemplative, cosmic space theme (50 BPM)
+ *    - Chord Progression: Em9 -> Cmaj7#11 -> Dadd9 -> Bm7 (Celestial Lydian/Dorian)
+ *    - Voice 1: Mystical high pulse lead with gentle slow attack and 3.8Hz shimmer
+ *    - Voice 2: Deep cosmic triangle sub-bass drone
+ *    - Voice 3: Sparkling high-register sine star arpeggios (twinkling constellations)
+ *    - Lowpass filter: 2400 Hz with resonant sparkle Q 1.2
+ * 
+ * Pure Web Audio API: zero audio files, instant loading, seamless procedural looping, smooth room crossfading.
  */
+
+export type RoomMusicTheme = 'study' | 'observatory';
 
 export class HearthAudio {
   private static instance: HearthAudio;
   private ctx: AudioContext | null = null;
   private isPlaying = false;
+  private currentRoom: RoomMusicTheme = 'study';
   private masterGain: GainNode | null = null;
   private filterNode: BiquadFilterNode | null = null;
   private sequenceTimer: number | null = null;
   private stepIndex = 0;
+  private onRoomChangeCallbacks: Array<(room: RoomMusicTheme) => void> = [];
 
-  // Chord progression: Cmaj7 -> Am7 -> Fmaj7 -> G6 (Cozy, reflective sanctuary loop)
-  // Notes in Hz:
-  // C3: 130.81, E3: 164.81, G3: 196.00, B3: 246.94
-  // A2: 110.00, C4: 261.63, D4: 293.66, E4: 329.63, G4: 392.00, A4: 440.00, B4: 493.88, C5: 523.25, D5: 587.33, E5: 659.25
-  // F2: 87.31, G2: 98.00
-
-  private readonly leadMelody: Array<{ note: number | null; dur: number }> = [
+  // ==================== STUDY SOUNDTRACK ====================
+  private readonly studyLeadMelody: Array<{ note: number | null; dur: number }> = [
     // Measure 1: Cmaj7 (Gentle opening)
     { note: 329.63, dur: 0.4 },  // E4
     { note: 392.00, dur: 0.4 },  // G4
@@ -53,30 +65,71 @@ export class HearthAudio {
     { note: 493.88, dur: 0.4 },  // B4
     { note: 587.33, dur: 0.8 },  // D5
     { note: 493.88, dur: 0.6 },  // B4
-    { note: 523.25, dur: 0.8 },  // C5 (lingers softly)
+    { note: 523.25, dur: 0.8 },  // C5
     { note: null,   dur: 0.2 },
   ];
 
-  private readonly bassProgression = [
-    // Measure 1: C
-    130.81, 130.81, 196.00, 130.81,
-    // Measure 2: A
-    110.00, 110.00, 164.81, 110.00,
-    // Measure 3: F
-    87.31, 87.31, 130.81, 87.31,
-    // Measure 4: G
-    98.00, 98.00, 146.83, 98.00,
+  private readonly studyBass = [
+    130.81, 130.81, 196.00, 130.81, // C3
+    110.00, 110.00, 164.81, 110.00, // A2
+    87.31,  87.31,  130.81, 87.31,  // F2
+    98.00,  98.00,  146.83, 98.00,  // G2
   ];
 
-  private readonly arpPatterns = [
-    // Measure 1: Cmaj7 arpeggios
-    [261.63, 329.63, 392.00, 493.88],
-    // Measure 2: Am7 arpeggios
-    [220.00, 261.63, 329.63, 392.00],
-    // Measure 3: Fmaj7 arpeggios
-    [174.61, 220.00, 261.63, 329.63],
-    // Measure 4: G6 arpeggios
-    [196.00, 246.94, 293.66, 329.63],
+  private readonly studyArps = [
+    [261.63, 329.63, 392.00, 493.88], // Cmaj7
+    [220.00, 261.63, 329.63, 392.00], // Am7
+    [174.61, 220.00, 261.63, 329.63], // Fmaj7
+    [196.00, 246.94, 293.66, 329.63], // G6
+  ];
+
+  // ==================== OBSERVATORY SOUNDTRACK ====================
+  // Celestial Lydian/Dorian Space Odyssey: Em9 -> Cmaj7#11 -> Dadd9 -> Bm7
+  // Soaring celestial square lead with slow ethereal bloom
+  private readonly observatoryLeadMelody: Array<{ note: number | null; dur: number }> = [
+    // Measure 1: Em9 (Floating into the cosmic void)
+    { note: 659.25, dur: 0.8 },  // E5
+    { note: 739.99, dur: 0.5 },  // F#5
+    { note: 783.99, dur: 1.0 },  // G5
+    { note: 987.77, dur: 0.9 },  // B5
+    { note: null,   dur: 0.4 },
+
+    // Measure 2: Cmaj7#11 (Lydian starlight lift)
+    { note: 1046.50, dur: 0.7 }, // C6
+    { note: 987.77,  dur: 0.6 }, // B5
+    { note: 739.99,  dur: 0.8 }, // F#5 (#11 high sparkle)
+    { note: 659.25,  dur: 0.9 }, // E5
+    { note: null,    dur: 0.4 },
+
+    // Measure 3: Dadd9 (Expansive cosmic horizon)
+    { note: 587.33, dur: 0.6 },  // D5
+    { note: 739.99, dur: 0.6 },  // F#5
+    { note: 880.00, dur: 1.0 },  // A5
+    { note: 987.77, dur: 0.8 },  // B5
+    { note: null,   dur: 0.4 },
+
+    // Measure 4: Bm7 (Quiet celestial wonder)
+    { note: 739.99, dur: 0.6 },  // F#5
+    { note: 587.33, dur: 0.6 },  // D5
+    { note: 493.88, dur: 1.2 },  // B4
+    { note: 659.25, dur: 0.6 },  // E5
+    { note: null,   dur: 0.4 },
+  ];
+
+  // Deep resonant sub-bass triangle drones (E2, C2, D2, B1)
+  private readonly observatoryBass = [
+    82.41, 82.41, 123.47, 82.41,   // E2 / B2
+    65.41, 65.41, 98.00,  65.41,   // C2 / G2
+    73.42, 73.42, 110.00, 73.42,   // D2 / A2
+    61.74, 61.74, 92.50,  61.74,   // B1 / F#2
+  ];
+
+  // Sparkling celestial constellation arpeggios in 5th and 6th octaves
+  private readonly observatoryArps = [
+    [493.88, 659.25, 783.99, 987.77, 739.99, 659.25, 987.77, 1174.66], // Em9
+    [392.00, 493.88, 659.25, 739.99, 783.99, 987.77, 1046.50, 739.99], // Cmaj7#11
+    [440.00, 587.33, 739.99, 880.00, 987.77, 880.00, 739.99, 1174.66], // Dadd9
+    [369.99, 493.88, 587.33, 739.99, 880.00, 739.99, 587.33, 987.77],  // Bm7
   ];
 
   public static getInstance(): HearthAudio {
@@ -112,6 +165,50 @@ export class HearthAudio {
     return this.isPlaying;
   }
 
+  public getRoom(): RoomMusicTheme {
+    return this.currentRoom;
+  }
+
+  public getRoomName(): string {
+    return this.currentRoom === 'observatory' ? 'Observatory' : 'Study';
+  }
+
+  public onRoomChange(callback: (room: RoomMusicTheme) => void) {
+    this.onRoomChangeCallbacks.push(callback);
+  }
+
+  public setRoom(room: string) {
+    const targetRoom: RoomMusicTheme = room === 'observatory' ? 'observatory' : 'study';
+    if (this.currentRoom === targetRoom) return;
+
+    this.currentRoom = targetRoom;
+    this.onRoomChangeCallbacks.forEach((cb) => cb(this.currentRoom));
+
+    if (this.isPlaying && this.ctx && this.masterGain && this.filterNode) {
+      const now = this.ctx.currentTime;
+      // Smoothly crossfade theme without audible click
+      this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now);
+      this.masterGain.gain.exponentialRampToValueAtTime(0.015, now + 0.25);
+
+      window.setTimeout(() => {
+        if (!this.isPlaying || !this.ctx || !this.masterGain || !this.filterNode) return;
+        const rampNow = this.ctx.currentTime;
+        this.stepIndex = 0;
+
+        if (this.currentRoom === 'observatory') {
+          this.filterNode.frequency.setTargetAtTime(2400, rampNow, 0.2);
+          this.filterNode.Q.setTargetAtTime(1.2, rampNow, 0.2);
+        } else {
+          this.filterNode.frequency.setTargetAtTime(1750, rampNow, 0.2);
+          this.filterNode.Q.setTargetAtTime(0.7, rampNow, 0.2);
+        }
+
+        this.masterGain.gain.setValueAtTime(0.015, rampNow);
+        this.masterGain.gain.exponentialRampToValueAtTime(0.09, rampNow + 0.5);
+      }, 260);
+    }
+  }
+
   public start() {
     if (this.isPlaying) return;
     this.initContext();
@@ -120,16 +217,18 @@ export class HearthAudio {
     this.isPlaying = true;
     this.stepIndex = 0;
 
-    // Master volume with smooth, gentle fade-in (calm ambient music level)
+    // Master volume with smooth, gentle fade-in
     this.masterGain = this.ctx.createGain();
     this.masterGain.gain.setValueAtTime(0.001, this.ctx.currentTime);
     this.masterGain.gain.exponentialRampToValueAtTime(0.09, this.ctx.currentTime + 1.2);
 
-    // Warm vintage console low-pass filter (no harsh highs)
+    // Warm vintage console filter
     this.filterNode = this.ctx.createBiquadFilter();
     this.filterNode.type = 'lowpass';
-    this.filterNode.frequency.setValueAtTime(1750, this.ctx.currentTime);
-    this.filterNode.Q.setValueAtTime(0.7, this.ctx.currentTime);
+    const initialFreq = this.currentRoom === 'observatory' ? 2400 : 1750;
+    const initialQ = this.currentRoom === 'observatory' ? 1.2 : 0.7;
+    this.filterNode.frequency.setValueAtTime(initialFreq, this.ctx.currentTime);
+    this.filterNode.Q.setValueAtTime(initialQ, this.ctx.currentTime);
 
     this.filterNode.connect(this.masterGain);
     this.masterGain.connect(this.ctx.destination);
@@ -143,7 +242,7 @@ export class HearthAudio {
 
     // Smooth fade out
     this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, this.ctx.currentTime);
-    this.masterGain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.6);
+    this.masterGain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.5);
 
     if (this.sequenceTimer !== null) {
       window.clearTimeout(this.sequenceTimer);
@@ -151,7 +250,14 @@ export class HearthAudio {
     }
   }
 
-  private playTone(freq: number, startTime: number, duration: number, type: OscillatorType, volume: number) {
+  private playTone(
+    freq: number,
+    startTime: number,
+    duration: number,
+    type: OscillatorType,
+    volume: number,
+    attackSec: number = 0.03
+  ) {
     if (!this.ctx || !this.filterNode) return;
 
     const osc = this.ctx.createOscillator();
@@ -160,21 +266,23 @@ export class HearthAudio {
     osc.type = type;
     osc.frequency.setValueAtTime(freq, startTime);
 
-    // Subtle 8-bit vibrato for lead notes
+    // Dynamic vibrato
     if (type === 'square') {
       const vib = this.ctx.createOscillator();
       const vibGain = this.ctx.createGain();
-      vib.frequency.setValueAtTime(4.5, startTime); // 4.5 Hz gentle warble
-      vibGain.gain.setValueAtTime(2.2, startTime);
+      const vibRate = this.currentRoom === 'observatory' ? 3.8 : 4.5;
+      const vibDepth = this.currentRoom === 'observatory' ? 2.8 : 2.2;
+      vib.frequency.setValueAtTime(vibRate, startTime);
+      vibGain.gain.setValueAtTime(vibDepth, startTime);
       vib.connect(vibGain);
       vibGain.connect(osc.frequency);
       vib.start(startTime);
       vib.stop(startTime + duration);
     }
 
-    // Soft chiptune envelope (quick attack, gentle exponential release decay)
+    // Soft chiptune envelope
     gain.gain.setValueAtTime(0.0001, startTime);
-    gain.gain.linearRampToValueAtTime(volume, startTime + 0.03);
+    gain.gain.linearRampToValueAtTime(volume, startTime + attackSec);
     gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
 
     osc.connect(gain);
@@ -185,8 +293,6 @@ export class HearthAudio {
   }
 
   private startSequencer() {
-    const stepDurationSec = 0.22; // ~68 BPM sixteenth note pace
-
     const tick = () => {
       if (!this.isPlaying || !this.ctx) return;
 
@@ -194,34 +300,47 @@ export class HearthAudio {
       const step = this.stepIndex;
       const measure = Math.floor((step % 64) / 16);
       const beatInMeasure = step % 16;
+      const isObs = this.currentRoom === 'observatory';
 
-      // 1. Bassline (every 4 steps / quarter note)
+      // 1. Bassline (quarter note pulse)
       if (step % 4 === 0) {
-        const bassNoteIdx = (Math.floor(step / 4)) % this.bassProgression.length;
-        const bassFreq = this.bassProgression[bassNoteIdx];
-        this.playTone(bassFreq, now, 0.7, 'triangle', 0.28);
+        const bassList = isObs ? this.observatoryBass : this.studyBass;
+        const bassNoteIdx = (Math.floor(step / 4)) % bassList.length;
+        const bassFreq = bassList[bassNoteIdx];
+        const bassVol = isObs ? 0.32 : 0.28;
+        const bassDur = isObs ? 0.9 : 0.7;
+        this.playTone(bassFreq, now, bassDur, 'triangle', bassVol, 0.04);
       }
 
-      // 2. Delicate Music-Box Arpeggio (every 2 steps / eighth note)
+      // 2. Delicate Arpeggios (eighth note pulse)
       if (step % 2 === 0) {
-        const arpPattern = this.arpPatterns[measure];
+        const arpMatrix = isObs ? this.observatoryArps : this.studyArps;
+        const arpPattern = arpMatrix[measure];
         const arpNote = arpPattern[(beatInMeasure / 2) % arpPattern.length];
-        this.playTone(arpNote, now, 0.35, 'sine', 0.12);
+        const arpVol = isObs ? 0.15 : 0.12;
+        const arpDur = isObs ? 0.45 : 0.35;
+        this.playTone(arpNote, now, arpDur, 'sine', arpVol, 0.015);
       }
 
-      // 3. Melodic Chiptune Lead (calculated from leadMelody pacing)
-      // Play lead notes on specific sixteenth ticks
+      // 3. Melodic Chiptune Lead
       const leadTicks = [0, 2, 4, 8, 10, 16, 18, 20, 24, 26, 32, 34, 36, 40, 43, 48, 50, 52, 56, 59];
       const tickPos = step % 64;
       const leadIdx = leadTicks.indexOf(tickPos);
-      if (leadIdx !== -1 && leadIdx < this.leadMelody.length) {
-        const m = this.leadMelody[leadIdx];
+      const melody = isObs ? this.observatoryLeadMelody : this.studyLeadMelody;
+
+      if (leadIdx !== -1 && leadIdx < melody.length) {
+        const m = melody[leadIdx];
         if (m.note !== null) {
-          this.playTone(m.note, now, m.dur, 'square', 0.14);
+          const leadVol = isObs ? 0.16 : 0.14;
+          const attack = isObs ? 0.05 : 0.025;
+          this.playTone(m.note, now, m.dur, 'square', leadVol, attack);
         }
       }
 
       this.stepIndex++;
+
+      // Adaptive tempo: Observatory is 50 BPM (0.28s), Study is 68 BPM (0.22s)
+      const stepDurationSec = isObs ? 0.28 : 0.22;
       this.sequenceTimer = window.setTimeout(tick, stepDurationSec * 1000);
     };
 

@@ -8,6 +8,7 @@ import { ModalOverlay } from './ui/overlay';
 import { DevTray } from './ui/devTray';
 import { InteractiveZone, RoomConfig, WorldStation, Direction, Doorway } from './core/types';
 import { RoomRegistry } from './rooms/registry';
+import { HearthAudio } from './sound/audio';
 
 class MindPalaceApp {
   private canvas: HTMLCanvasElement;
@@ -17,10 +18,13 @@ class MindPalaceApp {
   private companion: CompanionController;
   private renderer: RoomRenderer;
   private overlay: ModalOverlay;
+  private promptEl: HTMLDivElement;
+  private speechEl: HTMLDivElement;
   private activeZone: InteractiveZone | null = null;
   private currentRoom: RoomConfig;
   private lastSaveTime = Date.now();
   private lastLoopTime = performance.now();
+  private lastTransitionTime = 0;
 
   constructor() {
     this.canvas = document.getElementById('gameCanvas') as HTMLCanvasElement;
@@ -32,6 +36,9 @@ class MindPalaceApp {
       throw new Error('Could not acquire 2D canvas context');
     }
     this.ctx = context;
+
+    this.promptEl = document.getElementById('interaction-prompt') as HTMLDivElement;
+    this.speechEl = document.getElementById('companion-speech-bubble') as HTMLDivElement;
 
     this.stateManager = StateManager.getInstance();
     const savedState = this.stateManager.getState();
@@ -123,11 +130,20 @@ class MindPalaceApp {
     // Keyboard inspection trigger (Space, Enter, E)
     window.addEventListener('keydown', (e) => {
       if (this.overlay.isOpen()) return;
-      if (['Space', 'Enter', 'KeyE'].includes(e.code)) {
-        if (this.activeZone) {
-          e.preventDefault();
-          this.triggerInteraction(this.activeZone.id);
-        }
+      const isInteractKey =
+        ['Space', 'Enter', 'KeyE'].includes(e.code) ||
+        [' ', 'Spacebar', 'Enter', 'e', 'E'].includes(e.key);
+      if (isInteractKey && this.activeZone) {
+        e.preventDefault();
+        this.triggerInteraction(this.activeZone.id);
+      }
+    });
+
+    // Clicking the prompt pill directly triggers the interaction
+    this.promptEl.addEventListener('click', () => {
+      if (this.overlay.isOpen()) return;
+      if (this.activeZone) {
+        this.triggerInteraction(this.activeZone.id);
       }
     });
 
@@ -210,6 +226,63 @@ class MindPalaceApp {
       this.player.teleportTo(spawnPoint.x, spawnPoint.y, spawnPoint.facing);
       this.stateManager.syncPlayerPosition(this.player.x, this.player.y, this.player.facing);
     }
+    this.activeZone = null;
+    this.updatePromptUI();
+    this.updateSpeechUI(this.stateManager.getState());
+    HearthAudio.getInstance().setRoom(roomId);
+    this.lastTransitionTime = Date.now();
+  }
+
+  private updatePromptUI() {
+    if (this.overlay.isOpen() || !this.activeZone) {
+      this.promptEl.className = '';
+      return;
+    }
+
+    const rect = this.canvas.getBoundingClientRect();
+    const scale = rect.width / CANVAS_WIDTH;
+    const zoneCenterX = this.activeZone.x + this.activeZone.width / 2;
+    // Anchor prompt dynamically above the zone
+    let targetCanvasY = this.activeZone.y - 12;
+    if (targetCanvasY < 40) {
+      targetCanvasY = this.activeZone.y + this.activeZone.height + 22;
+    }
+
+    const screenX = rect.left + zoneCenterX * scale;
+    const screenY = rect.top + targetCanvasY * scale;
+
+    this.promptEl.style.left = `${screenX}px`;
+    this.promptEl.style.top = `${screenY}px`;
+
+    const isPortal = this.activeZone.id.startsWith('door_');
+    this.promptEl.className = isPortal ? 'visible portal-prompt' : 'visible';
+    this.promptEl.innerHTML = `
+      <div class="prompt-keys">
+        <kbd>Space</kbd>
+        <kbd>Click</kbd>
+      </div>
+      <span class="prompt-name">${this.activeZone.name}</span>
+      <span class="prompt-action">${this.activeZone.prompt}</span>
+    `;
+  }
+
+  private updateSpeechUI(state: ReturnType<StateManager['getState']>) {
+    if (this.currentRoom.id === 'study' && state.companion.speech) {
+      const now = Date.now();
+      const elapsed = now - state.companion.speech.timestamp;
+      if (elapsed < state.companion.speech.durationMs) {
+        const rect = this.canvas.getBoundingClientRect();
+        const scale = rect.width / CANVAS_WIDTH;
+        const screenX = rect.left + (state.companion.x + 8) * scale;
+        const screenY = rect.top + (state.companion.y - 8) * scale;
+        this.speechEl.style.left = `${screenX}px`;
+        this.speechEl.style.top = `${screenY}px`;
+        this.speechEl.textContent = state.companion.speech.text;
+        this.speechEl.className = 'visible';
+        return;
+      }
+    }
+    this.speechEl.className = '';
   }
 
   private startLoop() {
@@ -224,6 +297,22 @@ class MindPalaceApp {
       if (!this.overlay.isOpen()) {
         const { changed, activeZone } = this.player.update(dt);
         this.activeZone = activeZone;
+
+        // Check seamless automatic doorway walking threshold (cooldown prevents instant bounceback)
+        if (
+          this.activeZone &&
+          this.activeZone.id.startsWith('door_') &&
+          Date.now() - this.lastTransitionTime > 1000
+        ) {
+          // In Observatory walking up onto the North terrace threshold
+          if (this.currentRoom.id === 'observatory' && this.player.y <= 4.0 * TILE_SIZE) {
+            this.triggerInteraction(this.activeZone.id);
+          }
+          // In Study walking down into the South doorway threshold
+          else if (this.currentRoom.id === 'study' && this.player.y >= 13.0 * TILE_SIZE) {
+            this.triggerInteraction(this.activeZone.id);
+          }
+        }
 
         // Synchronize live player position to in-memory state every single frame!
         this.stateManager.syncPlayerPosition(this.player.x, this.player.y, this.player.facing);
@@ -240,6 +329,10 @@ class MindPalaceApp {
       }
 
       const state = this.stateManager.getState();
+      // Update DOM Overlays for 100% crisp native-DPI text
+      this.updatePromptUI();
+      this.updateSpeechUI(state);
+
       // Render room and player with LIVE coordinates every frame (60fps)
       this.renderer.render(
         state,
