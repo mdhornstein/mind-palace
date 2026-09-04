@@ -60,6 +60,15 @@ export class PlayerController {
         this.obstacles.push(station.collisionBox);
       }
     }
+
+    // Collect solid collision boxes from decorative props
+    if (room.decorativeProps) {
+      for (const prop of room.decorativeProps) {
+        if (prop.collisionBox) {
+          this.obstacles.push(prop.collisionBox);
+        }
+      }
+    }
   }
 
   private setupListeners() {

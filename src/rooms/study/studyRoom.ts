@@ -7,6 +7,9 @@ import {
   drawFireplace,
   drawWindow,
   drawObservatoryDoorway,
+  drawMonsteraPlant,
+  drawCascadingIvy,
+  drawBostonFern,
 } from '../../render/sprites';
 import { bookshelfStation } from './stations/bookshelf';
 import { readingNookStation } from './stations/readingNook';
@@ -27,6 +30,44 @@ export const studyRoomConfig: RoomConfig = {
     pedestalStation,
     workstationStation,
     duckephantStation,
+  ],
+  decorativeProps: [
+    {
+      id: 'study_monstera',
+      name: 'Potted Monstera Deliciosa',
+      y: 104,
+      collisionBox: {
+        x: 180,
+        y: 92,
+        w: 24,
+        h: 14,
+      },
+      draw: (ctx: CanvasRenderingContext2D, timeMs: number) => {
+        drawMonsteraPlant(ctx, 182, 90, timeMs);
+      },
+    },
+    {
+      id: 'study_cascading_ivy',
+      name: 'Cascading English Ivy',
+      y: 45,
+      draw: (ctx: CanvasRenderingContext2D, timeMs: number) => {
+        drawCascadingIvy(ctx, 568, 30, timeMs);
+      },
+    },
+    {
+      id: 'study_boston_fern',
+      name: 'Victorian Boston Fern in Brass Urn',
+      y: 106,
+      collisionBox: {
+        x: 366,
+        y: 94,
+        w: 20,
+        h: 14,
+      },
+      draw: (ctx: CanvasRenderingContext2D, timeMs: number) => {
+        drawBostonFern(ctx, 366, 92, timeMs);
+      },
+    },
   ],
   doors: [
     {

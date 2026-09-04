@@ -182,12 +182,21 @@ export interface Doorway {
   targetSpawnPoint: { x: number; y: number; facing: Direction };
 }
 
+export interface DecorativeProp {
+  id: string;
+  name: string;
+  y: number; // Isometric depth sorting Y coordinate
+  collisionBox?: BoundingBox;
+  draw: (ctx: CanvasRenderingContext2D, timeMs: number) => void;
+}
+
 export interface RoomConfig {
   id: string;
   name: string;
   widthTiles: number;
   heightTiles: number;
   stations: WorldStation[];
+  decorativeProps?: DecorativeProp[];
   doors: Doorway[];
   ambientLight: {
     type: 'day' | 'evening' | 'night';

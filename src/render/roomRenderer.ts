@@ -163,6 +163,16 @@ export class RoomRenderer {
       });
     }
 
+    // Decorative Props (Render sorted by Y with characters for natural isometric depth)
+    if (room.decorativeProps) {
+      for (const prop of room.decorativeProps) {
+        renderables.push({
+          y: prop.y,
+          draw: () => prop.draw(ctx, timeMs),
+        });
+      }
+    }
+
     renderables.sort((a, b) => a.y - b.y);
     renderables.forEach((r) => r.draw());
 

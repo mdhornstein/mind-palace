@@ -1756,3 +1756,248 @@ export function drawObservatoryDoorway(
   pRect(ctx, plaqueX + 2, plaqueY + 2, plaqueW - 4, 5, '#0f172a');
   drawPixelText(ctx, titleText, plaqueX + 4, plaqueY + 2, '#f8fafc', 1);
 }
+
+// =============================================================================
+// BOTANICAL DECORATIVE PROPS (Study Plants)
+// =============================================================================
+
+/**
+ * Grand Potted Monstera Deliciosa in Glazed Teal/Cobalt Ceramic Urn
+ */
+export function drawMonsteraPlant(ctx: CanvasRenderingContext2D, x: number, y: number, timeMs: number) {
+  const px = Math.floor(x);
+  const py = Math.floor(y);
+
+  // Soft floor contact shadow
+  ctx.fillStyle = 'rgba(10, 5, 2, 0.45)';
+  ctx.beginPath();
+  ctx.ellipse(px + 10, py + 14, 12, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const sway1 = Math.sin(timeMs * 0.002) * 0.8;
+  const sway2 = Math.sin(timeMs * 0.0025 + 1.2) * 0.8;
+  const sway3 = Math.sin(timeMs * 0.0018 + 2.5) * 0.8;
+
+  const OUTLINE = '#052e16';
+  const POT_OUT = '#090d16';
+
+  // --- Monstera Stems & Broad Leaves ---
+  // Leaf 1: High arching center leaf (topmost)
+  const l1x = px + 8 + Math.floor(sway1);
+  const l1y = py - 24;
+  pRect(ctx, l1x - 7, l1y - 3, 14, 12, OUTLINE);
+  pRect(ctx, l1x - 6, l1y - 2, 12, 10, '#15803d');
+  pRect(ctx, l1x - 5, l1y - 1, 10, 8, '#16a34a');
+  pRect(ctx, l1x - 3, l1y + 0, 6, 6, '#22c55e');
+  pRect(ctx, l1x - 1, l1y + 1, 2, 4, '#86efac'); // midrib highlight
+  // Leaf fenestration notches
+  pRect(ctx, l1x - 4, l1y + 2, 2, 2, OUTLINE);
+  pRect(ctx, l1x + 2, l1y + 1, 2, 2, OUTLINE);
+
+  // Leaf 2: Left spreading broad leaf
+  const l2x = px - 2 + Math.floor(sway2);
+  const l2y = py - 16;
+  pRect(ctx, l2x - 6, l2y - 2, 12, 11, OUTLINE);
+  pRect(ctx, l2x - 5, l2y - 1, 10, 9, '#14532d');
+  pRect(ctx, l2x - 4, l2y + 0, 8, 7, '#16a34a');
+  pRect(ctx, l2x - 2, l2y + 1, 4, 5, '#4ade80');
+  pRect(ctx, l2x - 3, l2y + 3, 2, 1, OUTLINE); // slit
+
+  // Leaf 3: Right drooping mature leaf
+  const l3x = px + 16 + Math.floor(sway3);
+  const l3y = py - 14;
+  pRect(ctx, l3x - 5, l3y - 2, 11, 10, OUTLINE);
+  pRect(ctx, l3x - 4, l3y - 1, 9, 8, '#15803d');
+  pRect(ctx, l3x - 3, l3y + 0, 7, 6, '#22c55e');
+  pRect(ctx, l3x - 1, l3y + 1, 3, 4, '#86efac');
+  pRect(ctx, l3x + 1, l3y + 2, 2, 1, OUTLINE); // slit
+
+  // Leaf 4: Low front young sprout (baby leaf)
+  pRect(ctx, px + 3, py - 6, 8, 7, OUTLINE);
+  pRect(ctx, px + 4, py - 5, 6, 5, '#22c55e');
+  pRect(ctx, px + 5, py - 4, 4, 3, '#86efac');
+
+  // Stems connecting to soil
+  pRect(ctx, px + 8, py - 14, 3, 16, '#14532d');
+  pRect(ctx, px + 9, py - 12, 1, 14, '#16a34a');
+  pRect(ctx, px + 5, py - 8, 2, 10, '#14532d');
+  pRect(ctx, px + 12, py - 7, 2, 9, '#14532d');
+
+  // --- Glazed Ceramic Urn Planter ---
+  // Soil surface
+  pRect(ctx, px + 1, py + 1, 18, 4, '#27170b');
+  pRect(ctx, px + 4, py + 2, 12, 2, '#451a03');
+  pRect(ctx, px + 7, py + 2, 2, 1, '#65a30d'); // moss speck
+
+  // Urn Rim (glazed with gold band)
+  pRect(ctx, px - 1, py + 2, 22, 4, POT_OUT);
+  pRect(ctx, px + 0, py + 3, 20, 2, '#0e7490'); // glazed teal
+  pRect(ctx, px + 2, py + 3, 16, 1, '#38bdf8'); // specular rim shine
+
+  // Urn Body (tapered)
+  pRect(ctx, px + 1, py + 6, 18, 9, POT_OUT);
+  pRect(ctx, px + 2, py + 6, 16, 8, '#0f766e'); // deep teal ceramic
+  pRect(ctx, px + 3, py + 7, 6, 6, '#14b8a6');  // light ceramic reflection
+  pRect(ctx, px + 13, py + 7, 4, 6, '#042f2e'); // shadow edge
+  // Gold inlay band
+  pRect(ctx, px + 2, py + 10, 16, 2, '#ca8a04');
+  pRect(ctx, px + 4, py + 10, 8, 1, '#fde047');
+
+  // Urn Base Pedestal
+  pRect(ctx, px + 3, py + 14, 14, 2, POT_OUT);
+  pRect(ctx, px + 4, py + 14, 12, 1, '#0e7490');
+}
+
+/**
+ * Trailing English Ivy / Cascading Pothos in Terracotta Clay Pot (Cabinet Ledge)
+ */
+export function drawCascadingIvy(ctx: CanvasRenderingContext2D, x: number, y: number, timeMs: number) {
+  const px = Math.floor(x);
+  const py = Math.floor(y);
+
+  const OUTLINE = '#052e16';
+  const POT_OUT = '#2e1005';
+
+  const swayA = Math.sin(timeMs * 0.0022) * 0.7;
+  const swayB = Math.sin(timeMs * 0.0028 + 1.5) * 0.7;
+  const swayC = Math.sin(timeMs * 0.0019 + 3.0) * 0.7;
+
+  // --- Terracotta Pot on Ledge ---
+  // Pot shadow on cabinet top
+  pRect(ctx, px + 1, py + 9, 16, 2, 'rgba(10, 5, 2, 0.4)');
+
+  // Pot rim
+  pRect(ctx, px - 1, py + 1, 20, 3, POT_OUT);
+  pRect(ctx, px, py + 2, 18, 1, '#ea580c');
+  pRect(ctx, px + 2, py + 2, 12, 1, '#fb923c'); // terracotta highlight
+
+  // Pot body
+  pRect(ctx, px + 1, py + 4, 16, 6, POT_OUT);
+  pRect(ctx, px + 2, py + 4, 14, 5, '#c2410c');
+  pRect(ctx, px + 3, py + 5, 5, 3, '#f97316');
+  pRect(ctx, px + 12, py + 5, 3, 4, '#7c2d12');
+
+  // Rich soil
+  pRect(ctx, px + 2, py + 0, 14, 2, '#27170b');
+
+  // Crown Foliage mounding over the pot
+  pRect(ctx, px - 2, py - 4, 22, 6, OUTLINE);
+  pRect(ctx, px - 1, py - 3, 20, 4, '#15803d');
+  pRect(ctx, px + 2, py - 2, 14, 3, '#22c55e');
+  pRect(ctx, px + 4, py - 2, 8, 1, '#86efac');
+
+  // --- Trailing Vine Tendril 1 (Left - medium ~14px) ---
+  const v1x = px + 2 + Math.floor(swayA);
+  pRect(ctx, v1x, py + 6, 2, 12, '#14532d');
+  // Leaf clusters along vine 1
+  pRect(ctx, v1x - 3, py + 8, 4, 4, OUTLINE);
+  pRect(ctx, v1x - 2, py + 9, 2, 2, '#22c55e');
+  pRect(ctx, v1x + 1, py + 12, 4, 4, OUTLINE);
+  pRect(ctx, v1x + 2, py + 13, 2, 2, '#4ade80');
+  pRect(ctx, v1x - 2, py + 16, 4, 4, OUTLINE);
+  pRect(ctx, v1x - 1, py + 17, 2, 2, '#86efac');
+
+  // --- Trailing Vine Tendril 2 (Center - long ~26px cascading down the side panel) ---
+  const v2x = px + 9 + Math.floor(swayB);
+  pRect(ctx, v2x, py + 6, 2, 24, '#14532d');
+  // Leaf clusters along vine 2
+  pRect(ctx, v2x - 3, py + 9, 4, 4, OUTLINE);
+  pRect(ctx, v2x - 2, py + 10, 2, 2, '#16a34a');
+  pRect(ctx, v2x + 1, py + 14, 4, 4, OUTLINE);
+  pRect(ctx, v2x + 2, py + 15, 2, 2, '#22c55e');
+  pRect(ctx, v2x - 4, py + 19, 5, 4, OUTLINE);
+  pRect(ctx, v2x - 3, py + 20, 3, 2, '#4ade80');
+  pRect(ctx, v2x + 1, py + 24, 4, 4, OUTLINE);
+  pRect(ctx, v2x + 2, py + 25, 2, 2, '#86efac');
+  // Vine tip tender bud
+  pRect(ctx, v2x - 1, py + 28, 3, 3, OUTLINE);
+  pRect(ctx, v2x, py + 29, 1, 1, '#bef264');
+
+  // --- Trailing Vine Tendril 3 (Right - medium-long ~18px) ---
+  const v3x = px + 15 + Math.floor(swayC);
+  pRect(ctx, v3x, py + 5, 2, 18, '#14532d');
+  pRect(ctx, v3x + 1, py + 7, 4, 4, OUTLINE);
+  pRect(ctx, v3x + 2, py + 8, 2, 2, '#15803d');
+  pRect(ctx, v3x - 3, py + 12, 4, 4, OUTLINE);
+  pRect(ctx, v3x - 2, py + 13, 2, 2, '#22c55e');
+  pRect(ctx, v3x + 1, py + 18, 4, 4, OUTLINE);
+  pRect(ctx, v3x + 2, py + 19, 2, 2, '#86efac');
+}
+
+/**
+ * Victorian Boston Fern in Neoclassical Fluted Brass Urn
+ */
+export function drawBostonFern(ctx: CanvasRenderingContext2D, x: number, y: number, timeMs: number) {
+  const px = Math.floor(x);
+  const py = Math.floor(y);
+
+  // Soft floor contact shadow
+  ctx.fillStyle = 'rgba(10, 5, 2, 0.45)';
+  ctx.beginPath();
+  ctx.ellipse(px + 10, py + 13, 11, 4.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const OUTLINE = '#052e16';
+  const BRASS_OUT = '#27170b';
+
+  const sway = Math.sin(timeMs * 0.003) * 0.7;
+
+  // --- Feathery Arching Boston Fern Fronds ---
+  // Center erect fronds
+  const fcX = px + 9 + Math.floor(sway);
+  pRect(ctx, fcX - 2, py - 20, 6, 18, OUTLINE);
+  pRect(ctx, fcX - 1, py - 19, 4, 16, '#15803d');
+  pRect(ctx, fcX, py - 18, 2, 14, '#4ade80');
+  pRect(ctx, fcX, py - 21, 2, 2, '#a7f3d0'); // tip bud
+
+  // High-left arching frond
+  const flX = px + 2 + Math.floor(sway * 1.2);
+  pRect(ctx, flX - 6, py - 16, 10, 8, OUTLINE);
+  pRect(ctx, flX - 5, py - 15, 8, 6, '#16a34a');
+  pRect(ctx, flX - 4, py - 14, 6, 4, '#22c55e');
+  pRect(ctx, flX - 2, py - 13, 2, 2, '#86efac');
+
+  // High-right arching frond
+  const frX = px + 16 - Math.floor(sway * 1.1);
+  pRect(ctx, frX - 4, py - 15, 10, 8, OUTLINE);
+  pRect(ctx, frX - 3, py - 14, 8, 6, '#16a34a');
+  pRect(ctx, frX - 2, py - 13, 6, 4, '#22c55e');
+  pRect(ctx, frX + 1, py - 12, 2, 2, '#86efac');
+
+  // Low-left drooping frond
+  pRect(ctx, px - 6, py - 8, 9, 7, OUTLINE);
+  pRect(ctx, px - 5, py - 7, 7, 5, '#14532d');
+  pRect(ctx, px - 4, py - 6, 5, 3, '#16a34a');
+  pRect(ctx, px - 2, py - 5, 2, 1, '#4ade80');
+
+  // Low-right drooping frond
+  pRect(ctx, px + 17, py - 7, 9, 7, OUTLINE);
+  pRect(ctx, px + 18, py - 6, 7, 5, '#14532d');
+  pRect(ctx, px + 19, py - 5, 5, 3, '#16a34a');
+  pRect(ctx, px + 20, py - 4, 2, 1, '#4ade80');
+
+  // Dense central rosette
+  pRect(ctx, px + 3, py - 9, 14, 8, OUTLINE);
+  pRect(ctx, px + 4, py - 8, 12, 6, '#15803d');
+  pRect(ctx, px + 6, py - 7, 8, 4, '#22c55e');
+
+  // --- Fluted Neoclassical Brass Urn ---
+  // Urn Rim
+  pRect(ctx, px + 1, py - 1, 18, 4, BRASS_OUT);
+  pRect(ctx, px + 2, py + 0, 16, 2, '#ca8a04'); // antique brass
+  pRect(ctx, px + 4, py + 0, 8, 1, '#fef08a');  // polished shine
+
+  // Fluted Urn Body
+  pRect(ctx, px + 3, py + 3, 14, 7, BRASS_OUT);
+  pRect(ctx, px + 4, py + 3, 12, 6, '#d97706'); // warm golden brass
+  pRect(ctx, px + 5, py + 4, 4, 4, '#fde047');  // highlight facet
+  pRect(ctx, px + 12, py + 4, 3, 5, '#78350f'); // shadow flute
+
+  // Urn Stem & Pedestal Base
+  pRect(ctx, px + 7, py + 9, 6, 2, BRASS_OUT);
+  pRect(ctx, px + 8, py + 9, 4, 1, '#ca8a04');
+  pRect(ctx, px + 4, py + 11, 12, 3, BRASS_OUT);
+  pRect(ctx, px + 5, py + 11, 10, 2, '#b45309');
+  pRect(ctx, px + 6, py + 11, 6, 1, '#fde047'); // base gleam
+}
+
