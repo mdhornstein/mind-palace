@@ -125,19 +125,7 @@ export class RoomRenderer {
     }
 
     // 4. Characters (Render sorted by Y for correct isometric depth)
-    const renderables = [
-      {
-        y: state.companion.y,
-        draw: () =>
-          drawCompanionSprite(
-            ctx,
-            state.companion.x,
-            state.companion.y,
-            state.companion.activity,
-            state.companion.facing,
-            timeMs
-          ),
-      },
+    const renderables: Array<{ y: number; draw: () => void }> = [
       {
         y: player.y,
         draw: () =>
@@ -152,11 +140,27 @@ export class RoomRenderer {
       },
     ];
 
+    // The scholar companion resides in the Study room
+    if (room.id === 'study') {
+      renderables.push({
+        y: state.companion.y,
+        draw: () =>
+          drawCompanionSprite(
+            ctx,
+            state.companion.x,
+            state.companion.y,
+            state.companion.activity,
+            state.companion.facing,
+            timeMs
+          ),
+      });
+    }
+
     renderables.sort((a, b) => a.y - b.y);
     renderables.forEach((r) => r.draw());
 
-    // 5. Companion Speech Bubble
-    if (state.companion.speech) {
+    // 5. Companion Speech Bubble (only active in the room where the companion resides)
+    if (room.id === 'study' && state.companion.speech) {
       const now = Date.now();
       const elapsed = now - state.companion.speech.timestamp;
       if (elapsed < state.companion.speech.durationMs) {

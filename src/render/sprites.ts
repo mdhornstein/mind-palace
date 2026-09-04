@@ -1228,3 +1228,383 @@ export function drawPlayerSprite(
   pRect(ctx, bx + 4, by + 29 + step1, 5, 3, '#0f172a'); // left boot
   pRect(ctx, bx + 11, by + 29 + step2, 5, 3, '#0f172a'); // right boot
 }
+
+// =============================================================================
+// OBSERVATORY SPRITES & ASTRONOMICAL INSTRUMENTS
+// =============================================================================
+
+/**
+ * Draw The Great Brass Refractor Telescope on an elevated granite equatorial dais
+ */
+export function drawTelescope(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  _w: number,
+  _h: number,
+  timeMs: number
+) {
+  // Center anchor
+  const cx = x + 48;
+  const cy = y + 54;
+
+  // 1. Shadow of Dais & Telescope
+  ctx.fillStyle = 'rgba(2, 6, 23, 0.65)';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + 18, 44, 14, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 2. Elevated Multi-Tiered Granite Dais
+  // Lower tier
+  ctx.fillStyle = '#1e293b';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + 14, 40, 12, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#b45309'; // brass ring rim
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Upper tier
+  ctx.fillStyle = '#334155';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + 8, 32, 9, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#d97706';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // 3. Cast-Iron Equatorial Pier Mount
+  pRect(ctx, cx - 7, cy - 14, 14, 22, '#0f172a'); // central pier column
+  pRect(ctx, cx - 8, cy + 5, 16, 4, '#1e293b'); // base plinth
+  pRect(ctx, cx - 5, cy - 18, 10, 6, '#1e293b'); // polar axis housing
+  // Brass setting circles
+  pRect(ctx, cx - 9, cy - 12, 18, 2, '#d97706');
+  pRect(ctx, cx - 7, cy - 8, 14, 1, '#b45309');
+
+  // Counterweight shaft (extending down-left)
+  ctx.strokeStyle = '#475569';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - 16);
+  ctx.lineTo(cx - 24, cy - 4);
+  ctx.stroke();
+  // Cylindrical lead counterweight
+  pRect(ctx, cx - 22, cy - 8, 8, 8, '#334155');
+  pRect(ctx, cx - 21, cy - 7, 6, 6, '#1e293b');
+
+  // 4. Stately 12-Foot Brass Refractor Tube (pointing up-right toward open dome)
+  // Optical axis vector: angle ~ -45 degrees
+  ctx.save();
+  ctx.translate(cx, cy - 18);
+  ctx.rotate(-Math.PI / 4); // 45-degree angle upward
+
+  // Main brass barrel
+  const tubeLen = 64;
+  const tubeRadius = 6;
+  const grad = ctx.createLinearGradient(0, -tubeRadius, 0, tubeRadius);
+  grad.addColorStop(0, '#fde68a'); // specular highlight
+  grad.addColorStop(0.3, '#f59e0b');
+  grad.addColorStop(0.7, '#d97706');
+  grad.addColorStop(1, '#78350f'); // shadow underside
+
+  ctx.fillStyle = grad;
+  ctx.fillRect(-18, -tubeRadius, tubeLen, tubeRadius * 2);
+
+  // Decorative brass reinforcement bands & mounting collar
+  ctx.fillStyle = '#b45309';
+  ctx.fillRect(-2, -tubeRadius - 1.5, 6, (tubeRadius * 2) + 3);
+  ctx.fillRect(18, -tubeRadius - 0.5, 3, (tubeRadius * 2) + 1);
+  ctx.fillRect(36, -tubeRadius - 0.5, 3, (tubeRadius * 2) + 1);
+
+  // Objective lens dew shield & cell (top-right aperture)
+  ctx.fillStyle = '#92400e';
+  ctx.fillRect(tubeLen - 18, -tubeRadius - 1.5, 8, (tubeRadius * 2) + 3);
+  // Glass lens starlight reflection
+  const lensPulse = Math.sin(timeMs * 0.005) * 0.2 + 0.8;
+  ctx.fillStyle = `rgba(56, 189, 248, ${lensPulse})`;
+  ctx.fillRect(tubeLen - 10, -tubeRadius + 0.5, 2, (tubeRadius * 2) - 1);
+
+  // Eyepiece drawtube & diagonal (bottom-left)
+  ctx.fillStyle = '#b45309';
+  ctx.fillRect(-28, -3, 10, 6);
+  ctx.fillStyle = '#78350f';
+  ctx.fillRect(-32, -4, 4, 8); // 90-degree star diagonal
+  // Knurled focus wheel
+  ctx.fillStyle = '#f59e0b';
+  ctx.fillRect(-24, -6, 2, 12);
+
+  // Finder scope mounted atop main tube
+  ctx.fillStyle = '#451a03';
+  ctx.fillRect(4, -tubeRadius - 7, 26, 4);
+  ctx.fillStyle = '#78350f';
+  ctx.fillRect(2, -tubeRadius - 5, 2, 2); // bracket
+  ctx.fillRect(22, -tubeRadius - 5, 2, 2); // bracket
+
+  ctx.restore();
+}
+
+/**
+ * Draw Celestial Star Chart & Astrolabe Drafting Table
+ */
+export function drawStarChartDesk(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  _w: number,
+  _h: number,
+  _timeMs: number
+) {
+  const dx = x + 4;
+  const dy = y + 8;
+  const dw = 100;
+  const dh = 54;
+
+  // 1. Table shadow on floor
+  ctx.fillStyle = 'rgba(2, 6, 23, 0.5)';
+  ctx.fillRect(dx + 4, dy + dh - 2, dw - 8, 6);
+
+  // 2. Oak Drafting Table (Architectural slant surface)
+  pRect(ctx, dx, dy + 2, dw, 22, '#452615'); // table top
+  pRect(ctx, dx + 1, dy + 2, dw - 2, 2, '#6e3c20'); // polished bevel
+  pRect(ctx, dx, dy + 22, dw, 3, '#2a160b'); // front lip shadow
+
+  // Table Legs with brass brackets
+  pRect(ctx, dx + 6, dy + 25, 6, dh - 27, '#331a0e');
+  pRect(ctx, dx + dw - 12, dy + 25, 6, dh - 27, '#331a0e');
+  pRect(ctx, dx + 16, dy + 25, dw - 32, dh - 32, '#1e110a'); // rear modesty board
+  pRect(ctx, dx + 8, dy + 40, dw - 16, 3, '#4a2b1a'); // footrest stretcher
+
+  // Brass feet
+  pRect(ctx, dx + 5, dy + dh - 2, 8, 3, '#b45309');
+  pRect(ctx, dx + dw - 13, dy + dh - 2, 8, 3, '#b45309');
+
+  // 3. Glowing Cyan/Vellum Celestial Star Chart Pinned to Desk
+  const mapX = dx + 12;
+  const mapY = dy + 5;
+  const mapW = 48;
+  const mapH = 15;
+  pRect(ctx, mapX, mapY, mapW, mapH, '#0c1a30'); // deep night indigo vellum
+  ctx.strokeStyle = '#38bdf8';
+  ctx.lineWidth = 0.8;
+  ctx.strokeRect(mapX + 1, mapY + 1, mapW - 2, mapH - 2);
+
+  // Celestial equator & constellation lines
+  ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+  ctx.beginPath();
+  ctx.moveTo(mapX + 4, mapY + 8);
+  ctx.lineTo(mapX + mapW - 4, mapY + 8);
+  // Mini Ursa Major / Orion points
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(mapX + 10, mapY + 4, 1.5, 1.5);
+  ctx.fillRect(mapX + 16, mapY + 6, 1.5, 1.5);
+  ctx.fillRect(mapX + 22, mapY + 5, 1.5, 1.5);
+  ctx.fillRect(mapX + 27, mapY + 9, 1.5, 1.5);
+  ctx.fillRect(mapX + 34, mapY + 4, 1.5, 1.5);
+  ctx.fillRect(mapX + 38, mapY + 8, 1.5, 1.5);
+  // Brass weights pinning map corners
+  pRect(ctx, mapX + 1, mapY + 1, 3, 3, '#d97706');
+  pRect(ctx, mapX + mapW - 4, mapY + 1, 3, 3, '#d97706');
+  pRect(ctx, mapX + 1, mapY + mapH - 4, 3, 3, '#d97706');
+  pRect(ctx, mapX + mapW - 4, mapY + mapH - 4, 3, 3, '#d97706');
+
+  // 4. Brass Armillary Sphere (Right side of table)
+  const armX = dx + dw - 28;
+  const armY = dy - 4;
+  // Wooden turned plinth
+  pRect(ctx, armX + 4, armY + 18, 12, 4, '#78350f');
+  pRect(ctx, armX + 8, armY + 12, 4, 6, '#b45309'); // vertical shaft
+  // Nested Brass Meridian & Equator Rings
+  ctx.strokeStyle = '#f59e0b';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(armX + 10, armY + 7, 9, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.strokeStyle = '#d97706';
+  ctx.beginPath();
+  ctx.ellipse(armX + 10, armY + 7, 9, 3.5, Math.PI / 4, 0, Math.PI * 2);
+  ctx.stroke();
+  // Central Earth sphere
+  ctx.fillStyle = '#38bdf8';
+  ctx.beginPath();
+  ctx.arc(armX + 10, armY + 7, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 5. Emerald Banker's Glass Desk Lamp
+  const lampX = dx + 4;
+  const lampY = dy - 2;
+  pRect(ctx, lampX + 1, lampY + 12, 6, 3, '#b45309'); // brass lamp base
+  pRect(ctx, lampX + 3, lampY + 4, 2, 8, '#d97706'); // brass curved neck
+  // Green glass shade
+  pRect(ctx, lampX, lampY + 2, 8, 4, '#047857');
+  pRect(ctx, lampX + 1, lampY + 4, 6, 2, '#34d399'); // inner amber/green glow
+  // Soft ambient desk light pool
+  ctx.fillStyle = 'rgba(52, 211, 153, 0.08)';
+  ctx.beginPath();
+  ctx.ellipse(lampX + 16, dy + 14, 18, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/**
+ * Draw Animated Mechanical Clockwork Orrery with Rotating Planets
+ */
+export function drawOrrery(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  _w: number,
+  _h: number,
+  timeMs: number
+) {
+  const ox = x + 4;
+  const oy = y + 8;
+  const ow = 100;
+  const oh = 54;
+
+  // 1. Shadow on floor
+  ctx.fillStyle = 'rgba(2, 6, 23, 0.5)';
+  ctx.fillRect(ox + 4, oy + oh - 2, ow - 8, 6);
+
+  // 2. Octagonal Mahogany Pedestal Table
+  pRect(ctx, ox, oy + 2, ow, 22, '#3b1d11'); // rich dark mahogany top
+  pRect(ctx, ox + 1, oy + 2, ow - 2, 2, '#6e3c20'); // polished bevel
+  pRect(ctx, ox, oy + 22, ow, 3, '#241209'); // lip shadow
+
+  // Pedestal Panels & Brass Gear Cutouts
+  pRect(ctx, ox + 8, oy + 25, ow - 16, oh - 27, '#241209');
+  pRect(ctx, ox + 12, oy + 28, ow - 24, oh - 33, '#150a05'); // recessed chamber
+  // Exposed interlocking brass drive gears visible in cabinet
+  pRect(ctx, ox + 22, oy + 32, 10, 10, '#92400e');
+  pRect(ctx, ox + 29, oy + 36, 12, 12, '#b45309');
+  pRect(ctx, ox + 48, oy + 33, 14, 14, '#78350f');
+  pRect(ctx, ox + 68, oy + 35, 12, 12, '#b45309');
+
+  // Brass Corner Trim Feet
+  pRect(ctx, ox + 4, oy + oh - 2, 8, 3, '#b45309');
+  pRect(ctx, ox + ow - 12, oy + oh - 2, 8, 3, '#b45309');
+
+  // 3. Central Clockwork Mechanical Orrery with Animated Planets
+  const cx = ox + Math.floor(ow / 2);
+  const cy = oy + 6;
+
+  // Glass showcase dome silhouette
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 26, Math.PI, 0);
+  ctx.stroke();
+
+  // Brass Center Sun Sphere
+  const sunPulse = Math.sin(timeMs * 0.008) * 0.5 + 1;
+  ctx.fillStyle = '#f59e0b';
+  ctx.beginPath();
+  ctx.arc(cx, cy, 5.5 + sunPulse * 0.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#fef08a';
+  ctx.beginPath();
+  ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 4. Rotating Planetary Gear Arms (Calculated in real time!)
+  const planets = [
+    { name: 'Mercury', r: 10, speed: 0.0035, color: '#94a3b8', size: 1.8 },
+    { name: 'Venus',   r: 15, speed: 0.0022, color: '#fef08a', size: 2.4 },
+    { name: 'Earth',   r: 21, speed: 0.0014, color: '#38bdf8', size: 2.6, moon: true },
+    { name: 'Mars',    r: 28, speed: 0.0009, color: '#f87171', size: 2.2 },
+    { name: 'Jupiter', r: 36, speed: 0.0004, color: '#fbbf24', size: 4.2 },
+    { name: 'Saturn',  r: 44, speed: 0.0002, color: '#fde68a', size: 3.5, ring: true },
+  ];
+
+  planets.forEach((p) => {
+    const angle = timeMs * p.speed + (p.r * 1.5);
+    const px = cx + Math.cos(angle) * p.r;
+    const py = cy + Math.sin(angle) * (p.r * 0.38); // isometric foreshortening
+
+    // Brass orbital track wire
+    ctx.strokeStyle = 'rgba(217, 119, 6, 0.25)';
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, p.r, p.r * 0.38, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Brass radial connecting arm
+    ctx.strokeStyle = 'rgba(180, 83, 9, 0.5)';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(px, py);
+    ctx.stroke();
+
+    // Planet sphere
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(px, py, p.size, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Earth's moon
+    if (p.moon) {
+      const moonAngle = timeMs * 0.009;
+      const mx = px + Math.cos(moonAngle) * 4;
+      const my = py + Math.sin(moonAngle) * 2;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(mx, my, 0.9, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Saturn's ring
+    if (p.ring) {
+      ctx.strokeStyle = '#ca8a04';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.ellipse(px, py, p.size * 2, p.size * 0.8, -Math.PI / 6, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  });
+}
+
+/**
+ * Draw Arched Stone Doorway Threshold with Lantern
+ */
+export function drawObservatoryDoorway(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  titleText: string,
+  isLitStudyGlow: boolean
+) {
+  // 1. Arched Door Frame
+  pRect(ctx, x - 4, y - 6, w + 8, h + 6, '#1e293b'); // outer masonry
+  pRect(ctx, x - 2, y - 4, w + 4, h + 4, '#0f172a'); // inner jamb
+
+  // 2. Doorway Cavity / Threshold
+  if (isLitStudyGlow) {
+    // Warm firelight glow streaming from the Study
+    const grad = ctx.createLinearGradient(x, y, x, y + h);
+    grad.addColorStop(0, '#f59e0b');
+    grad.addColorStop(0.4, '#b45309');
+    grad.addColorStop(1, '#1e110a');
+    ctx.fillStyle = grad;
+    ctx.fillRect(x, y, w, h);
+  } else {
+    // Deep starry void leading down into the Observatory
+    const grad = ctx.createLinearGradient(x, y, x, y + h);
+    grad.addColorStop(0, '#020617');
+    grad.addColorStop(0.5, '#0f172a');
+    grad.addColorStop(1, '#38bdf8');
+    ctx.fillStyle = grad;
+    ctx.fillRect(x, y, w, h);
+  }
+
+  // 3. Classical Arch Stone Keystone
+  pRect(ctx, x + Math.floor(w / 2) - 4, y - 8, 8, 5, '#475569');
+  pRect(ctx, x + Math.floor(w / 2) - 3, y - 7, 6, 3, '#94a3b8');
+
+  // 4. Carved Inscription Plaque above Doorway
+  ctx.fillStyle = '#f8fafc';
+  ctx.font = 'bold 6px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(titleText, x + Math.floor(w / 2), y - 10);
+  ctx.textAlign = 'start';
+}

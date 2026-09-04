@@ -1,11 +1,13 @@
 import { RoomConfig } from '../core/types';
 import { studyRoomConfig } from './study/studyRoom';
+import { observatoryRoomConfig } from './observatory/observatoryRoom';
 
 class RoomRegistryManager {
   private rooms: Map<string, RoomConfig> = new Map();
 
   constructor() {
     this.register(studyRoomConfig);
+    this.register(observatoryRoomConfig);
   }
 
   public register(room: RoomConfig) {

@@ -16,6 +16,11 @@ export class CompanionController {
 
   public update(_timeMs?: number) {
     const state = this.stateManager.getState();
+    // The scholar companion resides in the Study
+    if (state.currentRoomId !== 'study') {
+      return;
+    }
+
     const companion = state.companion;
     const player = state.player;
 

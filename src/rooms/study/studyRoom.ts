@@ -6,6 +6,7 @@ import {
   drawOrnateRug,
   drawFireplace,
   drawWindow,
+  drawObservatoryDoorway,
 } from '../../render/sprites';
 import { bookshelfStation } from './stations/bookshelf';
 import { readingNookStation } from './stations/readingNook';
@@ -25,7 +26,23 @@ export const studyRoomConfig: RoomConfig = {
     pedestalStation,
     workstationStation,
   ],
-  doors: [],
+  doors: [
+    {
+      id: 'to_observatory',
+      name: 'The Observatory Portal',
+      prompt: 'Enter the Stargazing Observatory',
+      tileX: 9,
+      tileY: 14,
+      tileWidth: 2,
+      tileHeight: 1,
+      targetRoomId: 'observatory',
+      targetSpawnPoint: {
+        x: 10 * TILE_SIZE,
+        y: 2.8 * TILE_SIZE,
+        facing: 'down',
+      },
+    },
+  ],
   ambientLight: {
     type: 'evening',
     primaryGlowColor: '#f59e0b',
@@ -57,12 +74,16 @@ export const studyRoomConfig: RoomConfig = {
     // Architectural Persian Rug under the reading nook
     drawOrnateRug(ctx, 2.0 * TILE_SIZE, 4.2 * TILE_SIZE, 4.8 * TILE_SIZE, 4.6 * TILE_SIZE);
 
-    // Entrance Welcome Door Mat (Bottom Center)
-    ctx.fillStyle = '#291b12';
-    ctx.fillRect(9 * TILE_SIZE, 14 * TILE_SIZE + 10, 2 * TILE_SIZE, 20);
-    ctx.fillStyle = '#452b1b';
-    ctx.font = '7px monospace';
-    ctx.fillText('HOME', 9.4 * TILE_SIZE, 14.5 * TILE_SIZE + 12);
+    // South Doorway Threshold leading down to Observatory
+    drawObservatoryDoorway(
+      ctx,
+      9 * TILE_SIZE,
+      14 * TILE_SIZE + 4,
+      2 * TILE_SIZE,
+      28,
+      'OBSERVATORY',
+      false
+    );
   },
 
   // 2. Dynamic Room Architecture & Atmospheric Light (Windows, Fireplace, Light Shafts, Hearth Glow)

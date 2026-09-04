@@ -6,7 +6,7 @@ import { CompanionController } from './world/companion';
 import { RoomRenderer } from './render/roomRenderer';
 import { ModalOverlay } from './ui/overlay';
 import { DevTray } from './ui/devTray';
-import { InteractiveZone, RoomConfig, WorldStation, Direction } from './core/types';
+import { InteractiveZone, RoomConfig, WorldStation, Direction, Doorway } from './core/types';
 import { RoomRegistry } from './rooms/registry';
 
 class MindPalaceApp {
@@ -100,6 +100,25 @@ class MindPalaceApp {
     return null;
   }
 
+  private getClickedDoor(clickX: number, clickY: number): Doorway | null {
+    for (const door of this.currentRoom.doors) {
+      const dx = door.tileX * TILE_SIZE;
+      const dy = door.tileY * TILE_SIZE;
+      const dw = door.tileWidth * TILE_SIZE;
+      const dh = door.tileHeight * TILE_SIZE;
+
+      if (
+        clickX >= dx - 10 &&
+        clickX <= dx + dw + 10 &&
+        clickY >= dy - 10 &&
+        clickY <= dy + dh + 18
+      ) {
+        return door;
+      }
+    }
+    return null;
+  }
+
   private setupInteractions() {
     // Keyboard inspection trigger (Space, Enter, E)
     window.addEventListener('keydown', (e) => {
@@ -112,7 +131,7 @@ class MindPalaceApp {
       }
     });
 
-    // Hover cursor: pointer when hovering over interactive objects
+    // Hover cursor: pointer when hovering over interactive objects or doorways
     this.canvas.addEventListener('mousemove', (e) => {
       if (this.overlay.isOpen()) {
         this.canvas.style.cursor = 'default';
@@ -126,7 +145,8 @@ class MindPalaceApp {
       const mouseY = (e.clientY - rect.top) * scaleY;
 
       const hoveredStation = this.getClickedStation(mouseX, mouseY);
-      this.canvas.style.cursor = hoveredStation ? 'pointer' : 'default';
+      const hoveredDoor = this.getClickedDoor(mouseX, mouseY);
+      this.canvas.style.cursor = (hoveredStation || hoveredDoor) ? 'pointer' : 'default';
     });
 
     // Canvas click to move or click to interact
@@ -140,6 +160,14 @@ class MindPalaceApp {
       const clickX = (e.clientX - rect.left) * scaleX;
       const clickY = (e.clientY - rect.top) * scaleY;
 
+      // 1. Check if doorway was clicked directly
+      const clickedDoor = this.getClickedDoor(clickX, clickY);
+      if (clickedDoor) {
+        this.transitionToRoom(clickedDoor.targetRoomId, clickedDoor.targetSpawnPoint);
+        return;
+      }
+
+      // 2. Check if an interactive station was clicked
       const clickedStation = this.getClickedStation(clickX, clickY);
 
       if (clickedStation) {
@@ -150,7 +178,7 @@ class MindPalaceApp {
         return;
       }
 
-      // Click on open floor: walk smoothly to location
+      // 3. Click on open floor: walk smoothly to location
       this.player.setTargetPosition(clickX, clickY);
     });
   }
