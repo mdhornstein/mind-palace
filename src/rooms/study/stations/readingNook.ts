@@ -7,25 +7,25 @@ export const readingNookStation: WorldStation = {
   id: 'reading_nook',
   name: 'Reading Nook',
   prompt: 'Rest in Wingback Chair & Read',
-  tileX: 3.5,
-  tileY: 5.5,
-  tileWidth: 1.8,
+  tileX: 3.2,
+  tileY: 5.2,
+  tileWidth: 2.4,
   tileHeight: 1.8,
   collisionBox: {
-    x: 3.5 * TILE_SIZE,
-    y: 5.5 * TILE_SIZE,
-    w: 1.8 * TILE_SIZE,
+    x: 3.2 * TILE_SIZE,
+    y: 5.2 * TILE_SIZE,
+    w: 2.4 * TILE_SIZE,
     h: 1.8 * TILE_SIZE,
   },
   approachPoint: {
-    x: 5.5 * TILE_SIZE,
-    y: 5.8 * TILE_SIZE,
+    x: 4.2 * TILE_SIZE,
+    y: 7.2 * TILE_SIZE,
   },
   draw: (ctx: CanvasRenderingContext2D, timeMs: number, state: WorldState) => {
     drawReadingNook(
       ctx,
-      3.5 * TILE_SIZE,
-      5.5 * TILE_SIZE,
+      3.2 * TILE_SIZE,
+      5.2 * TILE_SIZE,
       timeMs,
       state.environment.bookOpenOnRug
     );

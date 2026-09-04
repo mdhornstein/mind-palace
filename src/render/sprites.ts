@@ -155,43 +155,70 @@ export function drawFireplace(ctx: CanvasRenderingContext2D, x: number, y: numbe
 
 // Draw Persian patterned rug
 export function drawOrnateRug(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number) {
-  // Base rug crimson
-  pRect(ctx, x, y, w, h, '#7f1d1d');
-  // Outer gold fringe border
-  ctx.strokeStyle = '#d97706';
+  // 1. Soft drop shadow on wooden floorboards
+  ctx.fillStyle = 'rgba(10, 6, 3, 0.4)';
+  ctx.fillRect(x + 2, y + 2, w, h);
+
+  // 2. Base rug rich madder crimson field
+  pRect(ctx, x, y, w, h, '#7c1525');
+
+  // 3. Fringed ends (delicate ivory linen threads top & bottom)
+  ctx.fillStyle = '#fef3c7';
+  for (let i = x + 4; i < x + w - 4; i += 3) {
+    ctx.fillRect(i, y - 2, 1, 3);
+    ctx.fillRect(i, y + h - 1, 1, 3);
+  }
+
+  // 4. Multi-tier Persian guard borders
+  // Outer gold guard border
+  ctx.strokeStyle = '#b45309';
   ctx.lineWidth = 1;
   ctx.strokeRect(x + 2.5, y + 2.5, w - 5, h - 5);
-  // Inner navy band
-  pRect(ctx, x + 5, y + 5, w - 10, h - 10, '#1e293b');
-  // Inner field
-  pRect(ctx, x + 8, y + 8, w - 16, h - 16, '#991b1b');
 
-  // Decorative diamond medallion in center
-  const cx = x + w / 2;
-  const cy = y + h / 2;
+  // Wide midnight navy border band
+  pRect(ctx, x + 4, y + 4, w - 8, h - 8, '#1e293b');
+  // Delicate repeating florets along the navy border
   ctx.fillStyle = '#d97706';
-  ctx.beginPath();
-  ctx.moveTo(cx, cy - 12);
-  ctx.lineTo(cx + 14, cy);
-  ctx.lineTo(cx, cy + 12);
-  ctx.lineTo(cx - 14, cy);
-  ctx.closePath();
-  ctx.fill();
+  for (let bx = x + 8; bx < x + w - 8; bx += 12) {
+    ctx.fillRect(bx, y + 5, 2, 2);
+    ctx.fillRect(bx, y + h - 7, 2, 2);
+  }
+  for (let by = y + 8; by < y + h - 8; by += 12) {
+    ctx.fillRect(x + 5, by, 2, 2);
+    ctx.fillRect(x + w - 7, by, 2, 2);
+  }
 
-  ctx.fillStyle = '#1e293b';
-  ctx.beginPath();
-  ctx.moveTo(cx, cy - 7);
-  ctx.lineTo(cx + 8, cy);
-  ctx.lineTo(cx, cy + 7);
-  ctx.lineTo(cx - 8, cy);
-  ctx.closePath();
-  ctx.fill();
+  // Inner gold filigree stripe
+  ctx.strokeStyle = '#d97706';
+  ctx.strokeRect(x + 8.5, y + 8.5, w - 17, h - 17);
 
-  // Fringe ends
-  ctx.fillStyle = '#fef3c7';
-  for (let i = x + 3; i < x + w - 3; i += 3) {
-    ctx.fillRect(i, y, 1, 2);
-    ctx.fillRect(i, y + h - 2, 1, 2);
+  // Inner field: deep plush burgundy
+  pRect(ctx, x + 10, y + 10, w - 20, h - 20, '#881337');
+
+  // Four ornate corner spandrels (bracketed corner ornaments)
+  // Top-left
+  pRect(ctx, x + 10, y + 10, 10, 10, '#1e293b');
+  pRect(ctx, x + 11, y + 11, 8, 8, '#b45309');
+  pRect(ctx, x + 12, y + 12, 6, 6, '#881337');
+  // Top-right
+  pRect(ctx, x + w - 20, y + 10, 10, 10, '#1e293b');
+  pRect(ctx, x + w - 19, y + 11, 8, 8, '#b45309');
+  pRect(ctx, x + w - 18, y + 12, 6, 6, '#881337');
+  // Bottom-left
+  pRect(ctx, x + 10, y + h - 20, 10, 10, '#1e293b');
+  pRect(ctx, x + 11, y + h - 19, 8, 8, '#b45309');
+  pRect(ctx, x + 12, y + h - 18, 6, 6, '#881337');
+  // Bottom-right
+  pRect(ctx, x + w - 20, y + h - 20, 10, 10, '#1e293b');
+  pRect(ctx, x + w - 19, y + h - 19, 8, 8, '#b45309');
+  pRect(ctx, x + w - 18, y + h - 18, 6, 6, '#881337');
+
+  // Subtle, quiet field texture (repeating mini cross-stitch dots in dark amber)
+  ctx.fillStyle = 'rgba(180, 83, 9, 0.35)';
+  for (let fx = x + 24; fx < x + w - 24; fx += 16) {
+    for (let fy = y + 24; fy < y + h - 24; fy += 16) {
+      ctx.fillRect(fx, fy, 2, 2);
+    }
   }
 }
 
@@ -242,16 +269,16 @@ export function drawBookshelf(ctx: CanvasRenderingContext2D, x: number, y: numbe
   }
 }
 
-// Draw Armchair & substantial library table with steaming tea, lamp, and open book
+// Draw Armchair & substantial library table with steaming tea, lamp, ottoman, and open book
 export function drawReadingNook(ctx: CanvasRenderingContext2D, x: number, y: number, timeMs: number, bookOnRug: boolean) {
-  // 1. Wingback Armchair
   const ax = x;
   const ay = y;
 
+  // 1. Wingback Armchair
   // Chair Shadow
-  ctx.fillStyle = 'rgba(15, 10, 5, 0.45)';
+  ctx.fillStyle = 'rgba(15, 10, 5, 0.4)';
   ctx.beginPath();
-  ctx.ellipse(ax + 16, ay + 29, 15, 7, 0, 0, Math.PI * 2);
+  ctx.ellipse(ax + 16, ay + 28, 16, 7, 0, 0, Math.PI * 2);
   ctx.fill();
 
   // Chair Carved Mahogany Frame & Back
@@ -275,46 +302,58 @@ export function drawReadingNook(ctx: CanvasRenderingContext2D, x: number, y: num
   // Deep seat cushion
   pRect(ctx, ax + 4, ay + 16, 24, 13, '#992638');
   pRect(ctx, ax + 5, ay + 17, 22, 3, '#ba3045'); // plush cushion highlight
+
   // Carved wooden feet with brass claw caps
   pRect(ctx, ax + 3, ay + 28, 4, 4, '#241007');
   pRect(ctx, ax + 25, ay + 28, 4, 4, '#241007');
-  pRect(ctx, ax + 4, ay + 30, 2, 2, '#d97706'); // brass claw
+  pRect(ctx, ax + 4, ay + 30, 2, 2, '#d97706');
   pRect(ctx, ax + 26, ay + 30, 2, 2, '#d97706');
 
-  // 2. Substantial Dark Walnut Occasional Library Table
-  const tx = ax + 32;
-  const ty = ay + 4;
+  // 2. Matching Velvet Footstool / Ottoman in front of Chair
+  const ox = ax + 5;
+  const oy = ay + 33;
+  ctx.fillStyle = 'rgba(15, 10, 5, 0.35)';
+  ctx.fillRect(ox + 1, oy + 8, 20, 4);
+  pRect(ctx, ox, oy, 22, 9, '#3b1419'); // wood frame
+  pRect(ctx, ox + 2, oy + 1, 18, 6, '#882232'); // burgundy tufted cushion
+  pRect(ctx, ox + 3, oy + 2, 16, 2, '#ba3045'); // cushion highlight
+  pRect(ctx, ox + 1, oy + 8, 3, 2, '#d97706'); // brass foot
+  pRect(ctx, ox + 18, oy + 8, 3, 2, '#d97706'); // brass foot
+
+  // 3. Substantial Dark Walnut Occasional Library Table (spaced comfortably to the right)
+  const tx = ax + 38; // generous 10px breathing room
+  const ty = ay + 2;
 
   // Table Shadow
-  ctx.fillStyle = 'rgba(15, 10, 5, 0.4)';
+  ctx.fillStyle = 'rgba(15, 10, 5, 0.35)';
   ctx.beginPath();
-  ctx.ellipse(tx + 14, ty + 28, 14, 5, 0, 0, Math.PI * 2);
+  ctx.ellipse(tx + 14, ty + 30, 14, 5, 0, 0, Math.PI * 2);
   ctx.fill();
 
   // Carved Pedestal Stem & Tripod Legs
-  pRect(ctx, tx + 12, ty + 15, 4, 12, '#2e180d'); // main column
-  pRect(ctx, tx + 13, ty + 16, 2, 10, '#452616'); // column highlight
-  pRect(ctx, tx + 6, ty + 24, 16, 4, '#201008'); // spreading tripod feet
-  pRect(ctx, tx + 5, ty + 26, 3, 2, '#b45309'); // brass foot
-  pRect(ctx, tx + 20, ty + 26, 3, 2, '#b45309');
+  pRect(ctx, tx + 12, ty + 16, 4, 13, '#2e180d'); // main column
+  pRect(ctx, tx + 13, ty + 17, 2, 11, '#452616'); // column highlight
+  pRect(ctx, tx + 6, ty + 26, 16, 4, '#201008'); // tripod feet
+  pRect(ctx, tx + 5, ty + 28, 3, 2, '#b45309'); // brass foot
+  pRect(ctx, tx + 20, ty + 28, 3, 2, '#b45309');
 
-  // Polished Oval Tabletop (Beveled Rim & Rich Woodgrain)
-  pRect(ctx, tx, ty + 7, 28, 10, '#2b160b'); // rim shadow
-  pRect(ctx, tx + 1, ty + 5, 26, 9, '#4d2916'); // beveled rim
-  pRect(ctx, tx + 2, ty + 6, 24, 7, '#66391f'); // polished mahogany surface
-  pRect(ctx, tx + 3, ty + 7, 22, 1, '#854d2b'); // wood luster reflection
+  // Polished Oval Tabletop
+  pRect(ctx, tx, ty + 7, 28, 11, '#2b160b'); // rim shadow
+  pRect(ctx, tx + 1, ty + 5, 26, 10, '#4d2916'); // beveled rim
+  pRect(ctx, tx + 2, ty + 6, 24, 8, '#66391f'); // polished mahogany
+  pRect(ctx, tx + 3, ty + 7, 22, 1, '#854d2b'); // wood luster
 
   // Stack of Research Volumes on Table Left
-  pRect(ctx, tx + 3, ty + 6, 9, 3, '#1e3a5f'); // blue leather volume
-  pRect(ctx, tx + 3, ty + 4, 8, 3, '#78350f'); // brown leather volume
-  pRect(ctx, tx + 10, ty + 5, 1, 2, '#fde047'); // gold page edges
+  pRect(ctx, tx + 3, ty + 6, 8, 3, '#1e3a5f'); // blue volume
+  pRect(ctx, tx + 3, ty + 4, 7, 3, '#78350f'); // brown volume
+  pRect(ctx, tx + 9, ty + 5, 1, 2, '#fde047'); // gold page edges
 
   // Classic Banker's Brass Reading Lamp with Emerald Shade
   const lx = tx + 16;
   const ly = ty - 8;
   pRect(ctx, lx + 3, ly + 14, 5, 2, '#ca8a04'); // brass base
   pRect(ctx, lx + 5, ly + 4, 2, 10, '#eab308'); // curved brass arm
-  pRect(ctx, lx + 1, ly + 2, 10, 5, '#065f46'); // emerald glass shade
+  pRect(ctx, lx + 1, ly + 2, 10, 5, '#065f46'); // emerald shade
   pRect(ctx, lx + 2, ly + 3, 8, 2, '#059669'); // emerald highlight
   // Warm golden bulb glow pool on table
   ctx.fillStyle = 'rgba(253, 224, 71, 0.18)';
@@ -327,7 +366,7 @@ export function drawReadingNook(ctx: CanvasRenderingContext2D, x: number, y: num
   const cy = ty + 7;
   pRect(ctx, cx - 1, cy + 3, 7, 2, '#cbd5e1'); // saucer
   pRect(ctx, cx, cy + 1, 5, 3, '#f8fafc'); // cup body
-  pRect(ctx, cx + 1, cy + 1, 3, 1, '#92400e'); // dark steeped amber tea
+  pRect(ctx, cx + 1, cy + 1, 3, 1, '#92400e'); // tea
   pRect(ctx, cx + 5, cy + 2, 1, 2, '#94a3b8'); // handle
 
   // Animated delicate steam curls rising from the tea
@@ -339,10 +378,11 @@ export function drawReadingNook(ctx: CanvasRenderingContext2D, x: number, y: num
   ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
   ctx.fillRect(cx + 3 + sWave2, cy - 6 - sY * 0.8, 1, 2);
 
-  // 3. Open Book on Persian Rug (when memory was recalled)
+  // 4. Open Book on Persian Rug (when memory was recalled)
   if (bookOnRug) {
-    const rbx = ax - 8;
-    const rby = ay + 26;
+    // Placed neatly to the right of the footstool with clear space around it!
+    const rbx = ax + 34;
+    const rby = ay + 33;
 
     // Book drop shadow on rug
     ctx.fillStyle = 'rgba(10, 6, 4, 0.4)';
@@ -371,68 +411,141 @@ export function drawReadingNook(ctx: CanvasRenderingContext2D, x: number, y: num
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(rbx + 10, rby + 10);
-    ctx.quadraticCurveTo(rbx + 8, rby + 15, rbx + 12, rby + 17);
+    ctx.quadraticCurveTo(rbx + 8, rby + 16, rbx + 12, rby + 18);
     ctx.stroke();
   }
 }
 
 // Draw Workshop Desk with Prominent CRT Terminal (Active FEA / von Mises Heatmap) and Stegoceras Skull
+// Draw Workshop: Independent University Blackboard on Easel + Victorian Laboratory Workbench
 export function drawWorkshop(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
-  w: number,
-  h: number,
+  _w: number,
+  _h: number,
   project: ProjectItem,
-  equation: string,
+  _equation: string,
   timeMs: number
 ) {
-  // Wall Chalkboard behind desk
-  const cbW = w - 16;
-  const cbH = 26;
-  pRect(ctx, x + 8, y - 24, cbW, cbH, '#374151'); // dark chalkboard frame
-  pRect(ctx, x + 10, y - 22, cbW - 4, cbH - 4, '#111827'); // slate board
-  pRect(ctx, x + 10, y - 22, cbW - 4, 1, '#1f2937'); // inner shadow
-  // Chalkboard text
-  ctx.fillStyle = '#f3f4f6';
-  ctx.font = '7px monospace';
-  ctx.fillText(equation.slice(0, 28), x + 14, y - 9);
-  // Chalk dust ledge & chalk stick
-  pRect(ctx, x + 8, y + 2, cbW, 2, '#4b5563');
-  pRect(ctx, x + 24, y + 1, 4, 1, '#ffffff');
+  // =========================================================================
+  // 1. STATELY UNIVERSITY BLACKBOARD ON A-FRAME ROLLING EASEL (Left Side)
+  // =========================================================================
+  const ex = x + 2;
+  const ey = y - 10;
+  const ew = 74; // widened from 56 to 74px so equations fit comfortably!
+  const eh = 46;
 
-  // Desk Shadow
-  ctx.fillStyle = 'rgba(10, 8, 6, 0.5)';
-  ctx.fillRect(x + 4, y + h - 4, w - 8, 6);
+  // Easel shadow on floorboards
+  ctx.fillStyle = 'rgba(10, 8, 6, 0.4)';
+  ctx.fillRect(ex + 2, ey + 68, ew - 4, 4);
 
-  // Heavy Oak Desk Architecture
-  pRect(ctx, x, y, w, h - 6, '#381f12'); // main frame
-  pRect(ctx, x + 2, y + 2, w - 4, 10, '#532e1a'); // tabletop front bevel
-  pRect(ctx, x + 2, y + 2, w - 4, 1, '#6e3e24'); // highlight line
+  // A-Frame Wooden Easel Stand Legs
+  pRect(ctx, ex + 2, ey + 6, 3, 62, '#3d2213'); // left front leg
+  pRect(ctx, ex + ew - 5, ey + 6, 3, 62, '#3d2213'); // right front leg
+  pRect(ctx, ex + Math.floor(ew / 2) - 2, ey + 4, 4, 64, '#221208'); // rear tilt prop leg
+  pRect(ctx, ex + 2, ey + 52, ew - 4, 3, '#4a2b1a'); // horizontal cross brace
+  pRect(ctx, ex + 1, ey + 66, 5, 2, '#b45309'); // brass castor foot left
+  pRect(ctx, ex + ew - 6, ey + 66, 5, 2, '#b45309'); // brass castor foot right
 
-  // Left & Right Drawers with Polished Brass Handles
-  pRect(ctx, x + 4, y + 14, 24, h - 22, '#27140a');
-  pRect(ctx, x + 6, y + 16, 20, 8, '#3d2213');
-  pRect(ctx, x + 14, y + 19, 5, 2, '#f59e0b');
-  pRect(ctx, x + 6, y + 27, 20, 8, '#3d2213');
-  pRect(ctx, x + 14, y + 30, 5, 2, '#f59e0b');
+  // Framed Slate Blackboard (mounted at comfortable reading height)
+  pRect(ctx, ex + 2, ey, ew - 4, eh, '#452615'); // oak frame
+  pRect(ctx, ex + 4, ey + 2, ew - 8, eh - 4, '#2d180d'); // inner beveled shadow
+  pRect(ctx, ex + 5, ey + 3, ew - 10, eh - 6, '#0f172a'); // dark charcoal slate
 
-  // Scientific Blueprints & Scratchpads on Desk Surface
-  pRect(ctx, x + 30, y + 4, 26, 16, '#1e3a8a'); // blueprint paper
-  ctx.strokeStyle = '#60a5fa';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(x + 32.5, y + 5.5, 21, 13);
+  // Brass pivot knobs on sides
+  pRect(ctx, ex, ey + 20, 3, 4, '#f59e0b');
+  pRect(ctx, ex + ew - 3, ey + 20, 3, 4, '#f59e0b');
+
+  // Chalk dust ledge & chalk sticks
+  pRect(ctx, ex + 2, ey + eh - 2, ew - 4, 3, '#5c331c'); // ledge
+  pRect(ctx, ex + 8, ey + eh - 3, 5, 1, '#ffffff'); // white chalk
+  pRect(ctx, ex + 16, ey + eh - 3, 4, 1, '#fde047'); // yellow chalk
+  pRect(ctx, ex + ew - 16, ey + eh - 4, 10, 2, '#78350f'); // felt eraser
+
+  // Chalk text (COMPLETELY UNOBSTRUCTED & 100% LEGIBLE with comfortable margins!)
+  ctx.fillStyle = '#f8fafc';
+  ctx.font = 'bold 7px monospace';
+  ctx.fillText('∇ · σ + f = 0', ex + 8, ey + 15);
+  ctx.fillStyle = '#fde68a';
+  ctx.font = '6px monospace';
+  ctx.fillText('Linear Elasticity', ex + 8, ey + 25);
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '5px monospace';
+  ctx.fillText('FEA Stress Tensor σ_ij', ex + 8, ey + 34);
+
+  // Tiny hand-drawn stress element cube on slate
+  ctx.strokeStyle = 'rgba(148, 163, 184, 0.75)';
+  ctx.lineWidth = 0.8;
+  ctx.strokeRect(ex + ew - 20, ey + 25, 7, 7);
   ctx.beginPath();
-  ctx.arc(x + 42, y + 11, 4, 0, Math.PI * 2);
+  ctx.moveTo(ex + ew - 13, ey + 28.5); ctx.lineTo(ex + ew - 8, ey + 28.5); // sigma arrow
   ctx.stroke();
 
   // =========================================================================
-  // 1. PROMINENT RETRO CRT WORKSTATION TERMINAL (FEA & von Mises Display)
+  // 2. HEAVY VICTORIAN LABORATORY WORKBENCH (Right Side)
   // =========================================================================
-  const mx = x + 58;
-  const my = y - 10;
-  const mw = 48;
-  const mh = 36;
+  const dx = ex + ew + 8; // 8px breathing space between easel and workbench
+  const dy = y + 6;
+  const dw = 120; // 120px wide workbench
+  const dh = 54;
+
+  // Table drop shadow on floor
+  ctx.fillStyle = 'rgba(10, 8, 6, 0.45)';
+  ctx.fillRect(dx + 4, dy + dh - 2, dw - 8, 6);
+
+  // Tabletop Beveled Mahogany Surface
+  pRect(ctx, dx, dy + 2, dw, 22, '#452615'); // mahogany top
+  pRect(ctx, dx + 1, dy + 2, dw - 2, 2, '#6e3c20'); // polished top bevel highlight
+  pRect(ctx, dx, dy + 22, dw, 3, '#2a160b'); // front lip shadow
+  pRect(ctx, dx, dy + 2, 4, 4, '#b45309'); // brass corner bracket left
+  pRect(ctx, dx + dw - 4, dy + 2, 4, 4, '#b45309'); // brass corner bracket right
+
+  // Table Front Architecture
+  // Left Pedestal (drawers)
+  pRect(ctx, dx + 4, dy + 25, 26, dh - 27, '#331a0e');
+  pRect(ctx, dx + 6, dy + 27, 22, 10, '#452615');
+  pRect(ctx, dx + 14, dy + 31, 6, 2, '#f59e0b'); // brass handle
+  pRect(ctx, dx + 6, dy + 39, 22, 10, '#452615');
+  pRect(ctx, dx + 14, dy + 43, 6, 2, '#f59e0b'); // brass handle
+
+  // Right Pedestal (drawers)
+  pRect(ctx, dx + dw - 30, dy + 25, 26, dh - 27, '#331a0e');
+  pRect(ctx, dx + dw - 28, dy + 27, 22, 10, '#452615');
+  pRect(ctx, dx + dw - 20, dy + 31, 6, 2, '#f59e0b'); // brass handle
+  pRect(ctx, dx + dw - 28, dy + 39, 22, 10, '#452615');
+  pRect(ctx, dx + dw - 20, dy + 43, 6, 2, '#f59e0b'); // brass handle
+
+  // Open Center Kneehole (shows dark recessed cavity & floorboards!)
+  pRect(ctx, dx + 30, dy + 25, dw - 60, dh - 27, '#150a05');
+  pRect(ctx, dx + 30, dy + 25, dw - 60, 4, '#241209'); // arch apron
+
+  // Turned Table Legs with Brass Caps
+  pRect(ctx, dx + 5, dy + dh - 2, 4, 3, '#b45309');
+  pRect(ctx, dx + 25, dy + dh - 2, 4, 3, '#b45309');
+  pRect(ctx, dx + dw - 29, dy + dh - 2, 4, 3, '#b45309');
+  pRect(ctx, dx + dw - 9, dy + dh - 2, 4, 3, '#b45309');
+
+  // Scientific Blueprints & Drafting Tools (Centered between CRT and Skull with ample margin!)
+  const bx = dx + 52;
+  pRect(ctx, bx, dy + 5, 24, 15, '#1e3a8a'); // blueprint paper
+  ctx.strokeStyle = '#60a5fa';
+  ctx.lineWidth = 0.8;
+  ctx.strokeRect(bx + 1.5, dy + 6.5, 21, 12);
+  ctx.beginPath();
+  ctx.arc(bx + 11, dy + 12.5, 4, 0, Math.PI * 2);
+  ctx.stroke();
+  // Brass drafting compass & ruler
+  pRect(ctx, bx + 16, dy + 7, 2, 11, '#d97706');
+  pRect(ctx, bx + 2, dy + 20, 18, 1, '#b45309');
+
+  // =========================================================================
+  // 3. PROMINENT RETRO CRT WORKSTATION TERMINAL (FEA & von Mises Display)
+  // =========================================================================
+  const mx = dx + 6;
+  const my = dy - 12;
+  const mw = 40;
+  const mh = 32;
   const isComplete = project.status === 'completed';
 
   // CRT Monitor Housing (vintage industrial dark slate)
@@ -442,14 +555,14 @@ export function drawWorkshop(
 
   // Power LED & Ventilation Grille
   const ledColor = isComplete ? '#10b981' : (Math.sin(timeMs * 0.008) > 0 ? '#38bdf8' : '#0284c7');
-  pRect(ctx, mx + mw - 8, my + mh - 6, 3, 2, ledColor);
-  pRect(ctx, mx + 6, my + mh - 6, 16, 2, '#334155');
+  pRect(ctx, mx + mw - 7, my + mh - 6, 3, 2, ledColor);
+  pRect(ctx, mx + 5, my + mh - 6, 14, 2, '#334155');
 
   // Active Cathode Phosphor Glow
   const scrX = mx + 4;
   const scrY = my + 4;
-  const scrW = mw - 8; // 40px
-  const scrH = mh - 12; // 24px
+  const scrW = mw - 8;
+  const scrH = mh - 12;
 
   // CRT Scanlines
   ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
@@ -458,9 +571,8 @@ export function drawWorkshop(
   }
 
   // Stegoceras Skull Geometry on CRT Screen
-  // Coordinates mapped inside [scrX, scrY, scrW, scrH]
-  const kx = scrX + 6;
-  const ky = scrY + 3;
+  const kx = scrX + 4;
+  const ky = scrY + 2;
 
   if (isComplete) {
     // -----------------------------------------------------------------------
@@ -530,7 +642,6 @@ export function drawWorkshop(
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
     ctx.lineWidth = 0.8;
     ctx.beginPath();
-    // Dome contours
     ctx.moveTo(kx + 4, ky + 9);
     ctx.lineTo(kx + 10, ky + 3);
     ctx.lineTo(kx + 14, ky + 1);
@@ -540,31 +651,30 @@ export function drawWorkshop(
     ctx.lineTo(kx + 23, ky + 14);
     ctx.lineTo(kx + 8, ky + 14);
     ctx.lineTo(kx + 4, ky + 9);
-    // Internal element dividers
     ctx.moveTo(kx + 14, ky + 1); ctx.lineTo(kx + 17, ky + 6); ctx.lineTo(kx + 20, ky + 1);
     ctx.moveTo(kx + 10, ky + 3); ctx.lineTo(kx + 17, ky + 6); ctx.lineTo(kx + 21, ky + 8);
     ctx.moveTo(kx + 12, ky + 7); ctx.lineTo(kx + 18, ky + 12);
     ctx.stroke();
 
     // Vertical von Mises Stress Legend Colorbar on right of screen
-    const barX = scrX + scrW - 6;
-    const barY = scrY + 3;
+    const barX = scrX + scrW - 5;
+    const barY = scrY + 2;
     const barH = 15;
     const grad = ctx.createLinearGradient(barX, barY, barX, barY + barH);
-    grad.addColorStop(0, '#ef4444'); // Red max
-    grad.addColorStop(0.3, '#f97316'); // Orange
-    grad.addColorStop(0.6, '#eab308'); // Yellow
-    grad.addColorStop(0.8, '#22c55e'); // Green
-    grad.addColorStop(1, '#3b82f6'); // Blue min
+    grad.addColorStop(0, '#ef4444');
+    grad.addColorStop(0.3, '#f97316');
+    grad.addColorStop(0.6, '#eab308');
+    grad.addColorStop(0.8, '#22c55e');
+    grad.addColorStop(1, '#3b82f6');
     ctx.fillStyle = grad;
-    ctx.fillRect(barX, barY, 4, barH);
+    ctx.fillRect(barX, barY, 3, barH);
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 0.5;
-    ctx.strokeRect(barX, barY, 4, barH);
+    ctx.strokeRect(barX, barY, 3, barH);
 
     // Status Banner at bottom of CRT
     ctx.fillStyle = '#10b981';
-    ctx.font = '6px monospace';
+    ctx.font = '5px monospace';
     ctx.fillText('CONV ✓', scrX + 2, scrY + scrH - 2);
   } else {
     // -----------------------------------------------------------------------
@@ -573,12 +683,10 @@ export function drawWorkshop(
     const meshPulse = Math.sin(timeMs * 0.007) * 0.35 + 0.65;
     const scanSweep = (timeMs * 0.02) % scrW;
 
-    // Skull wireframe silhouette & elements
     ctx.strokeStyle = `rgba(56, 189, 248, ${meshPulse})`;
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 0.9;
 
     ctx.beginPath();
-    // Outer Stegoceras skull envelope
     ctx.moveTo(kx + 4, ky + 9);
     ctx.lineTo(kx + 10, ky + 3);
     ctx.lineTo(kx + 14, ky + 1);
@@ -588,7 +696,6 @@ export function drawWorkshop(
     ctx.lineTo(kx + 23, ky + 14);
     ctx.lineTo(kx + 8, ky + 14);
     ctx.lineTo(kx + 4, ky + 9);
-    // Internal triangular finite elements
     ctx.moveTo(kx + 14, ky + 1); ctx.lineTo(kx + 17, ky + 6); ctx.lineTo(kx + 20, ky + 1);
     ctx.moveTo(kx + 10, ky + 3); ctx.lineTo(kx + 17, ky + 6); ctx.lineTo(kx + 21, ky + 8);
     ctx.moveTo(kx + 12, ky + 7); ctx.lineTo(kx + 18, ky + 12); ctx.lineTo(kx + 17, ky + 6);
@@ -596,7 +703,7 @@ export function drawWorkshop(
     ctx.moveTo(kx + 24, ky + 9); ctx.lineTo(kx + 18, ky + 12);
     ctx.stroke();
 
-    // Glowing active calculation nodes (blinking green/cyan)
+    // Glowing active calculation nodes
     ctx.fillStyle = '#38bdf8';
     ctx.fillRect(kx + 14, ky + 1, 2, 2);
     ctx.fillRect(kx + 20, ky + 1, 2, 2);
@@ -610,31 +717,28 @@ export function drawWorkshop(
 
     // Running status telemetry
     ctx.fillStyle = '#38bdf8';
-    ctx.font = '6px monospace';
+    ctx.font = '5px monospace';
     ctx.fillText('FEA SOLV..', scrX + 2, scrY + scrH - 2);
   }
 
   // =========================================================================
-  // 2. PHYSICAL STEGOCERAS SKULL & HOLOGRAPHIC EMISSION ON DESK
-  // =========================================================================
-  const skX = x + 112;
-  const skY = y - 4;
+  // 4. PHYSICAL STEGOCERAS SKULL & HOLOGRAPHIC EMISSION ON DESK (Right Pedestal)
+  // =========================================================
+  const skX = dx + 86; // Placed on right pedestal with 8px margin from blueprint and 6px from edge!
+  const skY = dy - 6;
 
   // Brass Display Stand
-  pRect(ctx, skX + 14, skY + 20, 4, 10, '#b45309'); // brass vertical rod
-  pRect(ctx, skX + 8, skY + 28, 16, 4, '#78350f'); // weighted brass base
-  pRect(ctx, skX + 9, skY + 28, 14, 1, '#d97706'); // brass luster
+  pRect(ctx, skX + 14, skY + 18, 4, 10, '#b45309'); // brass vertical rod
+  pRect(ctx, skX + 8, skY + 26, 16, 4, '#78350f'); // weighted brass base
+  pRect(ctx, skX + 9, skY + 26, 14, 1, '#d97706'); // brass luster
 
   // Physical Fossil Bone Silhouette
   ctx.fillStyle = '#d6cbaf'; // weathered bone ivory
   ctx.beginPath();
   ctx.moveTo(skX + 6, skY + 14);
-  // Steep frontoparietal dome curve
   ctx.quadraticCurveTo(skX + 16, skY - 4, skX + 26, skY + 8);
-  // Posterior skull shelf with row of tubercles
   ctx.lineTo(skX + 30, skY + 14);
   ctx.lineTo(skX + 26, skY + 18);
-  // Snout & jaw
   ctx.lineTo(skX + 10, skY + 18);
   ctx.lineTo(skX + 4, skY + 15);
   ctx.closePath();
@@ -651,7 +755,6 @@ export function drawWorkshop(
   const holoPulse = Math.sin(timeMs * 0.006) * 0.3 + 0.7;
   ctx.save();
   if (isComplete) {
-    // Stress field aura contour radiating above dome
     ctx.strokeStyle = `rgba(239, 68, 68, ${holoPulse * 0.8})`;
     ctx.lineWidth = 1.2;
     ctx.beginPath();
@@ -663,7 +766,6 @@ export function drawWorkshop(
     ctx.arc(skX + 16, skY + 4, 13, Math.PI * 0.85, Math.PI * 2.15);
     ctx.stroke();
   } else {
-    // Active holographic grid hovering above dome
     ctx.strokeStyle = `rgba(56, 189, 248, ${holoPulse * 0.85})`;
     ctx.lineWidth = 1;
     ctx.beginPath();

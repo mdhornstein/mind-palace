@@ -1,6 +1,8 @@
 /**
  * Procedural Web Audio Fireplace Sound Generator
- * Generates realistic ambient hearth sounds (low roaring body + random wood pops/crackles)
+ * Generates cozy, calming ambient hearth sounds:
+ * - Soft, muffled low-frequency ember bed (gentle warm flue draft, non-resonant)
+ * - Infrequent, gentle wood snaps and warm settling pops (warm acoustic resonance, not harsh static)
  * Pure Web Audio API: zero external assets, instant loading, zero latency.
  */
 
@@ -10,7 +12,8 @@ export class HearthAudio {
   private isPlaying = false;
   private masterGain: GainNode | null = null;
   private roarNode: AudioBufferSourceNode | null = null;
-  private crackleInterval: number | null = null;
+  private driftGain: GainNode | null = null;
+  private crackleTimeout: number | null = null;
 
   public static getInstance(): HearthAudio {
     if (!HearthAudio.instance) {
@@ -21,7 +24,9 @@ export class HearthAudio {
 
   private initContext() {
     if (!this.ctx) {
-      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioContextClass =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       this.ctx = new AudioContextClass();
     }
     if (this.ctx.state === 'suspended') {
@@ -50,17 +55,17 @@ export class HearthAudio {
 
     this.isPlaying = true;
 
-    // Master volume with smooth fade in
+    // Master volume with smooth, gentle fade-in (calm ambient level)
     this.masterGain = this.ctx.createGain();
     this.masterGain.gain.setValueAtTime(0.001, this.ctx.currentTime);
-    this.masterGain.gain.exponentialRampToValueAtTime(0.28, this.ctx.currentTime + 1.2);
+    this.masterGain.gain.exponentialRampToValueAtTime(0.08, this.ctx.currentTime + 1.8);
     this.masterGain.connect(this.ctx.destination);
 
-    // 1. Low warm hearth roar (brownian/pink noise through low-pass resonant filter)
-    this.startHearthRoar();
+    // 1. Warm, gentle muffled hearth bed (low-frequency flame draft)
+    this.startWarmBed();
 
-    // 2. Realistic randomized wood embers snapping & crackling
-    this.startCrackles();
+    // 2. Rare, pleasant wood ember snaps
+    this.startGentleCrackles();
   }
 
   public stop() {
@@ -69,7 +74,7 @@ export class HearthAudio {
 
     // Smooth fade out
     this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, this.ctx.currentTime);
-    this.masterGain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.6);
+    this.masterGain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.8);
 
     setTimeout(() => {
       if (this.roarNode) {
@@ -81,68 +86,88 @@ export class HearthAudio {
         }
         this.roarNode = null;
       }
-      if (this.crackleInterval !== null) {
-        window.clearInterval(this.crackleInterval);
-        this.crackleInterval = null;
+      if (this.crackleTimeout !== null) {
+        window.clearTimeout(this.crackleTimeout);
+        this.crackleTimeout = null;
       }
-    }, 650);
+    }, 850);
   }
 
-  private startHearthRoar() {
+  private startWarmBed() {
     if (!this.ctx || !this.masterGain) return;
 
-    // Generate 4 seconds of looping pink/brown noise for hearth rumble
-    const bufferSize = this.ctx.sampleRate * 4;
+    // Generate 5 seconds of seamless pink/brown noise (soft flame body)
+    const bufferSize = this.ctx.sampleRate * 5;
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const data = buffer.getChannelData(0);
-    let lastOut = 0.0;
+    let b0 = 0, b1 = 0, b2 = 0;
 
     for (let i = 0; i < bufferSize; i++) {
       const white = Math.random() * 2 - 1;
-      // Brown noise integration
-      lastOut = (lastOut + 0.02 * white) / 1.02;
-      data[i] = lastOut * 3.5;
+      // Classic Paul Kellet pink-noise filtering for natural organic hiss/rumble
+      b0 = 0.99886 * b0 + white * 0.0555179;
+      b1 = 0.99332 * b1 + white * 0.0750759;
+      b2 = 0.96900 * b2 + white * 0.1538520;
+      data[i] = (b0 + b1 + b2 + white * 0.08) * 0.45;
     }
 
     this.roarNode = this.ctx.createBufferSource();
     this.roarNode.buffer = buffer;
     this.roarNode.loop = true;
 
-    // Low-pass filter for cozy fireplace muffled rumble
-    const filter = this.ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(220, this.ctx.currentTime);
-    filter.Q.setValueAtTime(1.8, this.ctx.currentTime);
+    // Cascaded smooth lowpass filters: NO resonant spike, pure warmth
+    const lp1 = this.ctx.createBiquadFilter();
+    lp1.type = 'lowpass';
+    lp1.frequency.setValueAtTime(160, this.ctx.currentTime);
+    lp1.Q.setValueAtTime(0.6, this.ctx.currentTime);
 
-    this.roarNode.connect(filter);
-    filter.connect(this.masterGain);
+    const lp2 = this.ctx.createBiquadFilter();
+    lp2.type = 'lowpass';
+    lp2.frequency.setValueAtTime(220, this.ctx.currentTime);
+    lp2.Q.setValueAtTime(0.5, this.ctx.currentTime);
+
+    // Subtle natural draft breath (drift gain)
+    this.driftGain = this.ctx.createGain();
+    this.driftGain.gain.setValueAtTime(0.7, this.ctx.currentTime);
+
+    this.roarNode.connect(lp1);
+    lp1.connect(lp2);
+    lp2.connect(this.driftGain);
+    this.driftGain.connect(this.masterGain);
+
     this.roarNode.start();
   }
 
-  private startCrackles() {
-    const triggerCrackle = () => {
+  private startGentleCrackles() {
+    const triggerGentlePop = () => {
       if (!this.isPlaying || !this.ctx || !this.masterGain) return;
 
-      // Small burst of high-frequency popping noise (wood snapping)
-      const isBigPop = Math.random() < 0.2;
-      const duration = isBigPop ? 0.04 : 0.015;
-      const crackleBuffer = this.ctx.createBuffer(1, Math.floor(this.ctx.sampleRate * duration), this.ctx.sampleRate);
+      const now = this.ctx.currentTime;
+      // Is this a tiny snap or a soft settling ember?
+      const isSoftSnap = Math.random() < 0.65;
+      const duration = isSoftSnap ? 0.03 : 0.06;
+      const bufferLength = Math.floor(this.ctx.sampleRate * duration);
+      const crackleBuffer = this.ctx.createBuffer(1, bufferLength, this.ctx.sampleRate);
       const output = crackleBuffer.getChannelData(0);
 
+      // Warm decay envelope
       for (let i = 0; i < output.length; i++) {
-        output[i] = (Math.random() * 2 - 1) * Math.exp(-i / (output.length * 0.3));
+        const decay = Math.exp(-i / (output.length * 0.25));
+        output[i] = (Math.random() * 2 - 1) * decay;
       }
 
       const source = this.ctx.createBufferSource();
       source.buffer = crackleBuffer;
 
+      // Warm wooden acoustic frequencies (600Hz - 1100Hz, no harsh 3kHz clicks)
       const popFilter = this.ctx.createBiquadFilter();
       popFilter.type = 'bandpass';
-      popFilter.frequency.value = isBigPop ? 1100 + Math.random() * 800 : 2200 + Math.random() * 1600;
-      popFilter.Q.value = 4.0;
+      popFilter.frequency.value = isSoftSnap ? 750 + Math.random() * 350 : 500 + Math.random() * 250;
+      popFilter.Q.value = 2.2;
 
       const popGain = this.ctx.createGain();
-      popGain.gain.value = isBigPop ? 0.7 + Math.random() * 0.4 : 0.25 + Math.random() * 0.3;
+      popGain.gain.setValueAtTime(isSoftSnap ? 0.09 : 0.15, now);
+      popGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
       source.connect(popFilter);
       popFilter.connect(popGain);
@@ -150,11 +175,13 @@ export class HearthAudio {
 
       source.start();
 
-      // Schedule next random pop
-      const nextDelay = isBigPop ? 180 + Math.random() * 350 : 60 + Math.random() * 220;
-      setTimeout(triggerCrackle, nextDelay);
+      // Fireplaces pop occasionally and pleasantly, not constantly!
+      // Schedule next crackle between 1.8s and 4.8s
+      const nextDelay = 1800 + Math.random() * 3000;
+      this.crackleTimeout = window.setTimeout(triggerGentlePop, nextDelay);
     };
 
-    triggerCrackle();
+    // First pop starts after 1.2 seconds of warm rumble
+    this.crackleTimeout = window.setTimeout(triggerGentlePop, 1200);
   }
 }

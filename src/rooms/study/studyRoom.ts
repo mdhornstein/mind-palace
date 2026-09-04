@@ -55,7 +55,7 @@ export const studyRoomConfig: RoomConfig = {
     }
 
     // Architectural Persian Rug under the reading nook
-    drawOrnateRug(ctx, 2 * TILE_SIZE, 4 * TILE_SIZE, 5 * TILE_SIZE, 5 * TILE_SIZE);
+    drawOrnateRug(ctx, 2.0 * TILE_SIZE, 4.2 * TILE_SIZE, 4.8 * TILE_SIZE, 4.6 * TILE_SIZE);
 
     // Entrance Welcome Door Mat (Bottom Center)
     ctx.fillStyle = '#291b12';
