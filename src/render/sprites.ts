@@ -432,21 +432,21 @@ export function drawWorkshop(
   // 1. STATELY UNIVERSITY BLACKBOARD ON A-FRAME ROLLING EASEL (Left Side)
   // =========================================================================
   const ex = x + 2;
-  const ey = y - 10;
-  const ew = 74; // widened from 56 to 74px so equations fit comfortably!
-  const eh = 46;
+  const ey = y - 12;
+  const ew = 104; // Generously widened to 104px so all equations have ample breathing room!
+  const eh = 54;
 
   // Easel shadow on floorboards
   ctx.fillStyle = 'rgba(10, 8, 6, 0.4)';
-  ctx.fillRect(ex + 2, ey + 68, ew - 4, 4);
+  ctx.fillRect(ex + 2, ey + 75, ew - 4, 4);
 
   // A-Frame Wooden Easel Stand Legs
-  pRect(ctx, ex + 2, ey + 6, 3, 62, '#3d2213'); // left front leg
-  pRect(ctx, ex + ew - 5, ey + 6, 3, 62, '#3d2213'); // right front leg
-  pRect(ctx, ex + Math.floor(ew / 2) - 2, ey + 4, 4, 64, '#221208'); // rear tilt prop leg
-  pRect(ctx, ex + 2, ey + 52, ew - 4, 3, '#4a2b1a'); // horizontal cross brace
-  pRect(ctx, ex + 1, ey + 66, 5, 2, '#b45309'); // brass castor foot left
-  pRect(ctx, ex + ew - 6, ey + 66, 5, 2, '#b45309'); // brass castor foot right
+  pRect(ctx, ex + 2, ey + 6, 3, 70, '#3d2213'); // left front leg
+  pRect(ctx, ex + ew - 5, ey + 6, 3, 70, '#3d2213'); // right front leg
+  pRect(ctx, ex + Math.floor(ew / 2) - 2, ey + 4, 4, 72, '#221208'); // rear tilt prop leg
+  pRect(ctx, ex + 2, ey + 58, ew - 4, 3, '#4a2b1a'); // horizontal cross brace
+  pRect(ctx, ex + 1, ey + 74, 5, 2, '#b45309'); // brass castor foot left
+  pRect(ctx, ex + ew - 6, ey + 74, 5, 2, '#b45309'); // brass castor foot right
 
   // Framed Slate Blackboard (mounted at comfortable reading height)
   pRect(ctx, ex + 2, ey, ew - 4, eh, '#452615'); // oak frame
@@ -454,47 +454,62 @@ export function drawWorkshop(
   pRect(ctx, ex + 5, ey + 3, ew - 10, eh - 6, '#0f172a'); // dark charcoal slate
 
   // Brass pivot knobs on sides
-  pRect(ctx, ex, ey + 20, 3, 4, '#f59e0b');
-  pRect(ctx, ex + ew - 3, ey + 20, 3, 4, '#f59e0b');
+  pRect(ctx, ex, ey + 24, 3, 4, '#f59e0b');
+  pRect(ctx, ex + ew - 3, ey + 24, 3, 4, '#f59e0b');
 
   // Chalk dust ledge & chalk sticks
   pRect(ctx, ex + 2, ey + eh - 2, ew - 4, 3, '#5c331c'); // ledge
-  pRect(ctx, ex + 8, ey + eh - 3, 5, 1, '#ffffff'); // white chalk
-  pRect(ctx, ex + 16, ey + eh - 3, 4, 1, '#fde047'); // yellow chalk
-  pRect(ctx, ex + ew - 16, ey + eh - 4, 10, 2, '#78350f'); // felt eraser
+  pRect(ctx, ex + 8, ey + eh - 3, 6, 2, '#ffffff'); // white chalk
+  pRect(ctx, ex + 17, ey + eh - 3, 5, 2, '#fde047'); // yellow chalk
+  pRect(ctx, ex + 25, ey + eh - 3, 5, 2, '#60a5fa'); // blue chalk
+  pRect(ctx, ex + ew - 18, ey + eh - 4, 12, 3, '#78350f'); // felt eraser
 
-  // Chalk text (COMPLETELY UNOBSTRUCTED & 100% LEGIBLE with comfortable margins!)
+  // Chalk text (COMPLETELY UNOBSTRUCTED & 100% LEGIBLE with generous margins!)
   ctx.fillStyle = '#f8fafc';
   ctx.font = 'bold 7px monospace';
-  ctx.fillText('∇ · σ + f = 0', ex + 8, ey + 15);
+  ctx.fillText('∇ · σ + f = 0', ex + 8, ey + 14);
+
   ctx.fillStyle = '#fde68a';
   ctx.font = '6px monospace';
-  ctx.fillText('Linear Elasticity', ex + 8, ey + 25);
+  ctx.fillText('Linear Elasticity', ex + 8, ey + 24);
+
+  ctx.fillStyle = '#93c5fd';
+  ctx.font = '5px monospace';
+  ctx.fillText('FEA Stress Tensor σ_ij', ex + 8, ey + 33);
+
   ctx.fillStyle = '#94a3b8';
   ctx.font = '5px monospace';
-  ctx.fillText('FEA Stress Tensor σ_ij', ex + 8, ey + 34);
+  ctx.fillText('Equilibrium & Boundary Cond.', ex + 8, ey + 43);
 
-  // Tiny hand-drawn stress element cube on slate
-  ctx.strokeStyle = 'rgba(148, 163, 184, 0.75)';
+  // Isometric 3D Stress Element Cube on Slate (neatly positioned on the right side)
+  const cx = ex + ew - 24;
+  const cy = ey + 10;
+  ctx.strokeStyle = 'rgba(253, 230, 138, 0.85)';
   ctx.lineWidth = 0.8;
-  ctx.strokeRect(ex + ew - 20, ey + 25, 7, 7);
+  // Front square
+  ctx.strokeRect(cx, cy + 4, 9, 9);
+  // Top face
   ctx.beginPath();
-  ctx.moveTo(ex + ew - 13, ey + 28.5); ctx.lineTo(ex + ew - 8, ey + 28.5); // sigma arrow
+  ctx.moveTo(cx, cy + 4); ctx.lineTo(cx + 4, cy); ctx.lineTo(cx + 13, cy); ctx.lineTo(cx + 9, cy + 4);
+  // Right face
+  ctx.moveTo(cx + 9, cy + 4); ctx.lineTo(cx + 13, cy); ctx.lineTo(cx + 13, cy + 9); ctx.lineTo(cx + 9, cy + 13);
+  // Normal traction arrow
+  ctx.moveTo(cx + 9, cy + 8.5); ctx.lineTo(cx + 15, cy + 8.5);
   ctx.stroke();
 
   // =========================================================================
   // 2. HEAVY VICTORIAN LABORATORY WORKBENCH (Right Side)
   // =========================================================================
-  const dx = ex + ew + 8; // 8px breathing space between easel and workbench
+  const dx = ex + ew + 10; // 10px breathing space between easel and workbench
   const dy = y + 6;
-  const dw = 120; // 120px wide workbench
+  const dw = 126; // 126px wide workbench
   const dh = 54;
 
   // Table drop shadow on floor
   ctx.fillStyle = 'rgba(10, 8, 6, 0.45)';
   ctx.fillRect(dx + 4, dy + dh - 2, dw - 8, 6);
 
-  // Tabletop Beveled Mahogany Surface
+  // Tabletop Beveled Mahogany Surface (Plane: dy + 2 to dy + 22)
   pRect(ctx, dx, dy + 2, dw, 22, '#452615'); // mahogany top
   pRect(ctx, dx + 1, dy + 2, dw - 2, 2, '#6e3c20'); // polished top bevel highlight
   pRect(ctx, dx, dy + 22, dw, 3, '#2a160b'); // front lip shadow
@@ -526,7 +541,7 @@ export function drawWorkshop(
   pRect(ctx, dx + dw - 29, dy + dh - 2, 4, 3, '#b45309');
   pRect(ctx, dx + dw - 9, dy + dh - 2, 4, 3, '#b45309');
 
-  // Scientific Blueprints & Drafting Tools (Centered between CRT and Skull with ample margin!)
+  // Scientific Blueprints & Drafting Tools (Centered between CRT and Skull with generous margin!)
   const bx = dx + 52;
   pRect(ctx, bx, dy + 5, 24, 15, '#1e3a8a'); // blueprint paper
   ctx.strokeStyle = '#60a5fa';
@@ -722,62 +737,75 @@ export function drawWorkshop(
   }
 
   // =========================================================================
-  // 4. PHYSICAL STEGOCERAS SKULL & HOLOGRAPHIC EMISSION ON DESK (Right Pedestal)
-  // =========================================================
-  const skX = dx + 86; // Placed on right pedestal with 8px margin from blueprint and 6px from edge!
-  const skY = dy - 6;
+  // 4. PHYSICAL STEGOCERAS SKULL & PEDESTAL (FIRM ON MAHOGANY TABLETOP)
+  // =========================================================================
+  const skX = dx + 88; // Right pedestal surface
+  const baseY = dy + 15; // Centered securely inside the tabletop surface (dy + 2 to dy + 22)
 
-  // Brass Display Stand
-  pRect(ctx, skX + 14, skY + 18, 4, 10, '#b45309'); // brass vertical rod
-  pRect(ctx, skX + 8, skY + 26, 16, 4, '#78350f'); // weighted brass base
-  pRect(ctx, skX + 9, skY + 26, 14, 1, '#d97706'); // brass luster
+  // 1. Dark contact shadow on mahogany wood (anchors pedestal to desk surface!)
+  ctx.fillStyle = 'rgba(15, 8, 4, 0.6)';
+  ctx.beginPath();
+  ctx.ellipse(skX + 16, baseY + 2, 10, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
 
-  // Physical Fossil Bone Silhouette
+  // 2. Weighted Turned Brass Plinth Base (resting squarely on top of the desk!)
+  pRect(ctx, skX + 8, baseY - 2, 16, 3, '#78350f'); // lower weighted rim
+  pRect(ctx, skX + 10, baseY - 4, 12, 2, '#b45309'); // upper tier bevel
+  pRect(ctx, skX + 10, baseY - 4, 12, 1, '#f59e0b'); // brass luster highlight
+  pRect(ctx, skX + 13, baseY - 6, 6, 2, '#d97706'); // collar socket ring
+
+  // 3. Brass Support Rod & Specimen Mounting Cradle
+  pRect(ctx, skX + 14, baseY - 18, 4, 12, '#b45309'); // vertical rod
+  pRect(ctx, skX + 15, baseY - 18, 1, 12, '#fde68a'); // specular rod reflection
+  pRect(ctx, skX + 11, baseY - 20, 10, 2, '#78350f'); // mounting cup cradle
+
+  // 4. Physical Fossil Bone Silhouette (mounted firmly atop the brass cradle)
+  const skullY = baseY - 34; // Dome and snout situated above cradle
   ctx.fillStyle = '#d6cbaf'; // weathered bone ivory
   ctx.beginPath();
-  ctx.moveTo(skX + 6, skY + 14);
-  ctx.quadraticCurveTo(skX + 16, skY - 4, skX + 26, skY + 8);
-  ctx.lineTo(skX + 30, skY + 14);
-  ctx.lineTo(skX + 26, skY + 18);
-  ctx.lineTo(skX + 10, skY + 18);
-  ctx.lineTo(skX + 4, skY + 15);
+  ctx.moveTo(skX + 6, skullY + 14);
+  ctx.quadraticCurveTo(skX + 16, skullY - 4, skX + 26, skullY + 8);
+  ctx.lineTo(skX + 30, skullY + 14);
+  ctx.lineTo(skX + 26, skullY + 18);
+  ctx.lineTo(skX + 10, skullY + 18);
+  ctx.lineTo(skX + 4, skullY + 15);
   ctx.closePath();
   ctx.fill();
 
   // Eye orbit & temporal opening
   ctx.fillStyle = '#262626';
   ctx.beginPath();
-  ctx.ellipse(skX + 14, skY + 12, 3, 2.5, 0, 0, Math.PI * 2);
+  ctx.ellipse(skX + 14, skullY + 12, 3, 2.5, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillRect(skX + 22, skY + 11, 3, 2);
+  ctx.fillRect(skX + 22, skullY + 11, 3, 2);
 
-  // Holographic Projection hovering over the physical skull
+  // 5. Holographic Projection hovering over the physical skull
   const holoPulse = Math.sin(timeMs * 0.006) * 0.3 + 0.7;
   ctx.save();
   if (isComplete) {
     ctx.strokeStyle = `rgba(239, 68, 68, ${holoPulse * 0.8})`;
     ctx.lineWidth = 1.2;
     ctx.beginPath();
-    ctx.arc(skX + 16, skY + 4, 9, Math.PI * 0.9, Math.PI * 2.1);
+    ctx.arc(skX + 16, skullY + 4, 9, Math.PI * 0.9, Math.PI * 2.1);
     ctx.stroke();
 
     ctx.strokeStyle = `rgba(245, 158, 11, ${holoPulse * 0.6})`;
     ctx.beginPath();
-    ctx.arc(skX + 16, skY + 4, 13, Math.PI * 0.85, Math.PI * 2.15);
+    ctx.arc(skX + 16, skullY + 4, 13, Math.PI * 0.85, Math.PI * 2.15);
     ctx.stroke();
   } else {
     ctx.strokeStyle = `rgba(56, 189, 248, ${holoPulse * 0.85})`;
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(skX + 10, skY + 4);
-    ctx.lineTo(skX + 16, skY - 2);
-    ctx.lineTo(skX + 22, skY + 4);
-    ctx.lineTo(skX + 16, skY + 8);
+    ctx.moveTo(skX + 10, skullY + 4);
+    ctx.lineTo(skX + 16, skullY - 2);
+    ctx.lineTo(skX + 22, skullY + 4);
+    ctx.lineTo(skX + 16, skullY + 8);
     ctx.closePath();
     ctx.stroke();
 
     ctx.fillStyle = '#38bdf8';
-    ctx.fillRect(skX + 15, skY - 3, 2, 2);
+    ctx.fillRect(skX + 15, skullY - 3, 2, 2);
   }
   ctx.restore();
 }

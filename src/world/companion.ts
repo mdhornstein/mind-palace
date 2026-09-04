@@ -67,6 +67,21 @@ export class CompanionController {
       }
     }
 
+    // Auto-correct if trapped inside workstation bounding box from old save states
+    if (
+      companion.x >= 10.0 * TILE_SIZE &&
+      companion.x <= 18.5 * TILE_SIZE &&
+      companion.y >= 8.5 * TILE_SIZE &&
+      companion.y <= 11.2 * TILE_SIZE
+    ) {
+      this.stateManager.updateCompanion((c) => {
+        c.x = 14.8 * TILE_SIZE;
+        c.y = 12.2 * TILE_SIZE;
+        c.facing = 'up';
+        c.activity = 'writing';
+      });
+    }
+
     // 3. Autonomous Idle Shifts (every ~45-90 seconds, changes subtle behavior if stationary)
     const now = Date.now();
     if (!this.isMoving && !companion.pendingRemark && now - this.lastActivityShift > 50000) {
@@ -162,11 +177,18 @@ export class CompanionController {
         activity: 'contemplating',
       },
       {
-        x: 12 * TILE_SIZE,
-        y: 9.5 * TILE_SIZE,
-        facing: 'right',
+        x: 14.8 * TILE_SIZE,
+        y: 12.2 * TILE_SIZE,
+        facing: 'up',
         location: 'desk',
         activity: 'writing',
+      },
+      {
+        x: 9.8 * TILE_SIZE,
+        y: 11.8 * TILE_SIZE,
+        facing: 'right',
+        location: 'desk',
+        activity: 'contemplating',
       },
     ];
 

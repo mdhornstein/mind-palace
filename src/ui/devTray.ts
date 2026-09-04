@@ -30,8 +30,8 @@ export class DevTray {
   private renderHud() {
     const isPlaying = this.hearthAudio.getIsPlaying();
     this.hudEl.innerHTML = `
-      <button id="btn-audio-toggle" class="hud-pill ${isPlaying ? 'active' : ''}" title="Toggle ambient procedural fireplace sound">
-        ${isPlaying ? '🔥 Hearth: Playing' : '🔥 Hearth: Muted'}
+      <button id="btn-audio-toggle" class="hud-pill ${isPlaying ? 'active' : ''}" title="Toggle cozy procedural 8-bit chiptune soundtrack (Press M to mute/unmute)">
+        ${isPlaying ? '🎶 8-Bit Music: Playing' : '🔇 8-Bit Music: Muted'}
       </button>
       <button id="btn-time-warp" class="hud-pill highlight" title="Simulate closing the app and returning hours or days later (~ or Shift+D)">
         ⏱️ Time Warp
@@ -50,7 +50,17 @@ export class DevTray {
 
   private setupListeners() {
     window.addEventListener('keydown', (e) => {
-      // Toggle on backtick (~) or Shift+D
+      // Toggle music on 'm' or 'M'
+      if (e.key === 'm' || e.key === 'M') {
+        if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+          return;
+        }
+        this.hearthAudio.toggle();
+        this.renderHud();
+        return;
+      }
+
+      // Toggle time-warp on backtick (~) or Shift+D
       if (e.key === '`' || (e.shiftKey && e.key === 'D')) {
         // Prevent toggle if currently typing in an input/textarea
         if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
