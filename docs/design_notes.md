@@ -233,21 +233,26 @@ Building the world first gives the companion things to actually *do* and places 
 
 ---
 
-## Where Would You Like to Start?
+## Built Worlds & Progress
 
-Here are three natural ways we could begin:
+### **Room 1: The Study & Curiosity Workshop** (Active)
+* **Atmosphere**: Cozy evening timber study with crackling hearth, arched mullioned windows, Persian reading rug, and welcome mat.
+* **Stations**: The Library Bookshelf, Reading Nook, Curio Fossil Vitrine, Specimen Display Pedestal, and Science Workstation (widened chalkboard easel with linear elasticity tensor equations, retro CRT with von Mises stress heatmap, drafting blueprints, and grounded *Stegoceras* fossil skull).
+* **Soundtrack**: Looping Web Audio 8-bit cozy chiptune sanctuary melody.
 
-### **Option 1: Add a Second Room (The Stargazing Observatory or Archive)**
-* Add an arched doorway in the South wall of the Study.
-* Build a second room (e.g. an **Observatory** with a panoramic domed skylight, brass telescope station, and star-catalog station).
-* **What we learn**: How does it feel to physically transition between rooms? Does moving between spaces make memory categorization feel more natural?
+### **Room 2: The Stargazing Observatory** (Active)
+* **Atmosphere**: Midnight circular stone rotunda with panoramic open dome aperture, real-time procedural twinkling stars, cyan/violet nebula clouds, architectural iron ribs, and an inlaid brass celestial zodiac and compass star floor.
+* **Stations**:
+  1. **Great Brass Refractor Telescope**: Circular ocular reticle view with selectable celestial targets (*Saturn & Rings*, *Orion Nebula M42*, *Pleiades M45*, *Andromeda M31*), multi-tier magnification (40x, 120x, 300x), and deep time logbook commentary.
+  2. **Celestial Star Chart & Astrolabe Desk**: Equatorial coordinate system (Right Ascension / Declination) and Kepler's three orbital laws ($P^2 = a^3$).
+  3. **Mechanical Clockwork Orrery**: Real-time revolving brass planetary gear arms (Mercury through Saturn with moon & rings) and astronomical gear ratio tables.
+* **Doorways**: Seamless bi-directional portal connecting South wall of Study to North archway of the Observatory.
 
-### **Option 2: Deepen Stations & Interactive Polish in the Current Study**
-* Add the **`[Feature on Pedestal]`** toggle so you can curate which fossil is displayed on the plinth.
-* Add 1 new station to the Study (e.g., an antique **Drafting Easel / Chalkboard** or **Fireplace Mantle** display).
-* Polish: Subtle day/evening ambient window lighting.
+---
 
-### **Option 3: High-Level Palace Architecture Brainstorming**
-* Step back and sketch out the conceptual "Palace Map" in [`docs/design_notes.md`](file:///Users/michael/Library/CloudStorage/GoogleDrive-mdhornstein@gmail.com/My%20Drive/AA%20Projects/mind-palace/docs/design_notes.md): What rooms make up *your* ideal sanctuary (e.g., Natural History Study, Mathematics & Simulation Lab, Philosophy Archive, Music/Art Courtyard)?
+## Next Horizons for Exploration
 
-Which direction sounds most compelling to tackle first?
+1. **Station Deepening**: Add the **`[Feature on Pedestal]`** active selection in the Fossil Cabinet, and custom telescope targets.
+2. **Third Room / Domain**: An antique **Natural History Greenhouse / Herbarium**, an **Underground Rare Archive / Vault**, or a **Courtyard Cloister**.
+3. **Companion Integration**: Allow the Scholar to follow the player into new rooms or share astronomical observations when standing in the Observatory.
+
