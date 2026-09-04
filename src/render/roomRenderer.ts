@@ -92,8 +92,8 @@ export class RoomRenderer {
     // 3. Architectural Rug in reading nook
     drawOrnateRug(ctx, 2 * TILE_SIZE, 4 * TILE_SIZE, 5 * TILE_SIZE, 5 * TILE_SIZE);
 
-    // 4. Fixed Bookshelf (base)
-    drawBookshelf(ctx, 2 * TILE_SIZE, 1 * TILE_SIZE, 4 * TILE_SIZE, 2.5 * TILE_SIZE);
+    // 4. Fixed Bookshelf (upper-left study wall, fully clear of windows)
+    drawBookshelf(ctx, 1.5 * TILE_SIZE, 1 * TILE_SIZE, 4 * TILE_SIZE, 2.5 * TILE_SIZE);
 
     // 5. Entrance Door Mat
     ctx.fillStyle = '#291b12';
@@ -131,8 +131,11 @@ export class RoomRenderer {
     ctx.drawImage(this.bgCanvas, 0, 0);
 
     // Dynamic Architectural Fixtures
-    // Arched window on north wall
-    drawWindow(ctx, 4 * TILE_SIZE, 6, timeMs);
+    // Symmetrical arched mullioned windows flanking the central stone fireplace:
+    // Left window (between Bookshelf and Fireplace — zero occlusion)
+    drawWindow(ctx, 6.2 * TILE_SIZE, 6, timeMs);
+    // Right window (between Fireplace and Fossil Cabinet)
+    drawWindow(ctx, 11.8 * TILE_SIZE, 6, timeMs);
 
     // Crackling Stone Fireplace with animated flames
     drawFireplace(ctx, 8.5 * TILE_SIZE, 6, timeMs);
@@ -330,17 +333,31 @@ export class RoomRenderer {
   }
 
   private renderAtmosphericLighting(ctx: CanvasRenderingContext2D, timeMs: number) {
-    // Window moonbeam shaft
-    const windowRay = ctx.createLinearGradient(4 * TILE_SIZE, 20, 3 * TILE_SIZE, 8 * TILE_SIZE);
-    windowRay.addColorStop(0, 'rgba(186, 230, 253, 0.12)');
-    windowRay.addColorStop(1, 'rgba(186, 230, 253, 0.0)');
+    // Left Window moonbeam shaft (casts across reading nook rug)
+    const rayLeft = ctx.createLinearGradient(6.2 * TILE_SIZE, 20, 4.5 * TILE_SIZE, 9 * TILE_SIZE);
+    rayLeft.addColorStop(0, 'rgba(186, 230, 253, 0.12)');
+    rayLeft.addColorStop(1, 'rgba(186, 230, 253, 0.0)');
 
-    ctx.fillStyle = windowRay;
+    ctx.fillStyle = rayLeft;
     ctx.beginPath();
-    ctx.moveTo(4 * TILE_SIZE, 24);
-    ctx.lineTo(5.5 * TILE_SIZE, 24);
-    ctx.lineTo(6.5 * TILE_SIZE, 9 * TILE_SIZE);
-    ctx.lineTo(1.5 * TILE_SIZE, 9 * TILE_SIZE);
+    ctx.moveTo(6.2 * TILE_SIZE, 24);
+    ctx.lineTo(7.7 * TILE_SIZE, 24);
+    ctx.lineTo(7.0 * TILE_SIZE, 9 * TILE_SIZE);
+    ctx.lineTo(3.2 * TILE_SIZE, 9 * TILE_SIZE);
+    ctx.closePath();
+    ctx.fill();
+
+    // Right Window moonbeam shaft
+    const rayRight = ctx.createLinearGradient(11.8 * TILE_SIZE, 20, 13 * TILE_SIZE, 9 * TILE_SIZE);
+    rayRight.addColorStop(0, 'rgba(186, 230, 253, 0.10)');
+    rayRight.addColorStop(1, 'rgba(186, 230, 253, 0.0)');
+
+    ctx.fillStyle = rayRight;
+    ctx.beginPath();
+    ctx.moveTo(11.8 * TILE_SIZE, 24);
+    ctx.lineTo(13.3 * TILE_SIZE, 24);
+    ctx.lineTo(14.5 * TILE_SIZE, 9 * TILE_SIZE);
+    ctx.lineTo(10.5 * TILE_SIZE, 9 * TILE_SIZE);
     ctx.closePath();
     ctx.fill();
 

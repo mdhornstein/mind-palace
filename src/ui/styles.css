@@ -360,31 +360,94 @@ textarea.tutor-input:focus {
   color: #fff;
 }
 
-/* Hidden Dev Tray */
+/* Floating Top-Right HUD Controls */
+#hud-bar {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 150;
+}
+
+.hud-pill {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: #e2e8f0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 0.76rem;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.hud-pill:hover {
+  background: rgba(30, 41, 59, 0.95);
+  border-color: rgba(148, 163, 184, 0.5);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.hud-pill.highlight {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: rgba(245, 158, 11, 0.5);
+  color: #fef08a;
+}
+
+.hud-pill.highlight:hover {
+  background: rgba(245, 158, 11, 0.35);
+  border-color: #f59e0b;
+  color: #fff;
+}
+
+.hud-pill.active {
+  background: rgba(239, 68, 68, 0.22);
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #fca5a5;
+}
+
+/* Time Machine Dev Tray */
 #dev-tray {
   position: absolute;
-  bottom: 12px;
-  right: 12px;
-  background: rgba(15, 23, 42, 0.94);
+  top: 52px;
+  right: 16px;
+  width: 320px;
+  background: rgba(15, 23, 42, 0.96);
   border: 1px solid #334155;
-  border-radius: 6px;
-  padding: 10px 14px;
+  border-radius: 8px;
+  padding: 14px;
   z-index: 200;
   display: none;
   font-family: monospace;
   font-size: 0.78rem;
   color: #94a3b8;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.8);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(56, 189, 248, 0.2);
+  backdrop-filter: blur(10px);
 }
 
 #dev-tray.visible {
   display: block;
+  animation: traySlide 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes traySlide {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 #dev-tray .dev-title {
   color: #38bdf8;
   font-weight: bold;
-  margin-bottom: 8px;
+  font-size: 0.82rem;
+  margin-bottom: 4px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -393,22 +456,27 @@ textarea.tutor-input:focus {
 #dev-tray .dev-btn-row {
   display: flex;
   gap: 6px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 #dev-tray button {
+  flex: 1;
   background: #1e293b;
   border: 1px solid #475569;
   color: #e2e8f0;
-  padding: 4px 8px;
+  padding: 6px 8px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
+  font-family: inherit;
+  transition: all 0.15s ease;
+  text-align: center;
 }
 
 #dev-tray button:hover {
   background: #334155;
   color: #fff;
+  border-color: #64748b;
 }
 
 /* Subtle dev mode hint */
@@ -417,7 +485,7 @@ textarea.tutor-input:focus {
   bottom: 8px;
   left: 10px;
   font-size: 0.68rem;
-  color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.25);
   font-family: monospace;
   pointer-events: none;
 }

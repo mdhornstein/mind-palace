@@ -33,7 +33,7 @@ export class PlayerController {
     // East Wall
     { x: 19 * TILE_SIZE, y: 0, w: TILE_SIZE, h: CANVAS_HEIGHT },
     // Library Bookshelf
-    { x: 2 * TILE_SIZE, y: 1.2 * TILE_SIZE, w: 4 * TILE_SIZE, h: 2.2 * TILE_SIZE },
+    { x: 1.5 * TILE_SIZE, y: 1.2 * TILE_SIZE, w: 4 * TILE_SIZE, h: 2.2 * TILE_SIZE },
     // Fireplace Mantle
     { x: 8.5 * TILE_SIZE, y: 1.2 * TILE_SIZE, w: 2.5 * TILE_SIZE, h: 2 * TILE_SIZE },
     // Fossil Cabinet

@@ -212,7 +212,7 @@ export const INTERACTIVE_ZONES: InteractiveZone[] = [
     id: 'library',
     name: 'The Library',
     prompt: 'Inspect Bookshelf & Memories',
-    x: 2 * TILE_SIZE,
+    x: 1.5 * TILE_SIZE,
     y: 1 * TILE_SIZE,
     width: 4 * TILE_SIZE,
     height: 3 * TILE_SIZE,

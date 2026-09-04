@@ -242,68 +242,141 @@ export function drawBookshelf(ctx: CanvasRenderingContext2D, x: number, y: numbe
   }
 }
 
-// Draw Armchair & side table with steaming tea
+// Draw Armchair & substantial library table with steaming tea, lamp, and open book
 export function drawReadingNook(ctx: CanvasRenderingContext2D, x: number, y: number, timeMs: number, bookOnRug: boolean) {
-  // Wingback Armchair
+  // 1. Wingback Armchair
   const ax = x;
   const ay = y;
-  // Shadow
-  ctx.fillStyle = 'rgba(15, 10, 5, 0.4)';
+
+  // Chair Shadow
+  ctx.fillStyle = 'rgba(15, 10, 5, 0.45)';
   ctx.beginPath();
-  ctx.ellipse(ax + 16, ay + 28, 14, 6, 0, 0, Math.PI * 2);
+  ctx.ellipse(ax + 16, ay + 29, 15, 7, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Cushion & Back
-  pRect(ctx, ax + 2, ay + 2, 28, 22, '#581c24');
-  pRect(ctx, ax + 4, ay + 4, 24, 18, '#782330'); // rich velvet burgundy
-  // Wing armrests
-  pRect(ctx, ax, ay + 8, 5, 18, '#4c181f');
-  pRect(ctx, ax + 27, ay + 8, 5, 18, '#4c181f');
-  // Seat cushion
-  pRect(ctx, ax + 5, ay + 14, 22, 14, '#8a2b38');
-  pRect(ctx, ax + 6, ay + 15, 20, 2, '#a33645'); // highlight
-  // Wood feet
-  pRect(ctx, ax + 3, ay + 27, 3, 3, '#2a160c');
-  pRect(ctx, ax + 26, ay + 27, 3, 3, '#2a160c');
+  // Chair Carved Mahogany Frame & Back
+  pRect(ctx, ax + 2, ay + 2, 28, 24, '#3b1419'); // dark mahogany silhouette
+  pRect(ctx, ax + 4, ay + 3, 24, 20, '#6b1d28'); // rich velvet burgundy
+  pRect(ctx, ax + 6, ay + 5, 20, 16, '#882232'); // inner backrest
+  // Button tufting on backrest
+  ctx.fillStyle = '#4a121b';
+  ctx.fillRect(ax + 9, ay + 8, 2, 2);
+  ctx.fillRect(ax + 15, ay + 8, 2, 2);
+  ctx.fillRect(ax + 21, ay + 8, 2, 2);
+  ctx.fillRect(ax + 12, ay + 13, 2, 2);
+  ctx.fillRect(ax + 18, ay + 13, 2, 2);
 
-  // Small round tea table
-  const tx = ax + 30;
-  const ty = ay + 8;
-  pRect(ctx, tx + 6, ty + 12, 3, 10, '#351e12'); // table leg
-  pRect(ctx, tx + 2, ty + 20, 11, 2, '#25140b'); // tripod base
+  // Rolled wing armrests
+  pRect(ctx, ax - 1, ay + 8, 6, 20, '#4f161e');
+  pRect(ctx, ax, ay + 9, 4, 18, '#731f2b');
+  pRect(ctx, ax + 27, ay + 8, 6, 20, '#4f161e');
+  pRect(ctx, ax + 28, ay + 9, 4, 18, '#731f2b');
 
-  // Table top
-  pRect(ctx, tx, ty + 4, 15, 9, '#4d2b1a');
-  pRect(ctx, tx + 1, ty + 5, 13, 7, '#623822');
+  // Deep seat cushion
+  pRect(ctx, ax + 4, ay + 16, 24, 13, '#992638');
+  pRect(ctx, ax + 5, ay + 17, 22, 3, '#ba3045'); // plush cushion highlight
+  // Carved wooden feet with brass claw caps
+  pRect(ctx, ax + 3, ay + 28, 4, 4, '#241007');
+  pRect(ctx, ax + 25, ay + 28, 4, 4, '#241007');
+  pRect(ctx, ax + 4, ay + 30, 2, 2, '#d97706'); // brass claw
+  pRect(ctx, ax + 26, ay + 30, 2, 2, '#d97706');
 
-  // Teacup
-  pRect(ctx, tx + 5, ty + 4, 5, 4, '#f8fafc');
-  pRect(ctx, tx + 6, ty + 5, 3, 2, '#78350f'); // tea liquid
+  // 2. Substantial Dark Walnut Occasional Library Table
+  const tx = ax + 32;
+  const ty = ay + 4;
 
-  // Steam particle
-  const steamOffset = (timeMs * 0.02) % 16;
-  const steamWave = Math.sin(timeMs * 0.005) * 2;
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-  ctx.fillRect(tx + 7 + steamWave, ty + 2 - steamOffset, 1, 2);
+  // Table Shadow
+  ctx.fillStyle = 'rgba(15, 10, 5, 0.4)';
+  ctx.beginPath();
+  ctx.ellipse(tx + 14, ty + 28, 14, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
 
-  // If memory was recalled on prior visit: open book lying on rug!
+  // Carved Pedestal Stem & Tripod Legs
+  pRect(ctx, tx + 12, ty + 15, 4, 12, '#2e180d'); // main column
+  pRect(ctx, tx + 13, ty + 16, 2, 10, '#452616'); // column highlight
+  pRect(ctx, tx + 6, ty + 24, 16, 4, '#201008'); // spreading tripod feet
+  pRect(ctx, tx + 5, ty + 26, 3, 2, '#b45309'); // brass foot
+  pRect(ctx, tx + 20, ty + 26, 3, 2, '#b45309');
+
+  // Polished Oval Tabletop (Beveled Rim & Rich Woodgrain)
+  pRect(ctx, tx, ty + 7, 28, 10, '#2b160b'); // rim shadow
+  pRect(ctx, tx + 1, ty + 5, 26, 9, '#4d2916'); // beveled rim
+  pRect(ctx, tx + 2, ty + 6, 24, 7, '#66391f'); // polished mahogany surface
+  pRect(ctx, tx + 3, ty + 7, 22, 1, '#854d2b'); // wood luster reflection
+
+  // Stack of Research Volumes on Table Left
+  pRect(ctx, tx + 3, ty + 6, 9, 3, '#1e3a5f'); // blue leather volume
+  pRect(ctx, tx + 3, ty + 4, 8, 3, '#78350f'); // brown leather volume
+  pRect(ctx, tx + 10, ty + 5, 1, 2, '#fde047'); // gold page edges
+
+  // Classic Banker's Brass Reading Lamp with Emerald Shade
+  const lx = tx + 16;
+  const ly = ty - 8;
+  pRect(ctx, lx + 3, ly + 14, 5, 2, '#ca8a04'); // brass base
+  pRect(ctx, lx + 5, ly + 4, 2, 10, '#eab308'); // curved brass arm
+  pRect(ctx, lx + 1, ly + 2, 10, 5, '#065f46'); // emerald glass shade
+  pRect(ctx, lx + 2, ly + 3, 8, 2, '#059669'); // emerald highlight
+  // Warm golden bulb glow pool on table
+  ctx.fillStyle = 'rgba(253, 224, 71, 0.18)';
+  ctx.beginPath();
+  ctx.ellipse(tx + 18, ty + 9, 8, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Fine Porcelain Teacup on Saucer
+  const cx = tx + 17;
+  const cy = ty + 7;
+  pRect(ctx, cx - 1, cy + 3, 7, 2, '#cbd5e1'); // saucer
+  pRect(ctx, cx, cy + 1, 5, 3, '#f8fafc'); // cup body
+  pRect(ctx, cx + 1, cy + 1, 3, 1, '#92400e'); // dark steeped amber tea
+  pRect(ctx, cx + 5, cy + 2, 1, 2, '#94a3b8'); // handle
+
+  // Animated delicate steam curls rising from the tea
+  const sWave1 = Math.sin(timeMs * 0.004) * 2;
+  const sWave2 = Math.cos(timeMs * 0.005) * 2;
+  const sY = (timeMs * 0.015) % 12;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+  ctx.fillRect(cx + 2 + sWave1, cy - 2 - sY, 1, 3);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+  ctx.fillRect(cx + 3 + sWave2, cy - 6 - sY * 0.8, 1, 2);
+
+  // 3. Open Book on Persian Rug (when memory was recalled)
   if (bookOnRug) {
-    const rbx = ax - 10;
+    const rbx = ax - 8;
     const rby = ay + 26;
-    pRect(ctx, rbx, rby, 16, 11, '#7f1d1d'); // open red cover
-    pRect(ctx, rbx + 1, rby + 1, 6, 9, '#fef3c7'); // left open page
-    pRect(ctx, rbx + 9, rby + 1, 6, 9, '#fef3c7'); // right open page
-    // Miniature lines of text
+
+    // Book drop shadow on rug
+    ctx.fillStyle = 'rgba(10, 6, 4, 0.4)';
+    ctx.fillRect(rbx + 1, rby + 1, 24, 14);
+
+    // Red Morocco leather binding cover
+    pRect(ctx, rbx, rby, 22, 13, '#7f1d1d');
+    pRect(ctx, rbx + 1, rby + 1, 20, 11, '#991b1b');
+
+    // Open cream parchment spreads (left and right pages)
+    pRect(ctx, rbx + 2, rby + 2, 8, 9, '#fef9c3'); // left page
+    pRect(ctx, rbx + 11, rby + 2, 8, 9, '#fef9c3'); // right page
+    pRect(ctx, rbx + 10, rby + 1, 1, 11, '#ca8a04'); // gilded spine valley
+
+    // Miniature printed paragraph lines
     ctx.fillStyle = '#475569';
-    ctx.fillRect(rbx + 2, rby + 3, 4, 1);
-    ctx.fillRect(rbx + 2, rby + 5, 4, 1);
-    ctx.fillRect(rbx + 2, rby + 7, 3, 1);
-    ctx.fillRect(rbx + 10, rby + 3, 4, 1);
-    ctx.fillRect(rbx + 10, rby + 5, 4, 1);
+    ctx.fillRect(rbx + 3, rby + 4, 6, 1);
+    ctx.fillRect(rbx + 3, rby + 6, 5, 1);
+    ctx.fillRect(rbx + 3, rby + 8, 6, 1);
+    ctx.fillRect(rbx + 12, rby + 4, 6, 1);
+    ctx.fillRect(rbx + 12, rby + 6, 6, 1);
+    ctx.fillRect(rbx + 12, rby + 8, 4, 1);
+
+    // Crimson silk ribbon bookmark trailing out onto rug
+    ctx.strokeStyle = '#dc2626';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(rbx + 10, rby + 10);
+    ctx.quadraticCurveTo(rbx + 8, rby + 15, rbx + 12, rby + 17);
+    ctx.stroke();
   }
 }
 
-// Draw Workshop Desk with Dinosaur Skull and pulsing FEA Mesh
+// Draw Workshop Desk with Prominent CRT Terminal (Active FEA / von Mises Heatmap) and Stegoceras Skull
 export function drawWorkshop(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -316,121 +389,298 @@ export function drawWorkshop(
 ) {
   // Wall Chalkboard behind desk
   const cbW = w - 16;
-  const cbH = 24;
-  pRect(ctx, x + 8, y - 22, cbW, cbH, '#374151'); // dark chalkboard frame
-  pRect(ctx, x + 10, y - 20, cbW - 4, cbH - 4, '#1f2937'); // slate board
-  ctx.fillStyle = '#e5e7eb';
+  const cbH = 26;
+  pRect(ctx, x + 8, y - 24, cbW, cbH, '#374151'); // dark chalkboard frame
+  pRect(ctx, x + 10, y - 22, cbW - 4, cbH - 4, '#111827'); // slate board
+  pRect(ctx, x + 10, y - 22, cbW - 4, 1, '#1f2937'); // inner shadow
+  // Chalkboard text
+  ctx.fillStyle = '#f3f4f6';
   ctx.font = '7px monospace';
-  ctx.fillText(equation.slice(0, 26), x + 14, y - 8);
+  ctx.fillText(equation.slice(0, 28), x + 14, y - 9);
+  // Chalk dust ledge & chalk stick
+  pRect(ctx, x + 8, y + 2, cbW, 2, '#4b5563');
+  pRect(ctx, x + 24, y + 1, 4, 1, '#ffffff');
 
-  // Desk shadow
-  ctx.fillStyle = 'rgba(10, 8, 6, 0.45)';
+  // Desk Shadow
+  ctx.fillStyle = 'rgba(10, 8, 6, 0.5)';
   ctx.fillRect(x + 4, y + h - 4, w - 8, 6);
 
-  // Oak Desk
-  pRect(ctx, x, y, w, h - 6, '#3a2012'); // main frame
-  pRect(ctx, x + 2, y + 2, w - 4, 8, '#54301c'); // tabletop front bevel
-  pRect(ctx, x + 2, y + 2, w - 4, 1, '#6d4026'); // highlight line
+  // Heavy Oak Desk Architecture
+  pRect(ctx, x, y, w, h - 6, '#381f12'); // main frame
+  pRect(ctx, x + 2, y + 2, w - 4, 10, '#532e1a'); // tabletop front bevel
+  pRect(ctx, x + 2, y + 2, w - 4, 1, '#6e3e24'); // highlight line
 
-  // Desk drawers on left and right
-  pRect(ctx, x + 4, y + 12, 22, h - 20, '#2b170c');
-  pRect(ctx, x + 6, y + 14, 18, 7, '#3d2213');
-  pRect(ctx, x + 13, y + 17, 4, 2, '#d97706'); // brass handle
+  // Left & Right Drawers with Polished Brass Handles
+  pRect(ctx, x + 4, y + 14, 24, h - 22, '#27140a');
+  pRect(ctx, x + 6, y + 16, 20, 8, '#3d2213');
+  pRect(ctx, x + 14, y + 19, 5, 2, '#f59e0b');
+  pRect(ctx, x + 6, y + 27, 20, 8, '#3d2213');
+  pRect(ctx, x + 14, y + 30, 5, 2, '#f59e0b');
 
-  pRect(ctx, x + 6, y + 24, 18, 7, '#3d2213');
-  pRect(ctx, x + 13, y + 27, 4, 2, '#d97706'); // brass handle
-
-  // Blueprints & scientific papers in center
-  pRect(ctx, x + 32, y + 4, 24, 15, '#1e3a8a');
+  // Scientific Blueprints & Scratchpads on Desk Surface
+  pRect(ctx, x + 30, y + 4, 26, 16, '#1e3a8a'); // blueprint paper
   ctx.strokeStyle = '#60a5fa';
   ctx.lineWidth = 1;
-  ctx.strokeRect(x + 34.5, y + 5.5, 19, 11);
+  ctx.strokeRect(x + 32.5, y + 5.5, 21, 13);
   ctx.beginPath();
-  ctx.arc(x + 44, y + 11, 4, 0, Math.PI);
+  ctx.arc(x + 42, y + 11, 4, 0, Math.PI * 2);
   ctx.stroke();
 
-  // CRT / Laptop Monitor
-  const mx = x + 62;
-  const my = y - 4;
-  pRect(ctx, mx, my, 22, 18, '#1e293b'); // casing
-  pRect(ctx, mx + 2, my + 2, 18, 14, '#0f172a'); // screen bezel
-  // CRT phosphor screen
+  // =========================================================================
+  // 1. PROMINENT RETRO CRT WORKSTATION TERMINAL (FEA & von Mises Display)
+  // =========================================================================
+  const mx = x + 58;
+  const my = y - 10;
+  const mw = 48;
+  const mh = 36;
   const isComplete = project.status === 'completed';
-  const phosphorColor = isComplete ? '#059669' : '#0284c7';
-  pRect(ctx, mx + 3, my + 3, 16, 12, phosphorColor);
-  // Scanlines
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-  for (let l = my + 4; l < my + 14; l += 2) {
-    ctx.fillRect(mx + 3, l, 16, 1);
+
+  // CRT Monitor Housing (vintage industrial dark slate)
+  pRect(ctx, mx, my, mw, mh, '#1e293b'); // outer casing
+  pRect(ctx, mx + 2, my + 2, mw - 4, mh - 4, '#0f172a'); // inner bezel
+  pRect(ctx, mx + 3, my + 3, mw - 6, mh - 10, '#020617'); // dark cathode screen area
+
+  // Power LED & Ventilation Grille
+  const ledColor = isComplete ? '#10b981' : (Math.sin(timeMs * 0.008) > 0 ? '#38bdf8' : '#0284c7');
+  pRect(ctx, mx + mw - 8, my + mh - 6, 3, 2, ledColor);
+  pRect(ctx, mx + 6, my + mh - 6, 16, 2, '#334155');
+
+  // Active Cathode Phosphor Glow
+  const scrX = mx + 4;
+  const scrY = my + 4;
+  const scrW = mw - 8; // 40px
+  const scrH = mh - 12; // 24px
+
+  // CRT Scanlines
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
+  for (let l = scrY; l < scrY + scrH; l += 2) {
+    ctx.fillRect(scrX, l, scrW, 1);
   }
 
-  // --- STEGOCERAS SKULL & FEA MESH ---
-  const skX = x + 92;
-  const skY = y - 2;
-
-  // Stand
-  pRect(ctx, skX + 10, skY + 18, 6, 10, '#b45309'); // brass rod
-  pRect(ctx, skX + 6, skY + 26, 14, 3, '#78350f'); // brass weighted base
-
-  // Skull bone silhouette (Stegoceras frontoparietal dome + snout)
-  ctx.fillStyle = '#e2d8c3'; // aged fossil bone
-  ctx.beginPath();
-  // Dome curve
-  ctx.moveTo(skX + 4, skY + 12);
-  ctx.quadraticCurveTo(skX + 12, skY - 6, skX + 22, skY + 6);
-  // Posterior shelf tubercles
-  ctx.lineTo(skX + 25, skY + 12);
-  ctx.lineTo(skX + 22, skY + 16);
-  // Snout
-  ctx.lineTo(skX + 8, skY + 16);
-  ctx.lineTo(skX + 2, skY + 14);
-  ctx.closePath();
-  ctx.fill();
-
-  // Orbit / Eye socket
-  ctx.fillStyle = '#262626';
-  ctx.beginPath();
-  ctx.ellipse(skX + 11, skY + 11, 2.5, 2, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Animated FEA Mesh overlay!
-  const meshPulse = Math.sin(timeMs * 0.005) * 0.3 + 0.7;
-  ctx.lineWidth = 1;
+  // Stegoceras Skull Geometry on CRT Screen
+  // Coordinates mapped inside [scrX, scrY, scrW, scrH]
+  const kx = scrX + 6;
+  const ky = scrY + 3;
 
   if (isComplete) {
-    // Stress contour heatmap (red/yellow/cyan)
-    ctx.strokeStyle = `rgba(239, 68, 68, ${meshPulse})`;
+    // -----------------------------------------------------------------------
+    // STATE: COMPLETED -> FULL VON MISES STRESS HEATMAP!
+    // -----------------------------------------------------------------------
+    // Element 1: Dorsal Impact Apex (High Stress Concentration: Red / Crimson)
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.moveTo(kx + 14, ky + 1);
+    ctx.lineTo(kx + 20, ky + 1);
+    ctx.lineTo(kx + 17, ky + 6);
+    ctx.closePath();
+    ctx.fill();
+
+    // Element 2: Frontoparietal Dome Core (High-Mid Stress: Orange)
+    ctx.fillStyle = '#f97316';
+    ctx.beginPath();
+    ctx.moveTo(kx + 10, ky + 3);
+    ctx.lineTo(kx + 14, ky + 1);
+    ctx.lineTo(kx + 17, ky + 6);
+    ctx.lineTo(kx + 12, ky + 7);
+    ctx.closePath();
+    ctx.fill();
+
+    // Element 3: Posterior Dome & Shelf (Mid Stress: Amber / Yellow)
+    ctx.fillStyle = '#eab308';
+    ctx.beginPath();
+    ctx.moveTo(kx + 20, ky + 1);
+    ctx.lineTo(kx + 24, ky + 5);
+    ctx.lineTo(kx + 21, ky + 8);
+    ctx.lineTo(kx + 17, ky + 6);
+    ctx.closePath();
+    ctx.fill();
+
+    // Element 4: Skull Roof & Temporal Bar (Low-Mid Stress: Green)
+    ctx.fillStyle = '#22c55e';
+    ctx.beginPath();
+    ctx.moveTo(kx + 12, ky + 7);
+    ctx.lineTo(kx + 17, ky + 6);
+    ctx.lineTo(kx + 21, ky + 8);
+    ctx.lineTo(kx + 18, ky + 12);
+    ctx.lineTo(kx + 11, ky + 12);
+    ctx.closePath();
+    ctx.fill();
+
+    // Element 5: Snout & Maxilla (Low Stress: Cyan)
+    ctx.fillStyle = '#06b6d4';
+    ctx.beginPath();
+    ctx.moveTo(kx + 4, ky + 9);
+    ctx.lineTo(kx + 10, ky + 3);
+    ctx.lineTo(kx + 12, ky + 7);
+    ctx.lineTo(kx + 8, ky + 12);
+    ctx.closePath();
+    ctx.fill();
+
+    // Element 6: Occipital Condyle & Braincase (Minimal Stress: Deep Cobalt Blue)
+    ctx.fillStyle = '#3b82f6';
+    ctx.beginPath();
+    ctx.moveTo(kx + 18, ky + 12);
+    ctx.lineTo(kx + 24, ky + 9);
+    ctx.lineTo(kx + 23, ky + 14);
+    ctx.lineTo(kx + 16, ky + 14);
+    ctx.closePath();
+    ctx.fill();
+
+    // White mesh boundary element lines
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    // Dome contours
+    ctx.moveTo(kx + 4, ky + 9);
+    ctx.lineTo(kx + 10, ky + 3);
+    ctx.lineTo(kx + 14, ky + 1);
+    ctx.lineTo(kx + 20, ky + 1);
+    ctx.lineTo(kx + 24, ky + 5);
+    ctx.lineTo(kx + 24, ky + 9);
+    ctx.lineTo(kx + 23, ky + 14);
+    ctx.lineTo(kx + 8, ky + 14);
+    ctx.lineTo(kx + 4, ky + 9);
+    // Internal element dividers
+    ctx.moveTo(kx + 14, ky + 1); ctx.lineTo(kx + 17, ky + 6); ctx.lineTo(kx + 20, ky + 1);
+    ctx.moveTo(kx + 10, ky + 3); ctx.lineTo(kx + 17, ky + 6); ctx.lineTo(kx + 21, ky + 8);
+    ctx.moveTo(kx + 12, ky + 7); ctx.lineTo(kx + 18, ky + 12);
+    ctx.stroke();
+
+    // Vertical von Mises Stress Legend Colorbar on right of screen
+    const barX = scrX + scrW - 6;
+    const barY = scrY + 3;
+    const barH = 15;
+    const grad = ctx.createLinearGradient(barX, barY, barX, barY + barH);
+    grad.addColorStop(0, '#ef4444'); // Red max
+    grad.addColorStop(0.3, '#f97316'); // Orange
+    grad.addColorStop(0.6, '#eab308'); // Yellow
+    grad.addColorStop(0.8, '#22c55e'); // Green
+    grad.addColorStop(1, '#3b82f6'); // Blue min
+    ctx.fillStyle = grad;
+    ctx.fillRect(barX, barY, 4, barH);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(barX, barY, 4, barH);
+
+    // Status Banner at bottom of CRT
+    ctx.fillStyle = '#10b981';
+    ctx.font = '6px monospace';
+    ctx.fillText('CONV ✓', scrX + 2, scrY + scrH - 2);
   } else {
-    // Electric blue wireframe simulation
+    // -----------------------------------------------------------------------
+    // STATE: RUNNING -> PULSATING ELECTRIC CYAN WIREFRAME SIMULATION!
+    // -----------------------------------------------------------------------
+    const meshPulse = Math.sin(timeMs * 0.007) * 0.35 + 0.65;
+    const scanSweep = (timeMs * 0.02) % scrW;
+
+    // Skull wireframe silhouette & elements
     ctx.strokeStyle = `rgba(56, 189, 248, ${meshPulse})`;
+    ctx.lineWidth = 1;
+
+    ctx.beginPath();
+    // Outer Stegoceras skull envelope
+    ctx.moveTo(kx + 4, ky + 9);
+    ctx.lineTo(kx + 10, ky + 3);
+    ctx.lineTo(kx + 14, ky + 1);
+    ctx.lineTo(kx + 20, ky + 1);
+    ctx.lineTo(kx + 24, ky + 5);
+    ctx.lineTo(kx + 24, ky + 9);
+    ctx.lineTo(kx + 23, ky + 14);
+    ctx.lineTo(kx + 8, ky + 14);
+    ctx.lineTo(kx + 4, ky + 9);
+    // Internal triangular finite elements
+    ctx.moveTo(kx + 14, ky + 1); ctx.lineTo(kx + 17, ky + 6); ctx.lineTo(kx + 20, ky + 1);
+    ctx.moveTo(kx + 10, ky + 3); ctx.lineTo(kx + 17, ky + 6); ctx.lineTo(kx + 21, ky + 8);
+    ctx.moveTo(kx + 12, ky + 7); ctx.lineTo(kx + 18, ky + 12); ctx.lineTo(kx + 17, ky + 6);
+    ctx.moveTo(kx + 4, ky + 9); ctx.lineTo(kx + 12, ky + 7);
+    ctx.moveTo(kx + 24, ky + 9); ctx.lineTo(kx + 18, ky + 12);
+    ctx.stroke();
+
+    // Glowing active calculation nodes (blinking green/cyan)
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillRect(kx + 14, ky + 1, 2, 2);
+    ctx.fillRect(kx + 20, ky + 1, 2, 2);
+    ctx.fillRect(kx + 17, ky + 6, 2, 2);
+    ctx.fillRect(kx + 10, ky + 3, 2, 2);
+    ctx.fillRect(kx + 21, ky + 8, 2, 2);
+
+    // Active sweep scanline
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.25)';
+    ctx.fillRect(scrX + scanSweep, scrY, 2, scrH);
+
+    // Running status telemetry
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = '6px monospace';
+    ctx.fillText('FEA SOLV..', scrX + 2, scrY + scrH - 2);
   }
 
-  // Wireframe nodes across the dome
+  // =========================================================================
+  // 2. PHYSICAL STEGOCERAS SKULL & HOLOGRAPHIC EMISSION ON DESK
+  // =========================================================================
+  const skX = x + 112;
+  const skY = y - 4;
+
+  // Brass Display Stand
+  pRect(ctx, skX + 14, skY + 20, 4, 10, '#b45309'); // brass vertical rod
+  pRect(ctx, skX + 8, skY + 28, 16, 4, '#78350f'); // weighted brass base
+  pRect(ctx, skX + 9, skY + 28, 14, 1, '#d97706'); // brass luster
+
+  // Physical Fossil Bone Silhouette
+  ctx.fillStyle = '#d6cbaf'; // weathered bone ivory
   ctx.beginPath();
-  // Triangular element lines
-  ctx.moveTo(skX + 6, skY + 10);
-  ctx.lineTo(skX + 12, skY + 2);
-  ctx.lineTo(skX + 18, skY + 4);
-  ctx.lineTo(skX + 14, skY + 10);
+  ctx.moveTo(skX + 6, skY + 14);
+  // Steep frontoparietal dome curve
+  ctx.quadraticCurveTo(skX + 16, skY - 4, skX + 26, skY + 8);
+  // Posterior skull shelf with row of tubercles
+  ctx.lineTo(skX + 30, skY + 14);
+  ctx.lineTo(skX + 26, skY + 18);
+  // Snout & jaw
+  ctx.lineTo(skX + 10, skY + 18);
+  ctx.lineTo(skX + 4, skY + 15);
   ctx.closePath();
+  ctx.fill();
 
-  ctx.moveTo(skX + 12, skY + 2);
-  ctx.lineTo(skX + 14, skY + 10);
+  // Eye orbit & temporal opening
+  ctx.fillStyle = '#262626';
+  ctx.beginPath();
+  ctx.ellipse(skX + 14, skY + 12, 3, 2.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillRect(skX + 22, skY + 11, 3, 2);
 
-  ctx.moveTo(skX + 18, skY + 4);
-  ctx.lineTo(skX + 23, skY + 10);
-  ctx.lineTo(skX + 14, skY + 10);
+  // Holographic Projection hovering over the physical skull
+  const holoPulse = Math.sin(timeMs * 0.006) * 0.3 + 0.7;
+  ctx.save();
+  if (isComplete) {
+    // Stress field aura contour radiating above dome
+    ctx.strokeStyle = `rgba(239, 68, 68, ${holoPulse * 0.8})`;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(skX + 16, skY + 4, 9, Math.PI * 0.9, Math.PI * 2.1);
+    ctx.stroke();
 
-  ctx.stroke();
+    ctx.strokeStyle = `rgba(245, 158, 11, ${holoPulse * 0.6})`;
+    ctx.beginPath();
+    ctx.arc(skX + 16, skY + 4, 13, Math.PI * 0.85, Math.PI * 2.15);
+    ctx.stroke();
+  } else {
+    // Active holographic grid hovering above dome
+    ctx.strokeStyle = `rgba(56, 189, 248, ${holoPulse * 0.85})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(skX + 10, skY + 4);
+    ctx.lineTo(skX + 16, skY - 2);
+    ctx.lineTo(skX + 22, skY + 4);
+    ctx.lineTo(skX + 16, skY + 8);
+    ctx.closePath();
+    ctx.stroke();
 
-  // Glowing nodes
-  ctx.fillStyle = isComplete ? '#ef4444' : '#38bdf8';
-  ctx.fillRect(skX + 12, skY + 2, 1.5, 1.5);
-  ctx.fillRect(skX + 18, skY + 4, 1.5, 1.5);
-  ctx.fillRect(skX + 14, skY + 10, 1.5, 1.5);
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillRect(skX + 15, skY - 3, 2, 2);
+  }
+  ctx.restore();
 }
 
-// Draw Fossil Cabinet and Display Pedestal
+// Draw Ornate Fossil Curio Vitrine Cabinet with Recognizable Prehistoric Specimens
 export function drawFossilCabinet(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -440,94 +690,271 @@ export function drawFossilCabinet(
   hasUndiscovered: boolean,
   timeMs: number
 ) {
-  // Mahogany cabinet frame
-  pRect(ctx, x, y, w, h, '#2a160d');
-  pRect(ctx, x + 2, y + 2, w - 4, 4, '#482718'); // cornice
+  // 1. Rich Polished Mahogany Vitrine Cabinet
+  pRect(ctx, x, y, w, h, '#24120a'); // outer frame shadow
+  pRect(ctx, x + 2, y + 2, w - 4, h - 4, '#381c10'); // mahogany cabinet body
+  // Arched Cornice Top Molding
+  pRect(ctx, x + 1, y, w - 2, 5, '#4f2818');
+  pRect(ctx, x + 4, y - 2, w - 8, 3, '#5e311e'); // carved pediment
+  pRect(ctx, x + 1, y + 1, w - 2, 1, '#7a422a'); // wood luster
 
-  // Lit glass panes
+  // 3 Velvet-Lined Display Shelves
   const shelfCount = 3;
-  const sh = (h - 10) / shelfCount;
+  const topPad = 6;
+  const botPad = 4;
+  const shelfH = Math.floor((h - topPad - botPad) / shelfCount);
 
   for (let s = 0; s < shelfCount; s++) {
-    const sy = y + 7 + s * sh;
-    // Illuminated interior background
-    pRect(ctx, x + 3, sy, w - 6, sh - 3, '#1c1512');
-    // Glass shelf highlight
-    pRect(ctx, x + 3, sy + sh - 3, w - 6, 2, 'rgba(186, 230, 253, 0.4)');
+    const sy = y + topPad + s * shelfH;
 
-    // Specimen fossils on shelf
+    // Shelf interior recess (rich deep navy-black velvet lining)
+    pRect(ctx, x + 4, sy, w - 8, shelfH - 3, '#0f172a');
+
+    // Glass shelf divider with polished bevel highlight
+    pRect(ctx, x + 3, sy + shelfH - 3, w - 6, 2, 'rgba(186, 230, 253, 0.45)');
+    pRect(ctx, x + 4, sy + shelfH - 3, w - 8, 1, 'rgba(255, 255, 255, 0.7)');
+
+    // =======================================================================
+    // SHELF 1 (TOP): Ammonite, Ankylosaur Osteoderm, Amber Gemstone
+    // =======================================================================
     if (s === 0) {
-      // Ammonite spiral & trilobite
-      ctx.fillStyle = '#a8a29e';
+      // 1. Coiled Ribbed Ammonite Fossil
+      const ax = x + 14;
+      const ay = sy + shelfH - 12;
+      ctx.fillStyle = '#a8a29e'; // pearly fossil shell
       ctx.beginPath();
-      ctx.arc(x + 12, sy + sh - 7, 4, 0, Math.PI * 2);
+      ctx.arc(ax + 6, ay + 6, 6, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#78716c';
-      pRect(ctx, x + 24, sy + sh - 8, 7, 5, '#78716c');
-    } else if (s === 1) {
-      // Triceratops horn core & osteoderm
-      ctx.fillStyle = '#d6d3d1';
+      ctx.strokeStyle = '#57534e';
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(x + 10, sy + sh - 4);
-      ctx.lineTo(x + 16, sy + sh - 11);
-      ctx.lineTo(x + 18, sy + sh - 4);
+      ctx.arc(ax + 6, ay + 6, 4, 0, Math.PI * 1.6);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(ax + 6, ay + 6, 2, 0, Math.PI * 1.2);
+      ctx.stroke();
+
+      // 2. Ankylosaurus Osteoderm Shield Plate
+      const ox = x + 48;
+      const oy = sy + shelfH - 11;
+      ctx.fillStyle = '#78716c'; // dense pitted cortical bone
+      ctx.beginPath();
+      ctx.moveTo(ox, oy + 8);
+      ctx.lineTo(ox + 8, oy); // dorsal peaked keel
+      ctx.lineTo(ox + 16, oy + 8);
       ctx.closePath();
       ctx.fill();
-    } else {
-      // Prenocephale dome specimen (The mystery discovery!)
-      ctx.fillStyle = '#e7e5e4';
+      // Keel ridge highlight
+      ctx.strokeStyle = '#a8a29e';
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.arc(x + 20, sy + sh - 6, 5, Math.PI, 0);
-      ctx.fill();
-      pRect(ctx, x + 15, sy + sh - 6, 10, 3, '#d6d3d1');
+      ctx.moveTo(ox + 8, oy);
+      ctx.lineTo(ox + 8, oy + 8);
+      ctx.stroke();
 
-      // Subtle sparkle twinkle if undiscovered!
+      // 3. Honey-Gold Amber Cabochon with Preserved Prehistoric Insect
+      const ambX = x + 88;
+      const ambY = sy + shelfH - 12;
+      ctx.fillStyle = '#f59e0b'; // glowing amber
+      ctx.beginPath();
+      ctx.ellipse(ambX + 6, ambY + 6, 6, 5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fbbf24'; // inner jewel light
+      ctx.beginPath();
+      ctx.ellipse(ambX + 5, ambY + 5, 4, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Tiny fossilized insect silhouette inside amber
+      ctx.fillStyle = '#451a03';
+      ctx.fillRect(ambX + 5, ambY + 5, 2, 2);
+      ctx.fillRect(ambX + 4, ambY + 6, 4, 1);
+    }
+
+    // =======================================================================
+    // SHELF 2 (MIDDLE): Triceratops Horn Core, Theropod Tooth, Trilobite Matrix
+    // =======================================================================
+    else if (s === 1) {
+      // 1. Triceratops Brow Horn Core mounted on brass display pegs
+      const hx = x + 16;
+      const hy = sy + shelfH - 13;
+      pRect(ctx, hx + 4, hy + 8, 2, 4, '#ca8a04'); // brass peg
+      pRect(ctx, hx + 14, hy + 8, 2, 4, '#ca8a04');
+      // Curving horn core
+      ctx.fillStyle = '#e7e5e4'; // pale bone
+      ctx.beginPath();
+      ctx.moveTo(hx, hy + 8);
+      ctx.quadraticCurveTo(hx + 10, hy - 4, hx + 22, hy + 2);
+      ctx.quadraticCurveTo(hx + 12, hy + 1, hx + 2, hy + 9);
+      ctx.closePath();
+      ctx.fill();
+
+      // 2. Serrated Tyrannosaur Theropod Tooth
+      const tx = x + 54;
+      const ty = sy + shelfH - 12;
+      ctx.fillStyle = '#44403c'; // dark root
+      ctx.fillRect(tx + 2, ty + 5, 6, 5);
+      ctx.fillStyle = '#f5f5f4'; // ivory crown
+      ctx.beginPath();
+      ctx.moveTo(tx + 2, ty + 5);
+      ctx.quadraticCurveTo(tx + 4, ty - 1, tx + 9, ty);
+      ctx.lineTo(tx + 7, ty + 5);
+      ctx.closePath();
+      ctx.fill();
+
+      // 3. Segmented Trilobite Fossil Slab
+      const tbx = x + 84;
+      const tby = sy + shelfH - 11;
+      pRect(ctx, tbx, tby, 18, 9, '#52525b'); // limestone matrix
+      pRect(ctx, tbx + 4, tby + 2, 10, 6, '#27272a'); // trilobite body
+      // Segment ribs
+      ctx.fillStyle = '#71717a';
+      ctx.fillRect(tbx + 5, tby + 3, 8, 1);
+      ctx.fillRect(tbx + 5, tby + 5, 8, 1);
+    }
+
+    // =======================================================================
+    // SHELF 3 (BOTTOM): The Asian Pachycephalosaur "Prenocephale brevis"
+    // =======================================================================
+    else {
+      const px = x + 38;
+      const py = sy + shelfH - 14;
+
       if (hasUndiscovered) {
-        const sparklePhase = (timeMs * 0.003) % (Math.PI * 2);
-        const alpha = Math.max(0, Math.sin(sparklePhase));
-        if (alpha > 0.05) {
-          ctx.fillStyle = `rgba(253, 224, 71, ${alpha})`;
-          const sx = x + 26;
-          const sySparkle = sy + sh - 12;
-          ctx.fillRect(sx - 1, sySparkle, 3, 1);
-          ctx.fillRect(sx, sySparkle - 1, 1, 3);
+        // UNDISCOVERED: Mysterious glass cloche bell jar with celestial starlight shimmer!
+        // Brass base plate
+        pRect(ctx, px, py + 10, 26, 3, '#ca8a04');
+        pRect(ctx, px + 1, py + 10, 24, 1, '#fde047');
+
+        // Glass cloche bell dome
+        ctx.fillStyle = 'rgba(186, 230, 253, 0.22)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(px + 13, py + 6, 9, Math.PI, 0);
+        ctx.lineTo(px + 22, py + 10);
+        ctx.lineTo(px + 4, py + 10);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Shrouded specimen silhouette inside
+        ctx.fillStyle = '#475569';
+        ctx.beginPath();
+        ctx.arc(px + 13, py + 7, 5, Math.PI, 0);
+        ctx.fill();
+
+        // Pulsating Golden Curiosity Rune ("?")
+        const pulse = Math.sin(timeMs * 0.007) * 0.35 + 0.65;
+        ctx.fillStyle = `rgba(253, 224, 71, ${pulse})`;
+        ctx.font = 'bold 9px monospace';
+        ctx.fillText('?', px + 11, py + 4);
+
+        // Animated Twinkling Constellation Stars
+        const starPhase = (timeMs * 0.004) % (Math.PI * 2);
+        const sAlpha = Math.max(0, Math.sin(starPhase));
+        if (sAlpha > 0.1) {
+          ctx.fillStyle = `rgba(254, 240, 138, ${sAlpha})`;
+          ctx.fillRect(px + 26, py + 2, 3, 1);
+          ctx.fillRect(px + 27, py + 1, 1, 3);
+          ctx.fillRect(px - 4, py + 5, 2, 2);
         }
+      } else {
+        // DISCOVERED: The Distinct Asian Globular Prenocephale Skull Dome!
+        // Royal purple velvet cushion
+        pRect(ctx, px - 2, py + 7, 28, 5, '#581c87');
+        pRect(ctx, px - 1, py + 8, 26, 3, '#7e22ce');
+
+        // Prenocephale Steep Globular Dome
+        ctx.fillStyle = '#f5f5f4'; // pristine ivory fossil bone
+        ctx.beginPath();
+        ctx.arc(px + 12, py + 7, 7, Math.PI, 0);
+        ctx.fill();
+
+        // Row of small bony tubercles on rear skull margin
+        ctx.fillStyle = '#d6d3d1';
+        ctx.fillRect(px + 5, py + 6, 2, 2);
+        ctx.fillRect(px + 8, py + 6, 2, 2);
+        ctx.fillRect(px + 14, py + 6, 2, 2);
+        ctx.fillRect(px + 17, py + 6, 2, 2);
+
+        // Miniature polished brass museum plaque
+        pRect(ctx, px + 2, py + 12, 20, 3, '#ca8a04');
+        pRect(ctx, px + 3, py + 12, 18, 1, '#fde047');
       }
+
+      // Brass Jeweler's Loupe & Leather Field Notebook on shelf right
+      const jx = x + 88;
+      const jy = sy + shelfH - 12;
+      pRect(ctx, jx, jy + 2, 14, 9, '#78350f'); // brown leather notebook
+      pRect(ctx, jx + 1, jy + 3, 12, 7, '#fef3c7'); // notebook pages
+      // Brass loupe ring
+      ctx.strokeStyle = '#eab308';
+      ctx.lineWidth = 1.2;
+      ctx.strokeRect(jx + 16, jy + 1, 6, 6);
+      pRect(ctx, jx + 22, jy + 6, 4, 1.5, '#78350f'); // wooden handle
     }
   }
 
-  // Brass handle on vertical frame
-  pRect(ctx, x + Math.floor(w / 2) - 1, y + Math.floor(h / 2) - 3, 2, 6, '#d97706');
+  // 2. Beveled Glass Doors with Brass Corner Hinges & Center Handles
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x + 4, y + 6, w - 8, h - 10);
+  // Center vertical glass division bar
+  pRect(ctx, x + Math.floor(w / 2) - 1, y + 6, 2, h - 10, '#24120a');
+  // Twin brass door handles
+  pRect(ctx, x + Math.floor(w / 2) - 3, y + Math.floor(h / 2) - 4, 2, 8, '#eab308');
+  pRect(ctx, x + Math.floor(w / 2) + 1, y + Math.floor(h / 2) - 4, 2, 8, '#eab308');
+  // Brass corner bracket accents
+  pRect(ctx, x + 3, y + 5, 4, 4, '#ca8a04');
+  pRect(ctx, x + w - 7, y + 5, 4, 4, '#ca8a04');
+  pRect(ctx, x + 3, y + h - 8, 4, 4, '#ca8a04');
+  pRect(ctx, x + w - 7, y + h - 8, 4, 4, '#ca8a04');
 }
 
-// Draw Display Pedestal
+// Draw Marble Display Pedestal with Featured Specimen
 export function drawPedestal(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   featuredName: string | null
 ) {
-  // Marble/dark wood column
-  pRect(ctx, x + 3, y + 2, 26, 6, '#475569'); // top cap
-  pRect(ctx, x + 4, y + 3, 24, 1, '#94a3b8'); // highlight
-  pRect(ctx, x + 6, y + 8, 20, 20, '#334155'); // shaft
-  pRect(ctx, x + 7, y + 8, 2, 20, '#64748b'); // fluting line
+  // Classical Fluted Marble Pedestal Column
+  pRect(ctx, x + 2, y + 2, 28, 6, '#475569'); // top cap
+  pRect(ctx, x + 3, y + 3, 26, 1, '#94a3b8'); // highlight
+  pRect(ctx, x + 5, y + 8, 22, 20, '#334155'); // shaft
+  // Fluting vertical shadow lines
+  pRect(ctx, x + 7, y + 8, 2, 20, '#64748b');
   pRect(ctx, x + 12, y + 8, 2, 20, '#64748b');
   pRect(ctx, x + 17, y + 8, 2, 20, '#64748b');
-  pRect(ctx, x + 2, y + 28, 28, 6, '#1e293b'); // base
+  pRect(ctx, x + 22, y + 8, 2, 20, '#64748b');
+  pRect(ctx, x + 1, y + 28, 30, 6, '#1e293b'); // base plinth
+  pRect(ctx, x + 2, y + 28, 28, 1, '#475569');
 
-  // If featured specimen is placed on pedestal:
+  // If featured specimen is placed on pedestal (e.g. newly discovered Prenocephale):
   if (featuredName) {
-    // Velvet display cushion
-    pRect(ctx, x + 5, y - 2, 22, 5, '#7f1d1d');
-    // Specimen dome on cushion
-    ctx.fillStyle = '#f5f5f4';
+    // Royal Velvet Display Cushion
+    pRect(ctx, x + 4, y - 3, 24, 6, '#581c87');
+    pRect(ctx, x + 5, y - 2, 22, 4, '#7e22ce');
+
+    // High-Fidelity Prenocephale Globular Skull Dome
+    ctx.fillStyle = '#f5f5f4'; // pristine ivory fossil bone
     ctx.beginPath();
-    ctx.arc(x + 16, y - 4, 7, Math.PI, 0);
+    ctx.arc(x + 16, y - 4, 8, Math.PI, 0);
     ctx.fill();
-    // Tiny label placard
-    pRect(ctx, x + 8, y + 14, 16, 6, '#d97706');
-    pRect(ctx, x + 9, y + 15, 14, 4, '#fef3c7');
+
+    // Row of small bony tubercles along rear rim
+    ctx.fillStyle = '#d6d3d1';
+    ctx.fillRect(x + 9, y - 5, 2, 2);
+    ctx.fillRect(x + 12, y - 5, 2, 2);
+    ctx.fillRect(x + 18, y - 5, 2, 2);
+    ctx.fillRect(x + 21, y - 5, 2, 2);
+
+    // Polished Brass Museum Placard on Pedestal Face
+    pRect(ctx, x + 6, y + 13, 20, 8, '#b45309');
+    pRect(ctx, x + 7, y + 14, 18, 6, '#fef3c7');
+    // Mini black placard lettering
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(x + 9, y + 16, 14, 1);
+    ctx.fillRect(x + 10, y + 18, 12, 1);
   }
 }
 
