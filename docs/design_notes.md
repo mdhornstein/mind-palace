@@ -54,6 +54,19 @@ A dedicated space to record hands-on observations, experiential impressions, des
 
 ---
 
+### 2026-09-04 — Track 1 Visual Polish & Architectural Modularization
+* **Visual Polish**:
+  * Moved window clear of the bookshelf into a balanced twin arched-window layout.
+  * Added prominent CRT monitor on the workstation displaying animated von Mises stress contours with wireframe toggle and status indicators.
+  * Enhanced fossil cabinet and reading nook table sprites for greater legibility.
+  * Added procedural crackling hearth audio with toggle and a sliding "Time Warp" drawer.
+* **Architecture Modularization**:
+  * Extracted hardcoded furniture logic across 4 files into self-contained `WorldStation` entities (`bookshelf.ts`, `readingNook.ts`, `curioCabinet.ts`, `pedestal.ts`, `workstation.ts`).
+  * Introduced `RoomConfig` and `RoomRegistry` supporting multi-room topologies (Study, future Observatory, etc.).
+  * Adding new stations or experimental rooms is now completely data-driven without modifying engine loop code.
+
+---
+
 ## 4. Design Ideas & Potential Directions
 
 ### Atmosphere & Ambience
