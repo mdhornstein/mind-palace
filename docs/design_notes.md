@@ -1652,8 +1652,10 @@ The important thing is that **we are no longer asking "what feature should we ad
 
 
 
-* Animal system; chimeras; bestiary 
-* Could have books in the library 
+* Animal system; chimeras; bestiary; genetic engineering bay (inspried by Stan's donuts book)
+* Could have books in the library that give hints about what to do in the world 
+* Automatons; build them, and they do various things, like a cleaning robot 
+* Engineering bay 
 
 
 * Study

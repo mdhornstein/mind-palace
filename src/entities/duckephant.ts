@@ -143,35 +143,43 @@ export class Duckephant {
    */
   public renderHomeMat(ctx: CanvasRenderingContext2D) {
     const mx = Math.floor(this.homeX);
-    const my = Math.floor(this.homeY + 6);
+    const my = Math.floor(this.homeY + 8);
 
-    // Braided woven reed pet rug with warm firelight sheen
     ctx.save();
-    ctx.fillStyle = 'rgba(15, 8, 4, 0.4)';
+    // Soft contact shadow of the large mat
+    ctx.fillStyle = 'rgba(10, 5, 2, 0.45)';
     ctx.beginPath();
-    ctx.ellipse(mx, my + 2, 22, 11, 0, 0, Math.PI * 2);
+    ctx.ellipse(mx, my + 3, 30, 15, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Outer braided border
+    // Dark woven outer border (outline)
+    ctx.fillStyle = '#451a03';
+    ctx.beginPath();
+    ctx.ellipse(mx, my, 28, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Braided golden-bronze border
     ctx.fillStyle = '#92400e';
     ctx.beginPath();
-    ctx.ellipse(mx, my, 20, 10, 0, 0, Math.PI * 2);
+    ctx.ellipse(mx, my, 26, 12.5, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Inner patterned woven mat
+    // Inner patterned woven reed mat
     ctx.fillStyle = '#b45309';
     ctx.beginPath();
-    ctx.ellipse(mx, my, 17, 8, 0, 0, Math.PI * 2);
+    ctx.ellipse(mx, my, 23, 10.5, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Center cozy rosette
-    ctx.fillStyle = '#fef08a';
-    ctx.fillRect(mx - 1, my - 1, 3, 2);
+    // Hearth firelight center medallion
+    ctx.fillStyle = '#fde047';
+    ctx.fillRect(mx - 2, my - 1, 5, 3);
+    ctx.fillStyle = '#d97706';
+    ctx.fillRect(mx - 1, my, 3, 1);
     ctx.restore();
   }
 
   /**
-   * Render the Duckephant sprite (with animated waddle, trunk, ears, tusks)
+   * Render the Duckephant sprite (with animated waddle, trunk, ears, tusks, and Stardew dark outline)
    */
   public render(ctx: CanvasRenderingContext2D, timeMs: number) {
     const bx = Math.floor(this.x);
@@ -183,14 +191,14 @@ export class Duckephant {
     const isHappy = this.activity === 'happy';
     const isNapping = this.activity === 'napping';
 
-    const breath = Math.sin(timeMs * 0.004) * 0.8;
-    const waddleBob = isMoving ? Math.abs(Math.sin(this.walkStep * 2)) * 1.5 : 0;
-    const waddleTilt = isMoving ? Math.sin(this.walkStep * 2) * 0.08 : 0;
+    const breath = Math.sin(timeMs * 0.0035) * 1.2;
+    const waddleBob = isMoving ? Math.abs(Math.sin(this.walkStep * 2)) * 2.2 : 0;
+    const waddleTilt = isMoving ? Math.sin(this.walkStep * 2) * 0.1 : 0;
 
-    // 1. Soft Contact Shadow
-    ctx.fillStyle = 'rgba(12, 6, 3, 0.5)';
+    // 1. Heavy Stardew Ground Shadow
+    ctx.fillStyle = 'rgba(10, 5, 2, 0.6)';
     ctx.beginPath();
-    ctx.ellipse(bx, by + 10, 10, 4.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(bx, by + 14, 15, 6, 0, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.save();
@@ -200,102 +208,143 @@ export class Duckephant {
     }
     ctx.rotate(waddleTilt);
 
-    const py = Math.floor(-waddleBob - (isNapping ? 1 : breath));
+    const py = Math.floor(-waddleBob - (isNapping ? 2 : breath));
 
-    // 2. Orange Webbed Feet
+    // Dark contour outline color (Stardew signature silhouette)
+    const OUTLINE = '#170c06';
+    const ELEPHANT_OUTLINE = '#0f172a';
+
+    // =========================================================================
+    // 2. ORANGE WEBBED FEET (with dark outline)
+    // =========================================================================
     if (!isNapping) {
-      const footL = isMoving ? Math.sin(this.walkStep * 2) * 2.5 : 0;
-      const footR = isMoving ? -Math.sin(this.walkStep * 2) * 2.5 : 0;
+      const footL = isMoving ? Math.sin(this.walkStep * 2) * 3.5 : 0;
+      const footR = isMoving ? -Math.sin(this.walkStep * 2) * 3.5 : 0;
 
-      // Left foot
-      pRect(ctx, -6 + footL, 8, 4, 2, '#ea580c');
-      pRect(ctx, -7 + footL, 9, 6, 2, '#f97316');
+      // Left Foot (Front)
+      pRect(ctx, -10 + footL, 10, 8, 5, OUTLINE);
+      pRect(ctx, -9 + footL, 11, 6, 3, '#ea580c');
+      pRect(ctx, -10 + footL, 13, 7, 2, '#f97316'); // webbed toe tips
 
-      // Right foot
-      pRect(ctx, 1 + footR, 8, 4, 2, '#c2410c');
-      pRect(ctx, 0 + footR, 9, 6, 2, '#ea580c');
+      // Right Foot (Rear)
+      pRect(ctx, 3 + footR, 10, 8, 5, OUTLINE);
+      pRect(ctx, 4 + footR, 11, 6, 3, '#c2410c');
+      pRect(ctx, 3 + footR, 13, 7, 2, '#ea580c');
     }
 
-    // 3. Plump Feathered Duck Body
-    // Rear tail feathers
-    pRect(ctx, 6, py - 4, 5, 4, '#854d0e');
-    pRect(ctx, 8, py - 6, 4, 3, '#a16207');
-    pRect(ctx, 9, py - 7, 2, 2, '#ca8a04');
+    // =========================================================================
+    // 3. PLUMP FEATHERED DUCK BODY (with dark outline)
+    // =========================================================================
+    // Tail Feathers Silhouette Outline
+    pRect(ctx, 9, py - 9, 8, 7, OUTLINE);
+    pRect(ctx, 13, py - 12, 6, 6, OUTLINE);
+    // Tail Feathers Fill
+    pRect(ctx, 10, py - 8, 6, 5, '#854d0e');
+    pRect(ctx, 14, py - 11, 4, 4, '#ca8a04');
+    pRect(ctx, 11, py - 6, 4, 3, '#eab308');
 
-    // Main torso
-    pRect(ctx, -4, py - 5, 12, 12, '#ca8a04'); // base golden-brown
-    pRect(ctx, -2, py - 4, 11, 10, '#eab308'); // warm feather highlight
-    pRect(ctx, -4, py + 1, 8, 5, '#fef08a');   // soft light breast feathers
-    pRect(ctx, 1, py - 2, 6, 5, '#a16207');    // wing covert plumage
+    // Main Torso Silhouette Outline
+    pRect(ctx, -7, py - 9, 19, 19, OUTLINE);
 
-    // 4. Slate-Gray Elephant Head
-    const hx = -6;
-    const hy = py - 8;
+    // Torso Fill & Feathers
+    pRect(ctx, -6, py - 8, 17, 17, '#ca8a04'); // base golden-buff
+    pRect(ctx, -4, py - 6, 14, 14, '#eab308'); // warm golden body
+    pRect(ctx, -6, py + 1, 10, 8, '#fef08a');  // cream breast plumage
 
-    pRect(ctx, hx - 5, hy - 1, 9, 10, '#475569'); // head base
-    pRect(ctx, hx - 4, hy, 8, 8, '#64748b');     // forehead & cheek
-    pRect(ctx, hx - 3, hy + 1, 6, 4, '#94a3b8'); // soft cranial brow
+    // Wing Covert Wing Flap
+    pRect(ctx, 0, py - 3, 9, 8, '#854d0e');   // wing shadow
+    pRect(ctx, 1, py - 2, 7, 6, '#b45309');   // wing plumage
+    pRect(ctx, 3, py - 1, 4, 4, '#fde047');   // wing tip highlight
 
-    // Floppy Ear
-    const earWiggle = Math.sin(timeMs * 0.003) * 1.2;
-    pRect(ctx, hx + 1, hy - 1 + earWiggle, 5, 8, '#475569');
-    pRect(ctx, hx + 2, hy + 1 + earWiggle, 3, 5, '#fda4af'); // pink inner ear
+    // =========================================================================
+    // 4. SLATE-GRAY ELEPHANT HEAD (with dark outline)
+    // =========================================================================
+    const hx = -9;
+    const hy = py - 13;
 
-    // Expressive Eye
+    // Head Silhouette Outline
+    pRect(ctx, hx - 8, hy - 2, 15, 16, ELEPHANT_OUTLINE);
+
+    // Head Base Fill
+    pRect(ctx, hx - 7, hy - 1, 13, 14, '#475569'); // slate shadow
+    pRect(ctx, hx - 6, hy, 11, 12, '#64748b');     // forehead & cheek
+    pRect(ctx, hx - 5, hy + 1, 8, 6, '#94a3b8');   // light brow highlight
+
+    // Large Floppy Ear (animated ear twitch)
+    const earTwitch = Math.sin(timeMs * 0.004) * 2;
+    // Ear Outline
+    pRect(ctx, hx + 3, hy - 2 + earTwitch, 8, 13, ELEPHANT_OUTLINE);
+    // Ear Fill
+    pRect(ctx, hx + 4, hy - 1 + earTwitch, 6, 11, '#475569');
+    pRect(ctx, hx + 5, hy + 2 + earTwitch, 4, 7, '#fda4af'); // pink inner ear
+
+    // Expressive Large Eye
     if (isNapping) {
-      // Sleeping happy curve
-      pRect(ctx, hx - 3, hy + 3, 3, 1, '#1e293b');
+      // Happy sleeping curve
+      pRect(ctx, hx - 4, hy + 4, 4, 2, '#0f172a');
     } else {
-      pRect(ctx, hx - 3, hy + 2, 2, 3, '#0f172a');
-      pRect(ctx, hx - 3, hy + 2, 1, 1, '#ffffff'); // bright glint
+      // Big expressive Stardew eye
+      pRect(ctx, hx - 5, hy + 3, 4, 4, '#0f172a');
+      pRect(ctx, hx - 5, hy + 3, 2, 2, '#ffffff'); // bright glint
+      pRect(ctx, hx - 4, hy + 2, 2, 1, '#1e293b'); // eyebrow
     }
 
     // Twin Curved Ivory Tusks
-    pRect(ctx, hx - 6, hy + 6, 3, 2, '#fefce8');
-    pRect(ctx, hx - 7, hy + 5, 2, 2, '#fffbeb');
-    pRect(ctx, hx - 8, hy + 4, 2, 2, '#fef08a');
+    pRect(ctx, hx - 9, hy + 8, 5, 4, ELEPHANT_OUTLINE);
+    pRect(ctx, hx - 8, hy + 9, 3, 2, '#fefce8');
+    pRect(ctx, hx - 10, hy + 7, 3, 2, '#fffbeb');
+    pRect(ctx, hx - 11, hy + 6, 2, 2, '#fde047'); // gold tip
 
-    // 5. Articulated Artful Elephant Mini-Trunk!
-    let trunkWave = Math.sin(timeMs * 0.005) * 2;
+    // =========================================================================
+    // 5. ARTICULATED PROBOSCIS TRUNK (curling with dark outline)
+    // =========================================================================
+    let trunkWave = Math.sin(timeMs * 0.005) * 3;
     if (isHappy) {
-      // High ecstatic trunk curl!
-      trunkWave = 5 + Math.sin(timeMs * 0.015) * 2;
+      trunkWave = 8 + Math.sin(timeMs * 0.015) * 3;
     } else if (isNapping) {
-      trunkWave = -1;
+      trunkWave = -2;
     }
 
-    // Trunk base
-    pRect(ctx, hx - 7, hy + 4, 3, 3, '#64748b');
-    // Trunk mid-shaft
-    pRect(ctx, hx - 9, hy + 5 - trunkWave * 0.4, 3, 3, '#475569');
-    // Trunk curl tip
-    pRect(ctx, hx - 11, hy + 4 - trunkWave * 0.8, 3, 2, '#64748b');
-    pRect(ctx, hx - 10, hy + 3 - trunkWave * 1.0, 2, 2, '#94a3b8');
+    // Trunk Base Outline & Fill
+    pRect(ctx, hx - 11, hy + 5, 5, 5, ELEPHANT_OUTLINE);
+    pRect(ctx, hx - 10, hy + 6, 3, 3, '#64748b');
+
+    // Trunk Mid-Shaft
+    pRect(ctx, hx - 14, hy + 7 - trunkWave * 0.4, 5, 5, ELEPHANT_OUTLINE);
+    pRect(ctx, hx - 13, hy + 8 - trunkWave * 0.4, 3, 3, '#475569');
+
+    // Trunk Curled Tip
+    pRect(ctx, hx - 17, hy + 6 - trunkWave * 0.9, 5, 5, ELEPHANT_OUTLINE);
+    pRect(ctx, hx - 16, hy + 7 - trunkWave * 0.9, 3, 3, '#64748b');
+    pRect(ctx, hx - 15, hy + 5 - trunkWave * 1.2, 4, 4, ELEPHANT_OUTLINE);
+    pRect(ctx, hx - 14, hy + 6 - trunkWave * 1.2, 2, 2, '#94a3b8');
 
     ctx.restore();
 
-    // 6. Floating Heart Emotes
+    // =========================================================================
+    // 6. FLOATING HEART EMOTES & SLEEP PARTICLES
+    // =========================================================================
     for (const heart of this.hearts) {
       const hx = Math.floor(heart.x);
       const hy = Math.floor(heart.y);
-      pRect(ctx, hx - 2, hy - 1, 2, 2, `rgba(244, 63, 94, ${heart.alpha})`);
-      pRect(ctx, hx + 1, hy - 1, 2, 2, `rgba(244, 63, 94, ${heart.alpha})`);
-      pRect(ctx, hx - 3, hy, 7, 2, `rgba(244, 63, 94, ${heart.alpha})`);
-      pRect(ctx, hx - 2, hy + 2, 5, 2, `rgba(244, 63, 94, ${heart.alpha})`);
-      pRect(ctx, hx - 1, hy + 4, 3, 1, `rgba(244, 63, 94, ${heart.alpha})`);
-      pRect(ctx, hx, hy + 5, 1, 1, `rgba(244, 63, 94, ${heart.alpha})`);
+      pRect(ctx, hx - 3, hy - 2, 3, 3, `rgba(244, 63, 94, ${heart.alpha})`);
+      pRect(ctx, hx + 1, hy - 2, 3, 3, `rgba(244, 63, 94, ${heart.alpha})`);
+      pRect(ctx, hx - 4, hy, 9, 3, `rgba(244, 63, 94, ${heart.alpha})`);
+      pRect(ctx, hx - 3, hy + 3, 7, 3, `rgba(244, 63, 94, ${heart.alpha})`);
+      pRect(ctx, hx - 2, hy + 6, 5, 2, `rgba(244, 63, 94, ${heart.alpha})`);
+      pRect(ctx, hx - 1, hy + 8, 3, 2, `rgba(244, 63, 94, ${heart.alpha})`);
     }
 
-    // 7. Sleeping 'Z's
     if (isNapping) {
       const zPhase = (timeMs * 0.002) % 3;
       const zAlpha = Math.max(0, Math.sin((zPhase / 3) * Math.PI));
-      const zY = by - 12 - zPhase * 5;
-      const zX = bx + (isLeft ? -8 : 8);
-      pRect(ctx, zX - 2, zY, 5, 1, `rgba(186, 230, 253, ${zAlpha})`);
-      pRect(ctx, zX + 1, zY + 1, 2, 1, `rgba(186, 230, 253, ${zAlpha})`);
-      pRect(ctx, zX - 1, zY + 2, 2, 1, `rgba(186, 230, 253, ${zAlpha})`);
-      pRect(ctx, zX - 2, zY + 3, 5, 1, `rgba(186, 230, 253, ${zAlpha})`);
+      const zY = by - 16 - zPhase * 7;
+      const zX = bx + (isLeft ? -12 : 12);
+      ctx.fillStyle = `rgba(186, 230, 253, ${zAlpha})`;
+      pRect(ctx, zX - 3, zY, 7, 2, `rgba(186, 230, 253, ${zAlpha})`);
+      pRect(ctx, zX + 2, zY + 2, 2, 2, `rgba(186, 230, 253, ${zAlpha})`);
+      pRect(ctx, zX - 1, zY + 4, 3, 2, `rgba(186, 230, 253, ${zAlpha})`);
+      pRect(ctx, zX - 3, zY + 6, 7, 2, `rgba(186, 230, 253, ${zAlpha})`);
     }
   }
 }

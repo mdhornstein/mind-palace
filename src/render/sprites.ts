@@ -1156,6 +1156,10 @@ export function drawPedestal(
 }
 
 // Draw Companion Inhabitant
+// =============================================================================
+// CHARACTERS & ACTORS (Stardew-Proportioned 42-44px Tall with Dark Outlines)
+// =============================================================================
+
 export function drawCompanionSprite(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -1164,52 +1168,87 @@ export function drawCompanionSprite(
   facing: Direction,
   timeMs: number
 ) {
-  const breath = Math.sin(timeMs * 0.003) * 1;
+  const breath = Math.sin(timeMs * 0.003) * 1.5;
+  const OUTLINE = '#170c06';
 
-  // Shadow
-  ctx.fillStyle = 'rgba(12, 8, 5, 0.4)';
+  // 1. Heavy Contact Shadow
+  ctx.fillStyle = 'rgba(12, 8, 5, 0.55)';
   ctx.beginPath();
-  ctx.ellipse(x + 8, y + 24, 7, 3, 0, 0, Math.PI * 2);
+  ctx.ellipse(x + 11, y + 36, 14, 5.5, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Hair & Head
-  pRect(ctx, x + 4, y + 2 - breath, 8, 7, '#44403c'); // dark grey-brown hair
-  pRect(ctx, x + 5, y + 5 - breath, 6, 5, '#fed7aa'); // face tone
+  const by = y - breath;
 
-  // Spectacles
-  ctx.fillStyle = '#ca8a04';
+  // 2. Head & Hair (with dark outline)
+  // Hair Silhouette
+  pRect(ctx, x + 2, by - 1, 18, 14, OUTLINE);
+  pRect(ctx, x + 3, by, 16, 12, '#38322e'); // dark scholar hair
+  pRect(ctx, x + 4, by + 1, 14, 5, '#524b45'); // hair highlights
+
+  // Face Silhouette
+  pRect(ctx, x + 4, by + 5, 14, 11, OUTLINE);
+  pRect(ctx, x + 5, by + 6, 12, 9, '#fed7aa'); // warm face tone
+  pRect(ctx, x + 6, by + 10, 10, 5, '#fdba74'); // subtle cheek shading
+
+  // Gold Spectacles & Expressive Eyes
+  ctx.fillStyle = '#b45309';
   if (facing === 'down' || facing === 'left') {
-    ctx.fillRect(x + 5, y + 6 - breath, 2, 1);
+    pRect(ctx, x + 5, by + 8, 4, 3, '#78350f'); // left rim
+    pRect(ctx, x + 6, by + 9, 2, 2, '#ca8a04'); // gold lens
+    pRect(ctx, x + 7, by + 9, 1, 1, '#0f172a'); // pupil
   }
   if (facing === 'down' || facing === 'right') {
-    ctx.fillRect(x + 8, y + 6 - breath, 2, 1);
+    pRect(ctx, x + 13, by + 8, 4, 3, '#78350f'); // right rim
+    pRect(ctx, x + 14, by + 9, 2, 2, '#ca8a04'); // gold lens
+    pRect(ctx, x + 14, by + 9, 1, 1, '#0f172a'); // pupil
+  }
+  if (facing === 'down') {
+    pRect(ctx, x + 9, by + 9, 4, 1, '#ca8a04'); // bridge
   }
 
-  // Tweed Waistcoat / Cardigan
-  pRect(ctx, x + 3, y + 10 - breath, 10, 8, '#78350f'); // warm brown tweed
-  pRect(ctx, x + 6, y + 10 - breath, 4, 8, '#f8fafc'); // white shirt & cravat
-  pRect(ctx, x + 7, y + 12 - breath, 2, 1, '#1e293b'); // tie knot
+  // 3. Tweed Waistcoat & Jacket (with dark outline)
+  // Coat Silhouette
+  pRect(ctx, x + 1, by + 16, 20, 15, OUTLINE);
+  pRect(ctx, x + 2, by + 17, 18, 13, '#78350f'); // rich brown tweed
+  pRect(ctx, x + 3, by + 18, 4, 11, '#92400e');  // left lapel
+  pRect(ctx, x + 15, by + 18, 4, 11, '#92400e'); // right lapel
 
-  // Trousers
-  pRect(ctx, x + 4, y + 18, 8, 6, '#334155'); // charcoal slates
-  pRect(ctx, x + 4, y + 24, 3, 2, '#1c1917'); // left shoe
-  pRect(ctx, x + 9, y + 24, 3, 2, '#1c1917'); // right shoe
+  // White Shirt & Cravat
+  pRect(ctx, x + 8, by + 17, 6, 12, '#f8fafc');
+  pRect(ctx, x + 9, by + 18, 4, 2, '#dc2626'); // red neck cravat
+  pRect(ctx, x + 10, by + 20, 2, 6, '#b91c1c');
 
-  // Activity props (holding book or magnifying glass)
+  // Brass Buttons
+  pRect(ctx, x + 7, by + 22, 2, 2, '#fbbf24');
+  pRect(ctx, x + 7, by + 26, 2, 2, '#fbbf24');
+
+  // 4. Charcoal Trousers & Shoes (with dark outline)
+  pRect(ctx, x + 3, by + 30, 7, 7, OUTLINE);
+  pRect(ctx, x + 12, by + 30, 7, 7, OUTLINE);
+  pRect(ctx, x + 4, by + 30, 5, 6, '#334155'); // left leg
+  pRect(ctx, x + 13, by + 30, 5, 6, '#334155'); // right leg
+
+  // Dark leather shoes
+  pRect(ctx, x + 3, by + 36, 6, 3, '#1c1917');
+  pRect(ctx, x + 13, by + 36, 6, 3, '#1c1917');
+
+  // 5. Activity Props (Large distinct Crimson Book)
   if (activity === 'reading') {
-    pRect(ctx, x + 1, y + 12, 5, 6, '#991b1b'); // red book in hands
-    pRect(ctx, x + 2, y + 13, 3, 4, '#fef3c7'); // pages
+    pRect(ctx, x - 2, by + 18, 9, 12, OUTLINE);
+    pRect(ctx, x - 1, by + 19, 7, 10, '#991b1b'); // red leather binding
+    pRect(ctx, x + 1, by + 20, 5, 8, '#fef3c7');  // parchment pages
+    pRect(ctx, x + 2, by + 22, 3, 1, '#78350f');  // text lines
+    pRect(ctx, x + 2, by + 24, 3, 1, '#78350f');
   } else if (activity === 'examining_fossil') {
-    // Magnifying glass
-    ctx.strokeStyle = '#d97706';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x + 11, y + 11, 3, 3);
-    ctx.fillStyle = 'rgba(186, 230, 253, 0.5)';
-    ctx.fillRect(x + 11, y + 11, 3, 3);
+    // Large Brass Magnifying Glass
+    pRect(ctx, x + 16, by + 16, 8, 8, OUTLINE);
+    pRect(ctx, x + 17, by + 17, 6, 6, '#d97706');
+    pRect(ctx, x + 18, by + 18, 4, 4, 'rgba(186, 230, 253, 0.75)');
+    pRect(ctx, x + 21, by + 23, 3, 6, '#78350f'); // wooden handle
   }
 }
 
-// Draw Player Character with high-visibility, 4-directional walk and idle animation
+// Draw Player Character with high-visibility, 4-directional walk and Stardew proportions
 export function drawPlayerSprite(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -1218,82 +1257,121 @@ export function drawPlayerSprite(
   isMoving: boolean,
   walkFrame: number
 ) {
-  const cx = x + 10;
-  const cy = y + 28;
+  const cx = x + 11;
+  const cy = y + 36;
+  const OUTLINE = '#090d16';
 
-  // 1. Soft Luminous Player Beacon Ring (ensures immediate visibility)
-  const pulse = Math.sin(walkFrame * 0.15) * 2;
+  // 1. Luminous Player Beacon Ring (enlarged for Stardew proportions)
+  const pulse = Math.sin(walkFrame * 0.15) * 2.5;
   ctx.save();
-  ctx.strokeStyle = 'rgba(245, 158, 11, 0.45)';
-  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
+  ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.ellipse(cx, cy, 14 + pulse, 6 + pulse * 0.4, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx, cy, 20 + pulse, 8 + pulse * 0.4, 0, 0, Math.PI * 2);
   ctx.stroke();
 
-  // Soft shadow
-  ctx.fillStyle = 'rgba(10, 6, 4, 0.55)';
+  // Heavy Ground Shadow
+  ctx.fillStyle = 'rgba(10, 6, 4, 0.65)';
   ctx.beginPath();
-  ctx.ellipse(cx, cy, 10, 4.5, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx, cy, 14, 5.5, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 
-  const step1 = isMoving ? Math.sin(walkFrame * 0.8) * 4 : 0;
-  const step2 = isMoving ? -Math.sin(walkFrame * 0.8) * 4 : 0;
-  const bodyBob = isMoving ? Math.abs(Math.sin(walkFrame * 0.8)) * 1.5 : 0;
+  const step1 = isMoving ? Math.sin(walkFrame * 0.8) * 5 : 0;
+  const step2 = isMoving ? -Math.sin(walkFrame * 0.8) * 5 : 0;
+  const bodyBob = isMoving ? Math.abs(Math.sin(walkFrame * 0.8)) * 2 : 0;
 
-  const bx = x + 1;
+  const bx = x;
   const by = y - bodyBob;
 
-  // 2. Head & Hair (distinct, clean silhouette)
-  pRect(ctx, bx + 5, by + 1, 10, 8, '#1c1917'); // dark styled hair
-  pRect(ctx, bx + 6, by + 5, 8, 7, '#ffedd5'); // face
+  // =========================================================================
+  // 2. HEAD & STYLED HAIR (with dark outline)
+  // =========================================================================
+  // Hair Silhouette Outline
+  pRect(ctx, bx + 3, by - 2, 16, 14, OUTLINE);
+  pRect(ctx, bx + 4, by - 1, 14, 12, '#1c1917'); // dark styled hair
+  pRect(ctx, bx + 5, by, 12, 5, '#292524');      // hair sheen
 
-  // Eyes and Facing Direction
+  // Face Silhouette Outline
+  pRect(ctx, bx + 5, by + 5, 12, 11, OUTLINE);
+  pRect(ctx, bx + 6, by + 6, 10, 9, '#ffedd5'); // face skin tone
+  pRect(ctx, bx + 7, by + 10, 8, 4, '#fed7aa'); // chin & cheek shadow
+
+  // Expressive Stardew Eyes
   ctx.fillStyle = '#0f172a';
   if (facing === 'down') {
-    ctx.fillRect(bx + 7, by + 7, 2, 2);
-    ctx.fillRect(bx + 11, by + 7, 2, 2);
-    // Gold spectacle frames
-    ctx.fillStyle = '#d97706';
-    ctx.fillRect(bx + 6, by + 6, 4, 1);
-    ctx.fillRect(bx + 10, by + 6, 4, 1);
+    pRect(ctx, bx + 7, by + 8, 3, 3, '#0f172a');
+    pRect(ctx, bx + 7, by + 8, 1, 1, '#ffffff'); // glint
+    pRect(ctx, bx + 12, by + 8, 3, 3, '#0f172a');
+    pRect(ctx, bx + 12, by + 8, 1, 1, '#ffffff');
+
+    // Gold spectacles
+    pRect(ctx, bx + 6, by + 7, 5, 1, '#d97706');
+    pRect(ctx, bx + 11, by + 7, 5, 1, '#d97706');
+    pRect(ctx, bx + 10, by + 8, 2, 1, '#d97706');
   } else if (facing === 'left') {
-    ctx.fillRect(bx + 6, by + 7, 2, 2);
-    ctx.fillStyle = '#d97706';
-    ctx.fillRect(bx + 5, by + 6, 4, 1);
+    pRect(ctx, bx + 6, by + 8, 3, 3, '#0f172a');
+    pRect(ctx, bx + 6, by + 8, 1, 1, '#ffffff');
+    pRect(ctx, bx + 5, by + 7, 5, 1, '#d97706');
   } else if (facing === 'right') {
-    ctx.fillRect(bx + 12, by + 7, 2, 2);
-    ctx.fillStyle = '#d97706';
-    ctx.fillRect(bx + 11, by + 6, 4, 1);
+    pRect(ctx, bx + 13, by + 8, 3, 3, '#0f172a');
+    pRect(ctx, bx + 13, by + 8, 1, 1, '#ffffff');
+    pRect(ctx, bx + 12, by + 7, 5, 1, '#d97706');
   } else {
-    // Up - back of hair
-    pRect(ctx, bx + 5, by + 3, 10, 8, '#1c1917');
+    // Up: Full rear hair silhouette
+    pRect(ctx, bx + 4, by + 2, 14, 13, '#1c1917');
+    pRect(ctx, bx + 5, by + 4, 12, 10, '#292524');
   }
 
-  // 3. Vibrant Scholar Coat (Royal Blue + Gold Trim for high visibility)
-  pRect(ctx, bx + 3, by + 12, 14, 11, '#2563eb'); // rich royal blue coat
-  pRect(ctx, bx + 7, by + 12, 6, 11, '#f8fafc'); // crisp white shirt & lapel
-  pRect(ctx, bx + 9, by + 13, 2, 5, '#dc2626'); // red necktie/cravat
+  // =========================================================================
+  // 3. ROYAL BLUE SCHOLAR COAT (with gold trim and dark outline)
+  // =========================================================================
+  // Coat Silhouette Outline
+  pRect(ctx, bx + 1, by + 15, 20, 16, OUTLINE);
 
-  // Gold coat buttons & border trim
-  pRect(ctx, bx + 3, by + 12, 14, 1, '#fbbf24');
-  pRect(ctx, bx + 3, by + 22, 14, 1, '#fbbf24');
-  pRect(ctx, bx + 9, by + 19, 2, 2, '#fbbf24');
+  // Rich Royal Blue Base
+  pRect(ctx, bx + 2, by + 16, 18, 14, '#2563eb');
+  pRect(ctx, bx + 4, by + 17, 14, 12, '#3b82f6'); // bright front velvet
 
-  // Coat tails / arms swinging
+  // White Lapels & Shirt
+  pRect(ctx, bx + 8, by + 16, 6, 13, '#f8fafc');
+  // Crimson Cravat
+  pRect(ctx, bx + 10, by + 17, 2, 6, '#dc2626');
+
+  // Gold Coat Trim & Brass Buttons
+  pRect(ctx, bx + 2, by + 16, 18, 1.5, '#fbbf24'); // gold collar trim
+  pRect(ctx, bx + 2, by + 29, 18, 1.5, '#fbbf24'); // gold hem trim
+  pRect(ctx, bx + 10, by + 24, 2, 2, '#fbbf24');   // button 1
+  pRect(ctx, bx + 10, by + 27, 2, 2, '#fbbf24');   // button 2
+
+  // Coat Sleeves & Arms (animated walking swing)
   if (isMoving) {
-    pRect(ctx, bx + 1, by + 13 - step1 * 0.5, 3, 9, '#1d4ed8');
-    pRect(ctx, bx + 16, by + 13 - step2 * 0.5, 3, 9, '#1d4ed8');
+    pRect(ctx, bx - 1, by + 17 - step1 * 0.6, 4, 11, OUTLINE);
+    pRect(ctx, bx, by + 18 - step1 * 0.6, 2, 9, '#1d4ed8');
+    pRect(ctx, bx + 19, by + 17 - step2 * 0.6, 4, 11, OUTLINE);
+    pRect(ctx, bx + 20, by + 18 - step2 * 0.6, 2, 9, '#1d4ed8');
   } else {
-    pRect(ctx, bx + 1, by + 13, 3, 9, '#1d4ed8');
-    pRect(ctx, bx + 16, by + 13, 3, 9, '#1d4ed8');
+    pRect(ctx, bx - 1, by + 17, 4, 11, OUTLINE);
+    pRect(ctx, bx, by + 18, 2, 9, '#1d4ed8');
+    pRect(ctx, bx + 19, by + 17, 4, 11, OUTLINE);
+    pRect(ctx, bx + 20, by + 18, 2, 9, '#1d4ed8');
   }
 
-  // 4. Legs & Boots (animated stride)
-  pRect(ctx, bx + 5, by + 23, 4, 6 + step1, '#1e293b'); // left leg
-  pRect(ctx, bx + 11, by + 23, 4, 6 + step2, '#1e293b'); // right leg
-  pRect(ctx, bx + 4, by + 29 + step1, 5, 3, '#0f172a'); // left boot
-  pRect(ctx, bx + 11, by + 29 + step2, 5, 3, '#0f172a'); // right boot
+  // =========================================================================
+  // 4. CHARCOAL LEGS & LEATHER STRIDE BOOTS (with dark outline)
+  // =========================================================================
+  // Left Leg Outline & Fill
+  pRect(ctx, bx + 4, by + 30, 5, 8 + step1, OUTLINE);
+  pRect(ctx, bx + 5, by + 30, 3, 7 + step1, '#1e293b');
+  // Right Leg Outline & Fill
+  pRect(ctx, bx + 13, by + 30, 5, 8 + step2, OUTLINE);
+  pRect(ctx, bx + 14, by + 30, 3, 7 + step2, '#1e293b');
+
+  // Heavy Stardew Walking Boots
+  pRect(ctx, bx + 3, by + 37 + step1, 7, 4, OUTLINE);
+  pRect(ctx, bx + 4, by + 38 + step1, 5, 2, '#0f172a');
+  pRect(ctx, bx + 12, by + 37 + step2, 7, 4, OUTLINE);
+  pRect(ctx, bx + 13, by + 38 + step2, 5, 2, '#0f172a');
 }
 
 // =============================================================================
