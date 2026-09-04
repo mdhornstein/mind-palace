@@ -346,4 +346,92 @@ export class HearthAudio {
 
     tick();
   }
+
+  /**
+   * Procedural Trumpet-Quack:
+   * A delightful hybrid sound combining an elephant's rising brassy pulse swell
+   * with a resonant downward duck formant chirp.
+   */
+  public playTrumpetQuack() {
+    this.initContext();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    // 1. Elephant Trumpet swell (brassy upward pulse swell)
+    const trumpetOsc = this.ctx.createOscillator();
+    const trumpetGain = this.ctx.createGain();
+    trumpetOsc.type = 'sawtooth';
+    trumpetOsc.frequency.setValueAtTime(145, now);
+    trumpetOsc.frequency.exponentialRampToValueAtTime(290, now + 0.12);
+    trumpetOsc.frequency.exponentialRampToValueAtTime(240, now + 0.22);
+
+    trumpetGain.gain.setValueAtTime(0.001, now);
+    trumpetGain.gain.linearRampToValueAtTime(0.22, now + 0.04);
+    trumpetGain.gain.linearRampToValueAtTime(0.18, now + 0.12);
+    trumpetGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+    const trumpetFilter = this.ctx.createBiquadFilter();
+    trumpetFilter.type = 'bandpass';
+    trumpetFilter.frequency.setValueAtTime(800, now);
+    trumpetFilter.frequency.exponentialRampToValueAtTime(1400, now + 0.12);
+    trumpetFilter.Q.value = 2.5;
+
+    trumpetOsc.connect(trumpetFilter);
+    trumpetFilter.connect(trumpetGain);
+    trumpetGain.connect(this.ctx.destination);
+
+    trumpetOsc.start(now);
+    trumpetOsc.stop(now + 0.26);
+
+    // 2. Duck Quack formant drop (resonant nasal downward chirp)
+    const quackTime = now + 0.14;
+    const quackOsc = this.ctx.createOscillator();
+    const quackGain = this.ctx.createGain();
+    quackOsc.type = 'triangle';
+    quackOsc.frequency.setValueAtTime(320, quackTime);
+    quackOsc.frequency.exponentialRampToValueAtTime(180, quackTime + 0.18);
+
+    quackGain.gain.setValueAtTime(0.001, quackTime);
+    quackGain.gain.linearRampToValueAtTime(0.24, quackTime + 0.02);
+    quackGain.gain.exponentialRampToValueAtTime(0.001, quackTime + 0.22);
+
+    const quackFilter = this.ctx.createBiquadFilter();
+    quackFilter.type = 'bandpass';
+    quackFilter.frequency.setValueAtTime(650, quackTime);
+    quackFilter.frequency.exponentialRampToValueAtTime(360, quackTime + 0.2);
+    quackFilter.Q.value = 4.0;
+
+    quackOsc.connect(quackFilter);
+    quackFilter.connect(quackGain);
+    quackGain.connect(this.ctx.destination);
+
+    quackOsc.start(quackTime);
+    quackOsc.stop(quackTime + 0.23);
+  }
+
+  /**
+   * Cute rhythmic munching crunch sound for peanut treats
+   */
+  public playMunch() {
+    this.initContext();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    for (let i = 0; i < 3; i++) {
+      const t = now + i * 0.09;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(450 - i * 60, t);
+      osc.frequency.exponentialRampToValueAtTime(180, t + 0.05);
+
+      gain.gain.setValueAtTime(0.18, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.07);
+    }
+  }
 }
+

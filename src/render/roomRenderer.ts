@@ -10,6 +10,7 @@ import {
   drawCompanionSprite,
   drawPlayerSprite,
 } from './sprites';
+import { duckephantEntity } from '../rooms/study/stations/duckephant';
 
 interface DustMote {
   x: number;
@@ -153,6 +154,12 @@ export class RoomRenderer {
             state.companion.facing,
             timeMs
           ),
+      });
+
+      // The chimeric Duckephant resides near the hearth
+      renderables.push({
+        y: duckephantEntity.y,
+        draw: () => duckephantEntity.render(ctx, timeMs),
       });
     }
 

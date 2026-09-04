@@ -9,6 +9,7 @@ import { DevTray } from './ui/devTray';
 import { InteractiveZone, RoomConfig, WorldStation, Direction, Doorway } from './core/types';
 import { RoomRegistry } from './rooms/registry';
 import { HearthAudio } from './sound/audio';
+import { duckephantEntity } from './rooms/study/stations/duckephant';
 
 class MindPalaceApp {
   private canvas: HTMLCanvasElement;
@@ -326,6 +327,9 @@ class MindPalaceApp {
         }
 
         this.companion.update(dt);
+        if (this.currentRoom.id === 'study') {
+          duckephantEntity.update(dt * 1000, this.player.x, this.player.y);
+        }
       }
 
       const state = this.stateManager.getState();

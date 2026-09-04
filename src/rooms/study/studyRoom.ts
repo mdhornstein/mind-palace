@@ -13,6 +13,7 @@ import { readingNookStation } from './stations/readingNook';
 import { curioCabinetStation } from './stations/curioCabinet';
 import { pedestalStation } from './stations/pedestal';
 import { workstationStation } from './stations/workstation';
+import { duckephantStation } from './stations/duckephant';
 
 export const studyRoomConfig: RoomConfig = {
   id: 'study',
@@ -25,6 +26,7 @@ export const studyRoomConfig: RoomConfig = {
     curioCabinetStation,
     pedestalStation,
     workstationStation,
+    duckephantStation,
   ],
   doors: [
     {
