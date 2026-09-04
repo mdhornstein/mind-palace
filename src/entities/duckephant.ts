@@ -210,114 +210,207 @@ export class Duckephant {
 
     const py = Math.floor(-waddleBob - (isNapping ? 2 : breath));
 
-    // Dark contour outline color (Stardew signature silhouette)
+    // Dark contour outline colors (Stardew signature silhouette)
     const OUTLINE = '#170c06';
+    const DUCK_WING_OUTLINE = '#78350f';
     const ELEPHANT_OUTLINE = '#0f172a';
 
+    // Tail Waggle & Wing Flap Animations
+    const tailWag = Math.sin(timeMs * (isHappy ? 0.02 : 0.007)) * (isHappy ? 3 : 1.2);
+    const wingFlap = isHappy ? Math.sin(timeMs * 0.025) * 2.5 : (isMoving ? Math.sin(this.walkStep * 2) * 1.2 : 0);
+
     // =========================================================================
-    // 2. ORANGE WEBBED FEET (with dark outline)
+    // 2. ORANGE WEBBED PADDLE FEET (with waddle stride)
     // =========================================================================
     if (!isNapping) {
-      const footL = isMoving ? Math.sin(this.walkStep * 2) * 3.5 : 0;
-      const footR = isMoving ? -Math.sin(this.walkStep * 2) * 3.5 : 0;
+      const footStride = isMoving ? Math.sin(this.walkStep * 2) * 4 : 0;
+      const footLiftL = isMoving && Math.sin(this.walkStep * 2) > 0.1 ? -2 : 0;
+      const footLiftR = isMoving && Math.sin(this.walkStep * 2) < -0.1 ? -2 : 0;
 
-      // Left Foot (Front)
-      pRect(ctx, -10 + footL, 10, 8, 5, OUTLINE);
-      pRect(ctx, -9 + footL, 11, 6, 3, '#ea580c');
-      pRect(ctx, -10 + footL, 13, 7, 2, '#f97316'); // webbed toe tips
+      // Front Webbed Foot (Left)
+      const fxL = -6 + footStride;
+      const fyL = 9 + footLiftL;
+      // Leg stem
+      pRect(ctx, fxL + 2, fyL - 2, 2, 3, '#c2410c');
+      // Foot outline (wide webbed duck paddle with 3 pointed toes)
+      pRect(ctx, fxL - 4, fyL + 1, 9, 4, OUTLINE);
+      pRect(ctx, fxL - 5, fyL + 3, 2, 2, OUTLINE); // outer toe tip
+      pRect(ctx, fxL - 2, fyL + 4, 2, 2, OUTLINE); // middle toe tip
+      pRect(ctx, fxL + 2, fyL + 4, 2, 2, OUTLINE); // inner toe tip
+      // Web fill
+      pRect(ctx, fxL - 3, fyL + 2, 7, 2, '#ea580c');
+      pRect(ctx, fxL - 4, fyL + 3, 2, 1, '#f97316');
+      pRect(ctx, fxL - 1, fyL + 3, 2, 2, '#f97316');
+      pRect(ctx, fxL + 2, fyL + 3, 2, 2, '#fb923c');
 
-      // Right Foot (Rear)
-      pRect(ctx, 3 + footR, 10, 8, 5, OUTLINE);
-      pRect(ctx, 4 + footR, 11, 6, 3, '#c2410c');
-      pRect(ctx, 3 + footR, 13, 7, 2, '#ea580c');
+      // Rear Webbed Foot (Right, slightly darker for depth)
+      const fxR = 5 - footStride;
+      const fyR = 9 + footLiftR;
+      // Leg stem
+      pRect(ctx, fxR + 1, fyR - 2, 2, 3, '#9a3412');
+      // Foot outline
+      pRect(ctx, fxR - 3, fyR + 1, 8, 4, OUTLINE);
+      pRect(ctx, fxR - 4, fyR + 3, 2, 2, OUTLINE);
+      pRect(ctx, fxR - 1, fyR + 4, 2, 2, OUTLINE);
+      pRect(ctx, fxR + 3, fyR + 3, 2, 2, OUTLINE);
+      // Web fill
+      pRect(ctx, fxR - 2, fyR + 2, 6, 2, '#c2410c');
+      pRect(ctx, fxR - 3, fyR + 3, 2, 1, '#ea580c');
+      pRect(ctx, fxR + 0, fyR + 3, 2, 2, '#ea580c');
+      pRect(ctx, fxR + 3, fyR + 3, 1, 1, '#f97316');
     }
 
     // =========================================================================
-    // 3. PLUMP FEATHERED DUCK BODY (with dark outline)
+    // 3. PERKY UPTURNED FEATHERED DUCK TAIL (with excited waggle)
     // =========================================================================
-    // Tail Feathers Silhouette Outline
-    pRect(ctx, 9, py - 9, 8, 7, OUTLINE);
-    pRect(ctx, 13, py - 12, 6, 6, OUTLINE);
-    // Tail Feathers Fill
-    pRect(ctx, 10, py - 8, 6, 5, '#854d0e');
-    pRect(ctx, 14, py - 11, 4, 4, '#ca8a04');
-    pRect(ctx, 11, py - 6, 4, 3, '#eab308');
+    const tx = 9;
+    const ty = py - 1 + Math.floor(tailWag);
 
-    // Main Torso Silhouette Outline
-    pRect(ctx, -7, py - 9, 19, 19, OUTLINE);
+    // Tail Feather Cluster Outlines (3 layered perky duck tail feathers)
+    // Top feather (pointing 45° up and back)
+    pRect(ctx, tx + 1, ty - 8, 5, 4, OUTLINE);
+    pRect(ctx, tx + 4, ty - 10, 3, 3, OUTLINE);
+    // Middle main tail feather (longest tip)
+    pRect(ctx, tx + 2, ty - 5, 8, 5, OUTLINE);
+    pRect(ctx, tx + 8, ty - 4, 3, 3, OUTLINE);
+    // Lower tail covert feather
+    pRect(ctx, tx + 1, ty - 1, 6, 4, OUTLINE);
 
-    // Torso Fill & Feathers
-    pRect(ctx, -6, py - 8, 17, 17, '#ca8a04'); // base golden-buff
-    pRect(ctx, -4, py - 6, 14, 14, '#eab308'); // warm golden body
-    pRect(ctx, -6, py + 1, 10, 8, '#fef08a');  // cream breast plumage
-
-    // Wing Covert Wing Flap
-    pRect(ctx, 0, py - 3, 9, 8, '#854d0e');   // wing shadow
-    pRect(ctx, 1, py - 2, 7, 6, '#b45309');   // wing plumage
-    pRect(ctx, 3, py - 1, 4, 4, '#fde047');   // wing tip highlight
+    // Tail Feathers Color Fills
+    pRect(ctx, tx + 2, ty - 7, 3, 2, '#ca8a04'); // top feather mid
+    pRect(ctx, tx + 4, ty - 9, 2, 2, '#fde047'); // top feather bright tip
+    pRect(ctx, tx + 3, ty - 4, 6, 3, '#eab308'); // middle feather body
+    pRect(ctx, tx + 7, ty - 3, 3, 2, '#fef08a'); // middle feather cream tip
+    pRect(ctx, tx + 2, ty + 0, 4, 2, '#a16207'); // bottom feather shadow
 
     // =========================================================================
-    // 4. SLATE-GRAY ELEPHANT HEAD (with dark outline)
+    // 4. PLUMP, CHUBBY DUCK BODY (Organic Rounded Duckling Silhouette)
+    // =========================================================================
+    // Dark Outer Silhouette Contours for Rounded Chubby Duck Body
+    pRect(ctx, -7, py - 6, 17, 2, OUTLINE); // upper back
+    pRect(ctx, -10, py - 4, 22, 2, OUTLINE); // back slope & upper breast
+    pRect(ctx, -12, py - 2, 25, 4, OUTLINE); // puffed breast & mid body
+    pRect(ctx, -12, py + 2, 24, 4, OUTLINE); // widest tummy span
+    pRect(ctx, -10, py + 6, 21, 3, OUTLINE); // lower chubby belly
+    pRect(ctx, -7, py + 8, 16, 2, OUTLINE);  // bottom belly between legs
+
+    // Soft Golden Duck Plumage Base
+    pRect(ctx, -6, py - 5, 15, 2, '#eab308'); // spine highlight
+    pRect(ctx, -9, py - 3, 20, 2, '#eab308');
+    pRect(ctx, -11, py - 1, 23, 3, '#f59e0b'); // warm golden body
+    pRect(ctx, -11, py + 2, 22, 4, '#d97706'); // lower body shading
+    pRect(ctx, -9, py + 6, 19, 2, '#b45309');  // belly shadow depth
+    pRect(ctx, -6, py + 7, 14, 1, '#92400e');  // under-fluff shadow
+
+    // Soft Creamy Duckling Breast & Tummy Fluff
+    // Puffed-out chest curving proudly under the elephant chin
+    pRect(ctx, -11, py - 1, 6, 5, '#fef08a'); // cream breast puff
+    pRect(ctx, -10, py + 0, 4, 3, '#fef9c3'); // highlight fluff
+    pRect(ctx, -6, py + 4, 9, 3, '#fef08a');  // belly downy fluff
+    pRect(ctx, -4, py + 5, 6, 2, '#fef9c3');  // light belly center
+
+    // =========================================================================
+    // 5. LAYERED FOLDED DUCK WING (with scalloped covert feathers & flap)
+    // =========================================================================
+    const wx = -1;
+    const wy = py - 1 + Math.floor(wingFlap);
+
+    // Wing Outline (Teardrop Folded Wing)
+    pRect(ctx, wx - 2, wy - 1, 12, 6, DUCK_WING_OUTLINE);
+    pRect(ctx, wx + 6, wy + 1, 4, 4, DUCK_WING_OUTLINE); // trailing wingtip
+    pRect(ctx, wx + 8, wy + 2, 3, 2, DUCK_WING_OUTLINE);
+
+    // Wing Feathers Layering
+    pRect(ctx, wx - 1, wy + 0, 10, 4, '#ca8a04'); // scapular base
+    pRect(ctx, wx + 1, wy + 1, 7, 3, '#b45309');  // covert shadow
+    pRect(ctx, wx + 5, wy + 2, 4, 2, '#92400e');  // flight feather quill
+
+    // Scalloped Feather Highlights (classic duck wing bars)
+    pRect(ctx, wx + 0, wy + 0, 3, 2, '#fde047'); // front wing scallop
+    pRect(ctx, wx + 3, wy + 1, 3, 2, '#fde047'); // middle wing scallop
+    pRect(ctx, wx + 7, wy + 2, 3, 1, '#fef08a'); // bright wingtip accent
+
+    // =========================================================================
+    // 6. CHIBI ELEPHANT HEAD (Soft Rounded Skull with Rosy Blushing Cheeks)
     // =========================================================================
     const hx = -9;
     const hy = py - 13;
 
-    // Head Silhouette Outline
-    pRect(ctx, hx - 8, hy - 2, 15, 16, ELEPHANT_OUTLINE);
+    // Rounded Elephant Skull Silhouette Outline (beveled soft corners)
+    pRect(ctx, hx - 7, hy - 3, 13, 2, ELEPHANT_OUTLINE);
+    pRect(ctx, hx - 9, hy - 1, 17, 14, ELEPHANT_OUTLINE);
+    pRect(ctx, hx - 8, hy + 12, 14, 2, ELEPHANT_OUTLINE);
 
-    // Head Base Fill
-    pRect(ctx, hx - 7, hy - 1, 13, 14, '#475569'); // slate shadow
-    pRect(ctx, hx - 6, hy, 11, 12, '#64748b');     // forehead & cheek
-    pRect(ctx, hx - 5, hy + 1, 8, 6, '#94a3b8');   // light brow highlight
+    // Head Base Slate-Gray Fills
+    pRect(ctx, hx - 6, hy - 2, 11, 2, '#64748b'); // forehead curve
+    pRect(ctx, hx - 8, hy + 0, 15, 12, '#475569'); // slate base
+    pRect(ctx, hx - 7, hy + 1, 13, 9, '#64748b');  // cheek & brow
+    pRect(ctx, hx - 5, hy + 0, 8, 4, '#94a3b8');   // light forehead highlight
 
-    // Large Floppy Ear (animated ear twitch)
+    // Large Floppy Ear with Soft Pink Interior (animated gentle flutter)
     const earTwitch = Math.sin(timeMs * 0.004) * 2;
-    // Ear Outline
-    pRect(ctx, hx + 3, hy - 2 + earTwitch, 8, 13, ELEPHANT_OUTLINE);
+    // Ear Outline (rounded)
+    pRect(ctx, hx + 4, hy - 2 + earTwitch, 8, 14, ELEPHANT_OUTLINE);
+    pRect(ctx, hx + 5, hy + 11 + earTwitch, 6, 2, ELEPHANT_OUTLINE);
     // Ear Fill
-    pRect(ctx, hx + 4, hy - 1 + earTwitch, 6, 11, '#475569');
-    pRect(ctx, hx + 5, hy + 2 + earTwitch, 4, 7, '#fda4af'); // pink inner ear
+    pRect(ctx, hx + 5, hy - 1 + earTwitch, 6, 12, '#475569');
+    pRect(ctx, hx + 6, hy + 1 + earTwitch, 4, 9, '#fda4af'); // baby pink inner ear
+    pRect(ctx, hx + 7, hy + 3 + earTwitch, 2, 5, '#f472b6'); // deep rosy inner shadow
 
-    // Expressive Large Eye
-    if (isNapping) {
-      // Happy sleeping curve
-      pRect(ctx, hx - 4, hy + 4, 4, 2, '#0f172a');
+    // ADORABLE ROSY BLUSHING CHEEK (under eye)
+    pRect(ctx, hx - 4, hy + 7, 3, 2, '#fb7185');
+
+    // EXPRESSIVE ULTRA-CUTE EYE
+    if (isHappy) {
+      // Adorable anime smiling eye (^ ^)
+      pRect(ctx, hx - 6, hy + 4, 5, 2, '#090d16');
+      pRect(ctx, hx - 7, hy + 5, 2, 2, '#090d16');
+      pRect(ctx, hx - 3, hy + 5, 2, 2, '#090d16');
+    } else if (isNapping) {
+      // Peaceful sleeping curve
+      pRect(ctx, hx - 6, hy + 5, 5, 2, '#090d16');
+      pRect(ctx, hx - 7, hy + 4, 2, 2, '#090d16');
     } else {
-      // Big expressive Stardew eye
-      pRect(ctx, hx - 5, hy + 3, 4, 4, '#0f172a');
-      pRect(ctx, hx - 5, hy + 3, 2, 2, '#ffffff'); // bright glint
-      pRect(ctx, hx - 4, hy + 2, 2, 1, '#1e293b'); // eyebrow
+      // Big sparkling anime/chibi eye with dual specular reflections
+      pRect(ctx, hx - 6, hy + 3, 4, 4, '#090d16'); // dark pupil box
+      pRect(ctx, hx - 6, hy + 3, 2, 2, '#ffffff'); // bright primary catchlight
+      pRect(ctx, hx - 4, hy + 5, 1, 1, '#bae6fd'); // soft secondary blue glimmer
+      pRect(ctx, hx - 5, hy + 2, 3, 1, '#1e293b'); // soft upper eyelid
     }
 
-    // Twin Curved Ivory Tusks
-    pRect(ctx, hx - 9, hy + 8, 5, 4, ELEPHANT_OUTLINE);
-    pRect(ctx, hx - 8, hy + 9, 3, 2, '#fefce8');
-    pRect(ctx, hx - 10, hy + 7, 3, 2, '#fffbeb');
-    pRect(ctx, hx - 11, hy + 6, 2, 2, '#fde047'); // gold tip
+    // Curved Miniature Ivory Tusks (cute little upturned nubs)
+    pRect(ctx, hx - 10, hy + 8, 4, 3, ELEPHANT_OUTLINE);
+    pRect(ctx, hx - 11, hy + 6, 3, 3, ELEPHANT_OUTLINE);
+    pRect(ctx, hx - 9, hy + 9, 2, 2, '#fefce8'); // tusk base
+    pRect(ctx, hx - 11, hy + 7, 2, 2, '#fef08a'); // golden-cream tip
 
     // =========================================================================
-    // 5. ARTICULATED PROBOSCIS TRUNK (curling with dark outline)
+    // 7. ARTICULATED PREHENSILE TRUNK (expressive breathing & trumpet curl)
     // =========================================================================
     let trunkWave = Math.sin(timeMs * 0.005) * 3;
     if (isHappy) {
-      trunkWave = 8 + Math.sin(timeMs * 0.015) * 3;
+      trunkWave = 9 + Math.sin(timeMs * 0.018) * 4; // celebratory high trumpet!
     } else if (isNapping) {
-      trunkWave = -2;
+      trunkWave = -2; // relaxed downward curl
     }
 
-    // Trunk Base Outline & Fill
-    pRect(ctx, hx - 11, hy + 5, 5, 5, ELEPHANT_OUTLINE);
-    pRect(ctx, hx - 10, hy + 6, 3, 3, '#64748b');
+    // Trunk Base (attached firmly to face)
+    pRect(ctx, hx - 11, hy + 5, 4, 4, ELEPHANT_OUTLINE);
+    pRect(ctx, hx - 10, hy + 6, 2, 2, '#64748b');
 
     // Trunk Mid-Shaft
-    pRect(ctx, hx - 14, hy + 7 - trunkWave * 0.4, 5, 5, ELEPHANT_OUTLINE);
-    pRect(ctx, hx - 13, hy + 8 - trunkWave * 0.4, 3, 3, '#475569');
+    const tMidY = hy + 7 - trunkWave * 0.4;
+    pRect(ctx, hx - 14, tMidY, 5, 5, ELEPHANT_OUTLINE);
+    pRect(ctx, hx - 13, tMidY + 1, 3, 3, '#475569');
 
-    // Trunk Curled Tip
-    pRect(ctx, hx - 17, hy + 6 - trunkWave * 0.9, 5, 5, ELEPHANT_OUTLINE);
-    pRect(ctx, hx - 16, hy + 7 - trunkWave * 0.9, 3, 3, '#64748b');
-    pRect(ctx, hx - 15, hy + 5 - trunkWave * 1.2, 4, 4, ELEPHANT_OUTLINE);
-    pRect(ctx, hx - 14, hy + 6 - trunkWave * 1.2, 2, 2, '#94a3b8');
+    // Trunk Prehensile Tip (smooth curl)
+    const tTipY = hy + 6 - trunkWave * 0.9;
+    pRect(ctx, hx - 17, tTipY, 5, 5, ELEPHANT_OUTLINE);
+    pRect(ctx, hx - 16, tTipY + 1, 3, 3, '#64748b');
+    // Curled nostril tip
+    const tEndLipY = hy + 5 - trunkWave * 1.25;
+    pRect(ctx, hx - 16, tEndLipY, 4, 4, ELEPHANT_OUTLINE);
+    pRect(ctx, hx - 15, tEndLipY + 1, 2, 2, '#94a3b8');
 
     ctx.restore();
 
