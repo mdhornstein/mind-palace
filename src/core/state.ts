@@ -270,6 +270,18 @@ export class StateManager {
     this.notify();
   }
 
+  public setRoomId(roomId: string) {
+    this.state.currentRoomId = roomId;
+    this.persist();
+    this.notify();
+  }
+
+  public setState(updater: (prev: WorldState) => WorldState) {
+    this.state = updater(this.state);
+    this.persist();
+    this.notify();
+  }
+
   public resetWorld() {
     const fresh = deepClone(INITIAL_SEED_STATE);
     const now = Date.now();

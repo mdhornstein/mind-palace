@@ -1,23 +1,13 @@
 import './ui/styles.css';
-import { CANVAS_WIDTH, CANVAS_HEIGHT, TILE_SIZE, INTERACTIVE_ZONES } from './core/constants';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, TILE_SIZE } from './core/constants';
 import { StateManager } from './core/state';
 import { PlayerController } from './world/player';
 import { CompanionController } from './world/companion';
 import { RoomRenderer } from './render/roomRenderer';
 import { ModalOverlay } from './ui/overlay';
-import { openLibraryModal } from './ui/libraryModal';
-import { openWorkshopModal } from './ui/workshopModal';
-import { openCabinetModal } from './ui/cabinetModal';
 import { DevTray } from './ui/devTray';
-import { InteractiveZone } from './core/types';
-
-// Walkable approach spots right in front of each station
-const APPROACH_POINTS: Record<string, { x: number; y: number }> = {
-  library: { x: 3.5 * TILE_SIZE, y: 3.5 * TILE_SIZE },
-  workshop: { x: 14.5 * TILE_SIZE, y: 8.5 * TILE_SIZE },
-  cabinet: { x: 15.5 * TILE_SIZE, y: 3.5 * TILE_SIZE },
-  pedestal: { x: 14.0 * TILE_SIZE, y: 5.5 * TILE_SIZE },
-};
+import { InteractiveZone, RoomConfig, WorldStation, Direction } from './core/types';
+import { RoomRegistry } from './rooms/registry';
 
 class MindPalaceApp {
   private canvas: HTMLCanvasElement;
@@ -28,6 +18,7 @@ class MindPalaceApp {
   private renderer: RoomRenderer;
   private overlay: ModalOverlay;
   private activeZone: InteractiveZone | null = null;
+  private currentRoom: RoomConfig;
   private lastSaveTime = Date.now();
   private lastLoopTime = performance.now();
 
@@ -44,11 +35,13 @@ class MindPalaceApp {
 
     this.stateManager = StateManager.getInstance();
     const savedState = this.stateManager.getState();
+    this.currentRoom = RoomRegistry.getRoom(savedState.currentRoomId || 'study');
 
     this.player = new PlayerController(
       savedState.player.x,
       savedState.player.y,
-      savedState.player.facing
+      savedState.player.facing,
+      this.currentRoom
     );
 
     this.companion = new CompanionController(this.stateManager);
@@ -82,13 +75,18 @@ class MindPalaceApp {
     resize();
   }
 
-  private getClickedZone(clickX: number, clickY: number): InteractiveZone | null {
-    for (const zone of INTERACTIVE_ZONES) {
+  private getClickedStation(clickX: number, clickY: number): WorldStation | null {
+    for (const station of this.currentRoom.stations) {
+      const sx = station.tileX * TILE_SIZE;
+      const sy = station.tileY * TILE_SIZE;
+      const sw = station.tileWidth * TILE_SIZE;
+      const sh = station.tileHeight * TILE_SIZE;
+
       // Generous clickable boundary for furniture
-      const expandedX = zone.x - 10;
-      const expandedY = zone.y - 10;
-      const expandedW = zone.width + 20;
-      const expandedH = zone.height + 25;
+      const expandedX = sx - 10;
+      const expandedY = sy - 10;
+      const expandedW = sw + 20;
+      const expandedH = sh + 25;
 
       if (
         clickX >= expandedX &&
@@ -96,7 +94,7 @@ class MindPalaceApp {
         clickY >= expandedY &&
         clickY <= expandedY + expandedH
       ) {
-        return zone;
+        return station;
       }
     }
     return null;
@@ -109,7 +107,7 @@ class MindPalaceApp {
       if (['Space', 'Enter', 'KeyE'].includes(e.code)) {
         if (this.activeZone) {
           e.preventDefault();
-          this.triggerZoneInteraction(this.activeZone);
+          this.triggerInteraction(this.activeZone.id);
         }
       }
     });
@@ -127,8 +125,8 @@ class MindPalaceApp {
       const mouseX = (e.clientX - rect.left) * scaleX;
       const mouseY = (e.clientY - rect.top) * scaleY;
 
-      const hoveredZone = this.getClickedZone(mouseX, mouseY);
-      this.canvas.style.cursor = hoveredZone ? 'pointer' : 'default';
+      const hoveredStation = this.getClickedStation(mouseX, mouseY);
+      this.canvas.style.cursor = hoveredStation ? 'pointer' : 'default';
     });
 
     // Canvas click to move or click to interact
@@ -142,15 +140,13 @@ class MindPalaceApp {
       const clickX = (e.clientX - rect.left) * scaleX;
       const clickY = (e.clientY - rect.top) * scaleY;
 
-      const clickedZone = this.getClickedZone(clickX, clickY);
+      const clickedStation = this.getClickedStation(clickX, clickY);
 
-      if (clickedZone) {
+      if (clickedStation) {
         // Instantly face and trigger the interaction at the station's approach spot!
-        const approach = APPROACH_POINTS[clickedZone.id] || { x: clickedZone.x, y: clickedZone.y };
-        this.player.x = approach.x;
-        this.player.y = approach.y;
+        this.player.teleportTo(clickedStation.approachPoint.x, clickedStation.approachPoint.y);
         this.stateManager.syncPlayerPosition(this.player.x, this.player.y, this.player.facing);
-        this.triggerZoneInteraction(clickedZone);
+        clickedStation.onInteract(this.stateManager, this.overlay);
         return;
       }
 
@@ -159,22 +155,32 @@ class MindPalaceApp {
     });
   }
 
-  private triggerZoneInteraction(zone: InteractiveZone) {
-    switch (zone.id) {
-      case 'library':
-        openLibraryModal(this.stateManager);
-        break;
-      case 'workshop':
-        openWorkshopModal(this.stateManager);
-        break;
-      case 'cabinet':
-        openCabinetModal(this.stateManager);
-        break;
-      case 'pedestal': {
-        const state = this.stateManager.getState();
-        openCabinetModal(this.stateManager, state.environment.activePedestalSpecimenId || undefined);
-        break;
+  private triggerInteraction(zoneId: string) {
+    // 1. Check if it matches an interactive station in the current room
+    const station = this.currentRoom.stations.find((s) => s.id === zoneId);
+    if (station) {
+      station.onInteract(this.stateManager, this.overlay);
+      return;
+    }
+
+    // 2. Check if it matches a doorway transition
+    if (zoneId.startsWith('door_')) {
+      const doorId = zoneId.replace('door_', '');
+      const door = this.currentRoom.doors.find((d) => d.id === doorId);
+      if (door) {
+        this.transitionToRoom(door.targetRoomId, door.targetSpawnPoint);
       }
+    }
+  }
+
+  public transitionToRoom(roomId: string, spawnPoint?: { x: number; y: number; facing: Direction }) {
+    const newRoom = RoomRegistry.getRoom(roomId);
+    this.currentRoom = newRoom;
+    this.stateManager.setRoomId(roomId);
+    this.player.setRoom(newRoom);
+    if (spawnPoint) {
+      this.player.teleportTo(spawnPoint.x, spawnPoint.y, spawnPoint.facing);
+      this.stateManager.syncPlayerPosition(this.player.x, this.player.y, this.player.facing);
     }
   }
 
@@ -206,12 +212,13 @@ class MindPalaceApp {
       }
 
       const state = this.stateManager.getState();
-      // Render player with LIVE coordinates every frame (60fps)
+      // Render room and player with LIVE coordinates every frame (60fps)
       this.renderer.render(
         state,
         this.player,
         this.activeZone,
-        now
+        now,
+        this.currentRoom
       );
 
       requestAnimationFrame(loop);

@@ -10,6 +10,7 @@ export const STORAGE_KEY = 'mind_palace_world_state_v1';
 
 export const INITIAL_SEED_STATE: WorldState = {
   version: 1,
+  currentRoomId: 'study',
   time: {
     createdAt: Date.now(),
     lastVisitedAt: Date.now(),

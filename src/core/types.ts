@@ -119,6 +119,7 @@ export interface PlayerState {
 
 export interface WorldState {
   version: number;
+  currentRoomId: string;
   time: WorldTime;
   player: PlayerState;
   companion: CompanionState;
@@ -131,7 +132,7 @@ export interface WorldState {
   };
 }
 
-export type InteractiveZoneId = 'library' | 'workshop' | 'cabinet' | 'pedestal' | 'companion';
+export type InteractiveZoneId = string;
 
 export interface InteractiveZone {
   id: InteractiveZoneId;
@@ -142,3 +143,57 @@ export interface InteractiveZone {
   width: number;
   height: number;
 }
+
+export interface BoundingBox {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface WorldStation {
+  id: string;
+  name: string;
+  prompt: string;
+  // Position and dimension in tiles
+  tileX: number;
+  tileY: number;
+  tileWidth: number;
+  tileHeight: number;
+  // Solid collision box in pixels (optional; if omitted, can default to tile bounds)
+  collisionBox?: BoundingBox;
+  // Walkable approach destination coordinate in pixels for click-to-walk
+  approachPoint: { x: number; y: number };
+  // Visual render hook
+  draw: (ctx: CanvasRenderingContext2D, timeMs: number, state: WorldState) => void;
+  // Interaction hook (receives state manager and overlay controller)
+  onInteract: (stateManager: any, overlay: any) => void;
+}
+
+export interface Doorway {
+  id: string;
+  name: string;
+  prompt: string;
+  tileX: number;
+  tileY: number;
+  tileWidth: number;
+  tileHeight: number;
+  targetRoomId: string;
+  targetSpawnPoint: { x: number; y: number; facing: Direction };
+}
+
+export interface RoomConfig {
+  id: string;
+  name: string;
+  widthTiles: number;
+  heightTiles: number;
+  stations: WorldStation[];
+  doors: Doorway[];
+  ambientLight: {
+    type: 'day' | 'evening' | 'night';
+    primaryGlowColor?: string;
+  };
+  customDrawBackground?: (ctx: CanvasRenderingContext2D, state: WorldState) => void;
+  customDrawAtmosphere?: (ctx: CanvasRenderingContext2D, timeMs: number) => void;
+}
+

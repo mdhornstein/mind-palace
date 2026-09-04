@@ -1,12 +1,5 @@
-import { Direction, InteractiveZone } from '../core/types';
-import { TILE_SIZE, CANVAS_WIDTH, CANVAS_HEIGHT, INTERACTIVE_ZONES } from '../core/constants';
-
-interface BoundingBox {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
+import { Direction, InteractiveZone, BoundingBox, RoomConfig } from '../core/types';
+import { TILE_SIZE, CANVAS_WIDTH, CANVAS_HEIGHT } from '../core/constants';
 
 export class PlayerController {
   public x: number;
@@ -21,36 +14,52 @@ export class PlayerController {
   private targetPos: { x: number; y: number } | null = null;
   private pendingInteraction: { zone: InteractiveZone; onArrival: (zone: InteractiveZone) => void } | null = null;
 
-  // Solid obstacles (in pixels)
-  private obstacles: BoundingBox[] = [
-    // North Wall & Top trim
-    { x: 0, y: 0, w: CANVAS_WIDTH, h: 2 * TILE_SIZE },
-    // South Wall (except door threshold in center)
-    { x: 0, y: 14 * TILE_SIZE, w: 9 * TILE_SIZE, h: TILE_SIZE },
-    { x: 11 * TILE_SIZE, y: 14 * TILE_SIZE, w: 9 * TILE_SIZE, h: TILE_SIZE },
-    // West Wall
-    { x: 0, y: 0, w: TILE_SIZE, h: CANVAS_HEIGHT },
-    // East Wall
-    { x: 19 * TILE_SIZE, y: 0, w: TILE_SIZE, h: CANVAS_HEIGHT },
-    // Library Bookshelf
-    { x: 1.5 * TILE_SIZE, y: 1.2 * TILE_SIZE, w: 4 * TILE_SIZE, h: 2.2 * TILE_SIZE },
-    // Fireplace Mantle
-    { x: 8.5 * TILE_SIZE, y: 1.2 * TILE_SIZE, w: 2.5 * TILE_SIZE, h: 2 * TILE_SIZE },
-    // Fossil Cabinet
-    { x: 14 * TILE_SIZE, y: 1.2 * TILE_SIZE, w: 4 * TILE_SIZE, h: 2.2 * TILE_SIZE },
-    // Display Pedestal
-    { x: 15 * TILE_SIZE, y: 5 * TILE_SIZE, w: TILE_SIZE, h: TILE_SIZE },
-    // Science Workshop Desk
-    { x: 13 * TILE_SIZE, y: 9.5 * TILE_SIZE, w: 5.5 * TILE_SIZE, h: 3.5 * TILE_SIZE },
-    // Reading Nook Chair & Table
-    { x: 3.5 * TILE_SIZE, y: 5.5 * TILE_SIZE, w: 1.8 * TILE_SIZE, h: 1.8 * TILE_SIZE },
-  ];
+  // Dynamic Room & Obstacle State
+  private currentRoom: RoomConfig | null = null;
+  private obstacles: BoundingBox[] = [];
 
-  constructor(startX: number, startY: number, startFacing: Direction = 'up') {
+  constructor(startX: number, startY: number, startFacing: Direction = 'up', initialRoom?: RoomConfig) {
     this.x = startX;
     this.y = startY;
     this.facing = startFacing;
+    if (initialRoom) {
+      this.setRoom(initialRoom);
+    }
     this.setupListeners();
+  }
+
+  public setRoom(room: RoomConfig) {
+    this.currentRoom = room;
+    this.rebuildObstacles();
+  }
+
+  private rebuildObstacles() {
+    if (!this.currentRoom) return;
+    const room = this.currentRoom;
+    const rW = room.widthTiles * TILE_SIZE;
+    const rH = room.heightTiles * TILE_SIZE;
+
+    // Outer Room Bounds & Architectural Perimeter
+    this.obstacles = [
+      // North Wall
+      { x: 0, y: 0, w: rW, h: 2 * TILE_SIZE },
+      // South Wall (leaving doorway gap at center)
+      { x: 0, y: (room.heightTiles - 1) * TILE_SIZE, w: 9 * TILE_SIZE, h: TILE_SIZE },
+      { x: 11 * TILE_SIZE, y: (room.heightTiles - 1) * TILE_SIZE, w: 9 * TILE_SIZE, h: TILE_SIZE },
+      // West Wall
+      { x: 0, y: 0, w: TILE_SIZE, h: rH },
+      // East Wall
+      { x: (room.widthTiles - 1) * TILE_SIZE, y: 0, w: TILE_SIZE, h: rH },
+      // Fireplace Mantle (north center)
+      { x: 8.5 * TILE_SIZE, y: 1.2 * TILE_SIZE, w: 2.5 * TILE_SIZE, h: 2 * TILE_SIZE },
+    ];
+
+    // Collect solid collision boxes dynamically from all stations in this room!
+    for (const station of room.stations) {
+      if (station.collisionBox) {
+        this.obstacles.push(station.collisionBox);
+      }
+    }
   }
 
   private setupListeners() {
@@ -80,6 +89,17 @@ export class PlayerController {
     window.addEventListener('blur', () => {
       this.keys = {};
     });
+  }
+
+  public teleportTo(x: number, y: number, facing?: Direction) {
+    this.x = x;
+    this.y = y;
+    this.targetPos = null;
+    this.pendingInteraction = null;
+    this.isMoving = false;
+    if (facing) {
+      this.facing = facing;
+    }
   }
 
   public setTargetPosition(worldX: number, worldY: number) {
@@ -244,15 +264,22 @@ export class PlayerController {
   }
 
   public detectActiveZone(): InteractiveZone | null {
+    if (!this.currentRoom) return null;
     const px = this.x + 12;
     const py = this.y + 20;
 
-    for (const zone of INTERACTIVE_ZONES) {
+    // Check all interactive stations in the active room
+    for (const station of this.currentRoom.stations) {
+      const sx = station.tileX * TILE_SIZE;
+      const sy = station.tileY * TILE_SIZE;
+      const sw = station.tileWidth * TILE_SIZE;
+      const sh = station.tileHeight * TILE_SIZE;
+
       // Generous proximity detection around interactive stations
-      const expandedX = zone.x - 24;
-      const expandedY = zone.y - 18;
-      const expandedW = zone.width + 48;
-      const expandedH = zone.height + 40;
+      const expandedX = sx - 24;
+      const expandedY = sy - 18;
+      const expandedW = sw + 48;
+      const expandedH = sh + 40;
 
       if (
         px >= expandedX &&
@@ -260,7 +287,38 @@ export class PlayerController {
         py >= expandedY &&
         py <= expandedY + expandedH
       ) {
-        return zone;
+        return {
+          id: station.id,
+          name: station.name,
+          prompt: station.prompt,
+          x: sx,
+          y: sy,
+          width: sw,
+          height: sh,
+        };
+      }
+    }
+
+    // Check doorways for room transitions
+    for (const door of this.currentRoom.doors) {
+      const dx = door.tileX * TILE_SIZE;
+      const dy = door.tileY * TILE_SIZE;
+      const dw = door.tileWidth * TILE_SIZE;
+      const dh = door.tileHeight * TILE_SIZE;
+
+      if (
+        px >= dx - 20 && px <= dx + dw + 20 &&
+        py >= dy - 16 && py <= dy + dh + 16
+      ) {
+        return {
+          id: `door_${door.id}`,
+          name: door.name,
+          prompt: door.prompt,
+          x: dx,
+          y: dy,
+          width: dw,
+          height: dh,
+        };
       }
     }
 
