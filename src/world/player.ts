@@ -36,23 +36,19 @@ export class PlayerController {
   private rebuildObstacles() {
     if (!this.currentRoom) return;
     const room = this.currentRoom;
-    const rW = room.widthTiles * TILE_SIZE;
-    const rH = room.heightTiles * TILE_SIZE;
 
-    // Outer Room Bounds & Architectural Perimeter
-    this.obstacles = [
-      // North Wall
-      { x: 0, y: 0, w: rW, h: 2 * TILE_SIZE },
-      // South Wall (leaving doorway gap at center)
-      { x: 0, y: (room.heightTiles - 1) * TILE_SIZE, w: 9 * TILE_SIZE, h: TILE_SIZE },
-      { x: 11 * TILE_SIZE, y: (room.heightTiles - 1) * TILE_SIZE, w: 9 * TILE_SIZE, h: TILE_SIZE },
-      // West Wall
-      { x: 0, y: 0, w: TILE_SIZE, h: rH },
-      // East Wall
-      { x: (room.widthTiles - 1) * TILE_SIZE, y: 0, w: TILE_SIZE, h: rH },
-      // Fireplace Mantle (north center)
-      { x: 8.5 * TILE_SIZE, y: 1.2 * TILE_SIZE, w: 2.5 * TILE_SIZE, h: 2 * TILE_SIZE },
-    ];
+    // Architectural Perimeter Obstacles
+    this.obstacles = [];
+
+    // Fireplace Mantle (north center of the Study)
+    if (room.id === 'study') {
+      this.obstacles.push({
+        x: 8.5 * TILE_SIZE,
+        y: 1.2 * TILE_SIZE,
+        w: 2.5 * TILE_SIZE,
+        h: 2 * TILE_SIZE,
+      });
+    }
 
     // Collect solid collision boxes dynamically from all stations in this room!
     for (const station of room.stations) {
@@ -253,9 +249,25 @@ export class PlayerController {
       h: 10,
     };
 
-    // Check world bounds
-    if (pBox.x < TILE_SIZE || pBox.x + pBox.w > CANVAS_WIDTH - TILE_SIZE) return true;
-    if (pBox.y < 2 * TILE_SIZE || pBox.y + pBox.h > CANVAS_HEIGHT - TILE_SIZE / 2) return true;
+    // Check if player is entering a doorway zone (allow stepping into door thresholds)
+    const inDoorway = this.currentRoom?.doors.some((door) => {
+      const dx = door.tileX * TILE_SIZE;
+      const dy = door.tileY * TILE_SIZE;
+      const dw = door.tileWidth * TILE_SIZE;
+      const dh = door.tileHeight * TILE_SIZE;
+      return (
+        pBox.x + pBox.w >= dx - 12 &&
+        pBox.x <= dx + dw + 12 &&
+        pBox.y + pBox.h >= dy - 12 &&
+        pBox.y <= dy + dh + 12
+      );
+    });
+
+    if (!inDoorway) {
+      // Check world bounds
+      if (pBox.x < TILE_SIZE || pBox.x + pBox.w > CANVAS_WIDTH - TILE_SIZE) return true;
+      if (pBox.y < 2 * TILE_SIZE || pBox.y + pBox.h > CANVAS_HEIGHT - TILE_SIZE / 2) return true;
+    }
 
     // Check obstacle bounding boxes
     for (const obs of this.obstacles) {

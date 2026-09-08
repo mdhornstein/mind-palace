@@ -1,6 +1,7 @@
 import { RoomConfig } from '../core/types';
 import { studyRoomConfig } from './study/studyRoom';
 import { observatoryRoomConfig } from './observatory/observatoryRoom';
+import { escherRoomConfig } from './escher/escherRoom';
 
 class RoomRegistryManager {
   private rooms: Map<string, RoomConfig> = new Map();
@@ -8,6 +9,7 @@ class RoomRegistryManager {
   constructor() {
     this.register(studyRoomConfig);
     this.register(observatoryRoomConfig);
+    this.register(escherRoomConfig);
   }
 
   public register(room: RoomConfig) {

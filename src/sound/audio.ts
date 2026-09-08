@@ -21,7 +21,7 @@
  * Pure Web Audio API: zero audio files, instant loading, seamless procedural looping, smooth room crossfading.
  */
 
-export type RoomMusicTheme = 'study' | 'observatory';
+export type RoomMusicTheme = 'study' | 'observatory' | 'escher';
 
 export class HearthAudio {
   private static instance: HearthAudio;
@@ -170,7 +170,9 @@ export class HearthAudio {
   }
 
   public getRoomName(): string {
-    return this.currentRoom === 'observatory' ? 'Observatory' : 'Study';
+    if (this.currentRoom === 'escher') return 'Paradox Gallery';
+    if (this.currentRoom === 'observatory') return 'Observatory';
+    return 'Study';
   }
 
   public onRoomChange(callback: (room: RoomMusicTheme) => void) {
@@ -178,7 +180,10 @@ export class HearthAudio {
   }
 
   public setRoom(room: string) {
-    const targetRoom: RoomMusicTheme = room === 'observatory' ? 'observatory' : 'study';
+    let targetRoom: RoomMusicTheme = 'study';
+    if (room === 'observatory') targetRoom = 'observatory';
+    else if (room === 'escher') targetRoom = 'escher';
+
     if (this.currentRoom === targetRoom) return;
 
     this.currentRoom = targetRoom;
@@ -195,7 +200,10 @@ export class HearthAudio {
         const rampNow = this.ctx.currentTime;
         this.stepIndex = 0;
 
-        if (this.currentRoom === 'observatory') {
+        if (this.currentRoom === 'escher') {
+          this.filterNode.frequency.setTargetAtTime(3200, rampNow, 0.2);
+          this.filterNode.Q.setTargetAtTime(1.8, rampNow, 0.2);
+        } else if (this.currentRoom === 'observatory') {
           this.filterNode.frequency.setTargetAtTime(2400, rampNow, 0.2);
           this.filterNode.Q.setTargetAtTime(1.2, rampNow, 0.2);
         } else {
@@ -225,8 +233,8 @@ export class HearthAudio {
     // Warm vintage console filter
     this.filterNode = this.ctx.createBiquadFilter();
     this.filterNode.type = 'lowpass';
-    const initialFreq = this.currentRoom === 'observatory' ? 2400 : 1750;
-    const initialQ = this.currentRoom === 'observatory' ? 1.2 : 0.7;
+    const initialFreq = this.currentRoom === 'escher' ? 3200 : this.currentRoom === 'observatory' ? 2400 : 1750;
+    const initialQ = this.currentRoom === 'escher' ? 1.8 : this.currentRoom === 'observatory' ? 1.2 : 0.7;
     this.filterNode.frequency.setValueAtTime(initialFreq, this.ctx.currentTime);
     this.filterNode.Q.setValueAtTime(initialQ, this.ctx.currentTime);
 
@@ -298,6 +306,43 @@ export class HearthAudio {
 
       const now = this.ctx.currentTime;
       const step = this.stepIndex;
+
+      // ----------------- ESCHER PARADOX SOUNDTRACK (Shepard Tone & Escapement) -----------------
+      if (this.currentRoom === 'escher') {
+        // 1. Shepard Tone Glissando / Infinite Chord
+        // 5 Octaves spaced by 12 semitones: A1 (55Hz) to A6 (1760Hz)
+        const s = step % 12;
+        const totalOctaves = 5;
+        for (let k = 0; k < totalOctaves; k++) {
+          const freq = 55 * Math.pow(2, k + s / 12);
+          // Cosine bell-curve envelope centered at ~440 Hz
+          const t = (k + s / 12) / totalOctaves;
+          const weight = 0.5 * (1 - Math.cos(2 * Math.PI * t));
+          const shepardVol = weight * 0.12;
+          if (shepardVol > 0.005) {
+            this.playTone(freq, now, 0.45, 'sine', shepardVol, 0.04);
+          }
+        }
+
+        // 2. Mechanical Clockwork Escapement Tick (Möbius & Waterfall gear train)
+        if (step % 2 === 0) {
+          const tickFreq = step % 4 === 0 ? 1400 : 980;
+          this.playTone(tickFreq, now, 0.035, 'triangle', 0.07, 0.005);
+        }
+
+        // 3. Bach-Escher Modal Canon Lead (D Hungarian Minor / Dorian #4)
+        const canonNotes = [293.66, 349.23, 415.3, 440.0, 523.25, 493.88, 415.3, 349.23];
+        if (step % 4 === 1 || step % 4 === 3) {
+          const note = canonNotes[Math.floor(step / 2) % canonNotes.length];
+          this.playTone(note, now, 0.32, 'triangle', 0.12, 0.02);
+        }
+
+        this.stepIndex++;
+        this.sequenceTimer = window.setTimeout(tick, 250); // 60 BPM
+        return;
+      }
+
+      // ----------------- STUDY & OBSERVATORY SOUNDTRACKS -----------------
       const measure = Math.floor((step % 64) / 16);
       const beatInMeasure = step % 16;
       const isObs = this.currentRoom === 'observatory';
@@ -433,5 +478,94 @@ export class HearthAudio {
       osc.stop(t + 0.07);
     }
   }
+
+  /**
+   * Perpetual Waterfall pebble drop:
+   * Combines an acoustic water droplet descent with a resonant crystalline chime.
+   */
+  public playWaterSplash() {
+    this.initContext();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    // Resonant water droplet downward chirp
+    const osc1 = this.ctx.createOscillator();
+    const gain1 = this.ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(1600, now);
+    osc1.frequency.exponentialRampToValueAtTime(700, now + 0.15);
+
+    gain1.gain.setValueAtTime(0.001, now);
+    gain1.gain.linearRampToValueAtTime(0.25, now + 0.02);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+    osc1.connect(gain1);
+    gain1.connect(this.ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.2);
+
+    // Crystalline chime harmonic (G6: 1567.98 Hz)
+    const osc2 = this.ctx.createOscillator();
+    const gain2 = this.ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(1567.98, now + 0.04);
+    gain2.gain.setValueAtTime(0.12, now + 0.04);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+    osc2.connect(gain2);
+    gain2.connect(this.ctx.destination);
+    osc2.start(now + 0.04);
+    osc2.stop(now + 0.38);
+  }
+
+  /**
+   * Clockwork Terrarium escapement click
+   */
+  public playClockworkTick() {
+    this.initContext();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(2200, now);
+    osc.frequency.exponentialRampToValueAtTime(800, now + 0.03);
+
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.04);
+  }
+
+  /**
+   * Pencil scratch / graphite sketch stroke
+   */
+  public playPencilScratch() {
+    this.initContext();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    for (let i = 0; i < 3; i++) {
+      const t = now + i * 0.04;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(3200 + i * 400, t);
+      osc.frequency.exponentialRampToValueAtTime(1800, t + 0.025);
+
+      gain.gain.setValueAtTime(0.04, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.035);
+    }
+  }
 }
+
 

@@ -11,6 +11,7 @@ import {
   drawCascadingIvy,
   drawBostonFern,
 } from '../../render/sprites';
+import { drawSideWallPortal } from '../../render/escherSprites';
 import { bookshelfStation } from './stations/bookshelf';
 import { readingNookStation } from './stations/readingNook';
 import { curioCabinetStation } from './stations/curioCabinet';
@@ -85,6 +86,21 @@ export const studyRoomConfig: RoomConfig = {
         facing: 'down',
       },
     },
+    {
+      id: 'to_escher',
+      name: 'Portal to Paradox Gallery',
+      prompt: 'Enter The Paradox Gallery',
+      tileX: 0,
+      tileY: 5.5,
+      tileWidth: 1.5,
+      tileHeight: 2.5,
+      targetRoomId: 'escher',
+      targetSpawnPoint: {
+        x: 17 * TILE_SIZE,
+        y: 7 * TILE_SIZE,
+        facing: 'left',
+      },
+    },
   ],
   ambientLight: {
     type: 'evening',
@@ -116,6 +132,17 @@ export const studyRoomConfig: RoomConfig = {
 
     // Architectural Persian Rug under the reading nook
     drawOrnateRug(ctx, 2.0 * TILE_SIZE, 4.2 * TILE_SIZE, 4.8 * TILE_SIZE, 4.6 * TILE_SIZE);
+
+    // West Doorway Portal leading to Paradox Gallery
+    drawSideWallPortal(
+      ctx,
+      0,
+      5.5 * TILE_SIZE,
+      28,
+      80,
+      'west',
+      'PARADOX GALLERY'
+    );
 
     // South Doorway Threshold leading down to Observatory
     drawObservatoryDoorway(
