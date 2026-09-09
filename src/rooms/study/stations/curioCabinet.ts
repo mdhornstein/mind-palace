@@ -1,7 +1,6 @@
 import { WorldStation, WorldState, DeepReadonly } from '../../../core/types';
 import { TILE_SIZE } from '../../../core/constants';
 import { drawFossilCabinet } from '../../../render/sprites';
-import { openCabinetModal } from '../../../ui/cabinetModal';
 
 export const curioCabinetStation: WorldStation = {
   id: 'cabinet',
@@ -33,7 +32,8 @@ export const curioCabinetStation: WorldStation = {
       timeMs
     );
   },
-  onInteract: (stateManager: any, _overlay: any) => {
-    openCabinetModal(stateManager);
+  intent: {
+    type: 'modal',
+    modalId: 'cabinet',
   },
 };

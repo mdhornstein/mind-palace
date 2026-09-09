@@ -1,7 +1,6 @@
 import { WorldStation, WorldState, DeepReadonly } from '../../../core/types';
 import { TILE_SIZE } from '../../../core/constants';
 import { drawTelescope } from '../../../render/sprites';
-import { openTelescopeModal } from '../../../ui/telescopeModal';
 
 export const telescopeStation: WorldStation = {
   id: 'telescope',
@@ -31,7 +30,8 @@ export const telescopeStation: WorldStation = {
       timeMs
     );
   },
-  onInteract: (stateManager: any, _overlay: any) => {
-    openTelescopeModal(stateManager);
+  intent: {
+    type: 'modal',
+    modalId: 'telescope',
   },
 };

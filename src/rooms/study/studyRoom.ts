@@ -89,6 +89,14 @@ export const studyRoomConfig: RoomConfig = {
       },
     },
   ],
+  architecturalCollisions: [
+    {
+      x: 8.5 * TILE_SIZE,
+      y: 1.2 * TILE_SIZE,
+      w: 2.5 * TILE_SIZE,
+      h: 2.0 * TILE_SIZE,
+    },
+  ],
   ambientLight: {
     type: 'evening',
     primaryGlowColor: '#f59e0b',

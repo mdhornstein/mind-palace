@@ -14,12 +14,7 @@ import {
   drawLithographerDesk,
   drawMobiusTerrarium,
 } from '../../render/escherSprites';
-import {
-  openWaterfallModal,
-  openDrawingHandsModal,
-  openMobiusModal,
-  openPenroseModal,
-} from '../../ui/escherModals';
+
 
 // =============================================================================
 // ROOM 3: THE M.C. ESCHER PARADOX GALLERY
@@ -53,8 +48,9 @@ export const escherRoomConfig: RoomConfig = {
       draw: (ctx: CanvasRenderingContext2D, timeMs: number, _state: DeepReadonly<WorldState>) => {
         drawWaterfallStation(ctx, 1.0 * TILE_SIZE, 1.5 * TILE_SIZE, timeMs);
       },
-      onInteract: (stateManager: any, _overlay: any) => {
-        openWaterfallModal(stateManager);
+      intent: {
+        type: 'modal',
+        modalId: 'escher_waterfall',
       },
     },
 
@@ -80,8 +76,9 @@ export const escherRoomConfig: RoomConfig = {
       draw: (ctx: CanvasRenderingContext2D, timeMs: number, _state: DeepReadonly<WorldState>) => {
         drawLithographerDesk(ctx, 14.2 * TILE_SIZE, 1.6 * TILE_SIZE, timeMs);
       },
-      onInteract: (stateManager: any, _overlay: any) => {
-        openDrawingHandsModal(stateManager);
+      intent: {
+        type: 'modal',
+        modalId: 'escher_drawing_hands',
       },
     },
 
@@ -107,8 +104,9 @@ export const escherRoomConfig: RoomConfig = {
       draw: (ctx: CanvasRenderingContext2D, timeMs: number, _state: DeepReadonly<WorldState>) => {
         drawMobiusTerrarium(ctx, 14.0 * TILE_SIZE, 9.0 * TILE_SIZE, timeMs);
       },
-      onInteract: (stateManager: any, _overlay: any) => {
-        openMobiusModal(stateManager);
+      intent: {
+        type: 'modal',
+        modalId: 'escher_mobius',
       },
     },
 
@@ -134,8 +132,9 @@ export const escherRoomConfig: RoomConfig = {
       draw: (ctx: CanvasRenderingContext2D, timeMs: number, _state: DeepReadonly<WorldState>) => {
         drawPenroseStairs(ctx, 10.0 * TILE_SIZE, 7.2 * TILE_SIZE, timeMs);
       },
-      onInteract: (stateManager: any, _overlay: any) => {
-        openPenroseModal(stateManager);
+      intent: {
+        type: 'modal',
+        modalId: 'escher_penrose_stairs',
       },
     },
   ],

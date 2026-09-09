@@ -6,10 +6,12 @@ import { CompanionController } from './world/companion';
 import { RoomRenderer } from './render/roomRenderer';
 import { ModalOverlay } from './ui/overlay';
 import { DevTray } from './ui/devTray';
-import { InteractiveZone, RoomConfig, WorldStation, Direction, Doorway } from './core/types';
+import { RoomConfig, Direction, InteractiveTarget } from './core/types';
 import { RoomRegistry } from './rooms/registry';
 import { HearthAudio } from './sound/audio';
 import { duckephantEntity } from './rooms/study/stations/duckephant';
+import { InteractionSystem } from './world/interactionSystem';
+import { InteractionDispatcher } from './ui/interactionDispatcher';
 
 class MindPalaceApp {
   private canvas: HTMLCanvasElement;
@@ -21,7 +23,8 @@ class MindPalaceApp {
   private overlay: ModalOverlay;
   private promptEl: HTMLDivElement;
   private speechEl: HTMLDivElement;
-  private activeZone: InteractiveZone | null = null;
+  private activeTarget: InteractiveTarget | null = null;
+  private pendingTarget: InteractiveTarget | null = null;
   private currentRoom: RoomConfig;
   private lastSaveTime = Date.now();
   private lastLoopTime = performance.now();
@@ -83,68 +86,41 @@ class MindPalaceApp {
     resize();
   }
 
-  private getClickedStation(clickX: number, clickY: number): WorldStation | null {
-    for (const station of this.currentRoom.stations) {
-      const sx = station.tileX * TILE_SIZE;
-      const sy = station.tileY * TILE_SIZE;
-      const sw = station.tileWidth * TILE_SIZE;
-      const sh = station.tileHeight * TILE_SIZE;
-
-      // Generous clickable boundary for furniture
-      const expandedX = sx - 10;
-      const expandedY = sy - 10;
-      const expandedW = sw + 20;
-      const expandedH = sh + 25;
-
-      if (
-        clickX >= expandedX &&
-        clickX <= expandedX + expandedW &&
-        clickY >= expandedY &&
-        clickY <= expandedY + expandedH
-      ) {
-        return station;
-      }
-    }
-    return null;
-  }
-
-  private getClickedDoor(clickX: number, clickY: number): Doorway | null {
-    for (const door of this.currentRoom.doors) {
-      const dx = door.tileX * TILE_SIZE;
-      const dy = door.tileY * TILE_SIZE;
-      const dw = door.tileWidth * TILE_SIZE;
-      const dh = door.tileHeight * TILE_SIZE;
-
-      if (
-        clickX >= dx - 10 &&
-        clickX <= dx + dw + 10 &&
-        clickY >= dy - 10 &&
-        clickY <= dy + dh + 18
-      ) {
-        return door;
-      }
-    }
-    return null;
-  }
-
   private setupInteractions() {
-    // Keyboard inspection trigger (Space, Enter, E)
+    // Keyboard inspection trigger (Space, Enter, E) and movement key handling
     window.addEventListener('keydown', (e) => {
+      if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+        return;
+      }
+
+      // Manual movement cancels click-to-walk interaction
+      const moveKeys = [
+        'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+        'KeyW', 'KeyS', 'KeyA', 'KeyD',
+        'w', 's', 'a', 'd',
+        'arrowup', 'arrowdown', 'arrowleft', 'arrowright'
+      ];
+      if (moveKeys.includes(e.code) || (e.key && moveKeys.includes(e.key.toLowerCase()))) {
+        this.pendingTarget = null;
+      }
+
       if (this.overlay.isOpen()) return;
+
       const isInteractKey =
         ['Space', 'Enter', 'KeyE'].includes(e.code) ||
         [' ', 'Spacebar', 'Enter', 'e', 'E'].includes(e.key);
-      if (isInteractKey && this.activeZone) {
+
+      if (isInteractKey && this.activeTarget) {
         e.preventDefault();
-        this.triggerInteraction(this.activeZone.id);
+        this.triggerActiveInteraction();
       }
     });
 
     // Clicking the prompt pill directly triggers the interaction
     this.promptEl.addEventListener('click', () => {
       if (this.overlay.isOpen()) return;
-      if (this.activeZone) {
-        this.triggerInteraction(this.activeZone.id);
+      if (this.activeTarget) {
+        this.triggerActiveInteraction();
       }
     });
 
@@ -161,9 +137,8 @@ class MindPalaceApp {
       const mouseX = (e.clientX - rect.left) * scaleX;
       const mouseY = (e.clientY - rect.top) * scaleY;
 
-      const hoveredStation = this.getClickedStation(mouseX, mouseY);
-      const hoveredDoor = this.getClickedDoor(mouseX, mouseY);
-      this.canvas.style.cursor = (hoveredStation || hoveredDoor) ? 'pointer' : 'default';
+      const hoveredTarget = InteractionSystem.findInteractiveAt(this.currentRoom, mouseX, mouseY);
+      this.canvas.style.cursor = hoveredTarget ? 'pointer' : 'default';
     });
 
     // Canvas click to move or click to interact
@@ -177,44 +152,52 @@ class MindPalaceApp {
       const clickX = (e.clientX - rect.left) * scaleX;
       const clickY = (e.clientY - rect.top) * scaleY;
 
-      // 1. Check if doorway was clicked directly
-      const clickedDoor = this.getClickedDoor(clickX, clickY);
-      if (clickedDoor) {
-        this.transitionToRoom(clickedDoor.targetRoomId, clickedDoor.targetSpawnPoint);
-        return;
+      const clickedTarget = InteractionSystem.findInteractiveAt(this.currentRoom, clickX, clickY);
+
+      if (clickedTarget) {
+        if (clickedTarget.kind === 'door') {
+          // Explicit UX Invariant: Door click -> immediate room transition
+          this.pendingTarget = null;
+          this.player.clearTarget();
+          this.transitionToRoom(clickedTarget.door.targetRoomId, clickedTarget.door.targetSpawnPoint);
+          return;
+        }
+
+        if (clickedTarget.kind === 'station') {
+          // Explicit UX Invariant: Station click -> walk to interaction point -> interact upon arrival
+          const targetPoint = InteractionSystem.getInteractionPoint(clickedTarget);
+          this.player.setTargetPosition(targetPoint.x, targetPoint.y);
+          this.pendingTarget = clickedTarget;
+          return;
+        }
       }
 
-      // 2. Check if an interactive station was clicked
-      const clickedStation = this.getClickedStation(clickX, clickY);
-
-      if (clickedStation) {
-        // Instantly face and trigger the interaction at the station's approach spot!
-        this.player.teleportTo(clickedStation.approachPoint.x, clickedStation.approachPoint.y);
-        this.stateManager.syncPlayerPosition(this.player.x, this.player.y, this.player.facing);
-        clickedStation.onInteract(this.stateManager, this.overlay);
-        return;
-      }
-
-      // 3. Click on open floor: walk smoothly to location
+      // Open floor click: walk directly to clicked coordinate, cancelling pending station interaction
       this.player.setTargetPosition(clickX, clickY);
+      this.pendingTarget = null;
     });
   }
 
-  private triggerInteraction(zoneId: string) {
-    // 1. Check if it matches an interactive station in the current room
-    const station = this.currentRoom.stations.find((s) => s.id === zoneId);
-    if (station) {
-      station.onInteract(this.stateManager, this.overlay);
+  private triggerActiveInteraction() {
+    if (!this.activeTarget) return;
+
+    if (this.activeTarget.kind === 'door') {
+      this.pendingTarget = null;
+      this.player.clearTarget();
+      this.transitionToRoom(
+        this.activeTarget.door.targetRoomId,
+        this.activeTarget.door.targetSpawnPoint
+      );
       return;
     }
 
-    // 2. Check if it matches a doorway transition
-    if (zoneId.startsWith('door_')) {
-      const doorId = zoneId.replace('door_', '');
-      const door = this.currentRoom.doors.find((d) => d.id === doorId);
-      if (door) {
-        this.transitionToRoom(door.targetRoomId, door.targetSpawnPoint);
-      }
+    if (this.activeTarget.kind === 'station') {
+      this.pendingTarget = null;
+      this.player.stop();
+      InteractionDispatcher.dispatch(this.activeTarget.station.intent, {
+        stateManager: this.stateManager,
+        transitionToRoom: (roomId, spawn) => this.transitionToRoom(roomId, spawn),
+      });
     }
   }
 
@@ -227,7 +210,8 @@ class MindPalaceApp {
       this.player.teleportTo(spawnPoint.x, spawnPoint.y, spawnPoint.facing);
       this.stateManager.syncPlayerPosition(this.player.x, this.player.y, this.player.facing);
     }
-    this.activeZone = null;
+    this.activeTarget = null;
+    this.pendingTarget = null;
     this.updatePromptUI();
     this.updateSpeechUI(this.stateManager.getState());
     HearthAudio.getInstance().setRoom(roomId);
@@ -235,18 +219,45 @@ class MindPalaceApp {
   }
 
   private updatePromptUI() {
-    if (this.overlay.isOpen() || !this.activeZone) {
+    if (this.overlay.isOpen() || !this.activeTarget) {
       this.promptEl.className = '';
       return;
     }
 
     const rect = this.canvas.getBoundingClientRect();
     const scale = rect.width / CANVAS_WIDTH;
-    const zoneCenterX = this.activeZone.x + this.activeZone.width / 2;
+
+    let zoneX: number;
+    let zoneY: number;
+    let zoneW: number;
+    let zoneH: number;
+    let name: string;
+    let prompt: string;
+    const isPortal = this.activeTarget.kind === 'door';
+
+    if (this.activeTarget.kind === 'door') {
+      const door = this.activeTarget.door;
+      zoneX = door.tileX * TILE_SIZE;
+      zoneY = door.tileY * TILE_SIZE;
+      zoneW = door.tileWidth * TILE_SIZE;
+      zoneH = door.tileHeight * TILE_SIZE;
+      name = door.name;
+      prompt = door.prompt;
+    } else {
+      const station = this.activeTarget.station;
+      zoneX = station.tileX * TILE_SIZE;
+      zoneY = station.tileY * TILE_SIZE;
+      zoneW = station.tileWidth * TILE_SIZE;
+      zoneH = station.tileHeight * TILE_SIZE;
+      name = station.name;
+      prompt = station.prompt;
+    }
+
+    const zoneCenterX = zoneX + zoneW / 2;
     // Anchor prompt dynamically above the zone
-    let targetCanvasY = this.activeZone.y - 12;
+    let targetCanvasY = zoneY - 12;
     if (targetCanvasY < 40) {
-      targetCanvasY = this.activeZone.y + this.activeZone.height + 22;
+      targetCanvasY = zoneY + zoneH + 22;
     }
 
     const screenX = rect.left + zoneCenterX * scale;
@@ -254,16 +265,14 @@ class MindPalaceApp {
 
     this.promptEl.style.left = `${screenX}px`;
     this.promptEl.style.top = `${screenY}px`;
-
-    const isPortal = this.activeZone.id.startsWith('door_');
     this.promptEl.className = isPortal ? 'visible portal-prompt' : 'visible';
     this.promptEl.innerHTML = `
       <div class="prompt-keys">
         <kbd>Space</kbd>
         <kbd>Click</kbd>
       </div>
-      <span class="prompt-name">${this.activeZone.name}</span>
-      <span class="prompt-action">${this.activeZone.prompt}</span>
+      <span class="prompt-name">${name}</span>
+      <span class="prompt-action">${prompt}</span>
     `;
   }
 
@@ -296,22 +305,52 @@ class MindPalaceApp {
 
       // If modal dialog is open, pause player walking updates
       if (!this.overlay.isOpen()) {
-        const { changed, activeZone } = this.player.update(dt);
-        this.activeZone = activeZone;
+        const { changed } = this.player.update(dt);
+
+        // Update active target via unified foot proximity detection
+        this.activeTarget = InteractionSystem.findNearbyInteractive(
+          this.currentRoom,
+          this.player.x,
+          this.player.y
+        );
+
+        // Check if player arrived at pending click-to-walk interaction target
+        if (this.pendingTarget && this.pendingTarget.kind === 'station') {
+          const arrivedAtDestination = !this.player.isNavigating();
+          const reachedStationProximity =
+            this.activeTarget?.kind === 'station' &&
+            this.activeTarget.station.id === this.pendingTarget.station.id;
+
+          if (arrivedAtDestination || reachedStationProximity) {
+            const station = this.pendingTarget.station;
+            this.pendingTarget = null;
+            this.player.stop();
+            InteractionDispatcher.dispatch(station.intent, {
+              stateManager: this.stateManager,
+              transitionToRoom: (roomId, spawn) => this.transitionToRoom(roomId, spawn),
+            });
+          }
+        }
 
         // Check seamless automatic doorway walking threshold (cooldown prevents instant bounceback)
         if (
-          this.activeZone &&
-          this.activeZone.id.startsWith('door_') &&
+          this.activeTarget &&
+          this.activeTarget.kind === 'door' &&
           Date.now() - this.lastTransitionTime > 1000
         ) {
           // In Observatory walking up onto the North terrace threshold
           if (this.currentRoom.id === 'observatory' && this.player.y <= 4.0 * TILE_SIZE) {
-            this.triggerInteraction(this.activeZone.id);
+            this.transitionToRoom(
+              this.activeTarget.door.targetRoomId,
+              this.activeTarget.door.targetSpawnPoint
+            );
           }
           // In Study walking down into the South doorway threshold
           else if (this.currentRoom.id === 'study' && this.player.y >= 13.0 * TILE_SIZE) {
-            this.triggerInteraction(this.activeZone.id);
+            this.transitionToRoom(
+              this.activeTarget.door.targetRoomId,
+              this.activeTarget.door.targetSpawnPoint
+            );
           }
         }
 
@@ -341,7 +380,7 @@ class MindPalaceApp {
       this.renderer.render(
         state,
         this.player,
-        this.activeZone,
+        this.activeTarget,
         now,
         this.currentRoom
       );

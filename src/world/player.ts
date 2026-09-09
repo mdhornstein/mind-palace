@@ -1,5 +1,6 @@
-import { Direction, InteractiveZone, BoundingBox, RoomConfig } from '../core/types';
+import { Direction, BoundingBox, RoomConfig } from '../core/types';
 import { TILE_SIZE, CANVAS_WIDTH, CANVAS_HEIGHT } from '../core/constants';
+import { InteractionSystem } from './interactionSystem';
 
 export class PlayerController {
   public x: number;
@@ -12,7 +13,6 @@ export class PlayerController {
   private speed = 210;
   private keys: Record<string, boolean> = {};
   private targetPos: { x: number; y: number } | null = null;
-  private pendingInteraction: { zone: InteractiveZone; onArrival: (zone: InteractiveZone) => void } | null = null;
 
   // Dynamic Room & Obstacle State
   private currentRoom: RoomConfig | null = null;
@@ -34,37 +34,11 @@ export class PlayerController {
   }
 
   private rebuildObstacles() {
-    if (!this.currentRoom) return;
-    const room = this.currentRoom;
-
-    // Architectural Perimeter Obstacles
-    this.obstacles = [];
-
-    // Fireplace Mantle (north center of the Study)
-    if (room.id === 'study') {
-      this.obstacles.push({
-        x: 8.5 * TILE_SIZE,
-        y: 1.2 * TILE_SIZE,
-        w: 2.5 * TILE_SIZE,
-        h: 2 * TILE_SIZE,
-      });
+    if (!this.currentRoom) {
+      this.obstacles = [];
+      return;
     }
-
-    // Collect solid collision boxes dynamically from all stations in this room!
-    for (const station of room.stations) {
-      if (station.collisionBox) {
-        this.obstacles.push(station.collisionBox);
-      }
-    }
-
-    // Collect solid collision boxes from decorative props
-    if (room.decorativeProps) {
-      for (const prop of room.decorativeProps) {
-        if (prop.collisionBox) {
-          this.obstacles.push(prop.collisionBox);
-        }
-      }
-    }
+    this.obstacles = InteractionSystem.getRoomObstacles(this.currentRoom);
   }
 
   private setupListeners() {
@@ -77,10 +51,14 @@ export class PlayerController {
       if (e.key) {
         this.keys[e.key.toLowerCase()] = true;
       }
-      const moveKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'w', 's', 'a', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'];
+      const moveKeys = [
+        'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+        'KeyW', 'KeyS', 'KeyA', 'KeyD',
+        'w', 's', 'a', 'd',
+        'arrowup', 'arrowdown', 'arrowleft', 'arrowright'
+      ];
       if (moveKeys.includes(e.code) || (e.key && moveKeys.includes(e.key.toLowerCase()))) {
         this.targetPos = null; // Keyboard cancels click-to-move
-        this.pendingInteraction = null;
       }
     });
 
@@ -100,7 +78,6 @@ export class PlayerController {
     this.x = x;
     this.y = y;
     this.targetPos = null;
-    this.pendingInteraction = null;
     this.isMoving = false;
     if (facing) {
       this.facing = facing;
@@ -108,24 +85,34 @@ export class PlayerController {
   }
 
   public setTargetPosition(worldX: number, worldY: number) {
-    this.pendingInteraction = null;
+    const bounds = this.currentRoom
+      ? InteractionSystem.getRoomPixelBounds(this.currentRoom)
+      : { width: CANVAS_WIDTH, height: CANVAS_HEIGHT };
+
     this.targetPos = {
-      x: Math.max(TILE_SIZE + 10, Math.min(CANVAS_WIDTH - TILE_SIZE - 20, worldX)),
-      y: Math.max(2 * TILE_SIZE + 10, Math.min(CANVAS_HEIGHT - TILE_SIZE - 20, worldY)),
+      x: Math.max(TILE_SIZE + 10, Math.min(bounds.width - TILE_SIZE - 20, worldX)),
+      y: Math.max(2 * TILE_SIZE + 10, Math.min(bounds.height - TILE_SIZE - 20, worldY)),
     };
   }
 
-  public walkToAndInteract(
-    destX: number,
-    destY: number,
-    zone: InteractiveZone,
-    onArrival: (zone: InteractiveZone) => void
-  ) {
-    this.targetPos = { x: destX, y: destY };
-    this.pendingInteraction = { zone, onArrival };
+  public clearTarget(): void {
+    this.targetPos = null;
   }
 
-  public update(dt: number): { changed: boolean; activeZone: InteractiveZone | null } {
+  public stop(): void {
+    this.targetPos = null;
+    this.isMoving = false;
+  }
+
+  public isNavigating(): boolean {
+    return this.targetPos !== null;
+  }
+
+  public isAtTarget(): boolean {
+    return this.targetPos === null;
+  }
+
+  public update(dt: number): { changed: boolean } {
     let dx = 0;
     let dy = 0;
 
@@ -166,11 +153,6 @@ export class PlayerController {
       } else {
         // Arrived at target
         this.targetPos = null;
-        if (this.pendingInteraction) {
-          const pi = this.pendingInteraction;
-          this.pendingInteraction = null;
-          pi.onArrival(pi.zone);
-        }
       }
     }
 
@@ -203,40 +185,14 @@ export class PlayerController {
         movedY = true;
       }
 
-      // If clicked into an obstacle and cannot move further, complete or cancel
+      // If clicked into an obstacle and cannot move further, cancel navigation
       if (this.targetPos && !movedX && !movedY) {
-        // We're stuck against an obstacle
-        if (this.pendingInteraction) {
-          const activeZone = this.detectActiveZone();
-          if (activeZone && activeZone.id === this.pendingInteraction.zone.id) {
-            const pi = this.pendingInteraction;
-            this.pendingInteraction = null;
-            this.targetPos = null;
-            pi.onArrival(pi.zone);
-          } else {
-            this.targetPos = null;
-            this.pendingInteraction = null;
-          }
-        } else {
-          this.targetPos = null;
-        }
+        this.targetPos = null;
       }
-    }
-
-    const activeZone = this.detectActiveZone();
-
-    // If we're walking toward an interaction and we enter its zone, trigger arrival early!
-    if (this.pendingInteraction && activeZone && activeZone.id === this.pendingInteraction.zone.id) {
-      const pi = this.pendingInteraction;
-      this.pendingInteraction = null;
-      this.targetPos = null;
-      this.isMoving = false;
-      pi.onArrival(pi.zone);
     }
 
     return {
       changed: this.isMoving || wasMoving,
-      activeZone,
     };
   }
 
@@ -249,24 +205,17 @@ export class PlayerController {
       h: 10,
     };
 
-    // Check if player is entering a doorway zone (allow stepping into door thresholds)
-    const inDoorway = this.currentRoom?.doors.some((door) => {
-      const dx = door.tileX * TILE_SIZE;
-      const dy = door.tileY * TILE_SIZE;
-      const dw = door.tileWidth * TILE_SIZE;
-      const dh = door.tileHeight * TILE_SIZE;
-      return (
-        pBox.x + pBox.w >= dx - 12 &&
-        pBox.x <= dx + dw + 12 &&
-        pBox.y + pBox.h >= dy - 12 &&
-        pBox.y <= dy + dh + 12
-      );
-    });
+    const inDoorway = this.currentRoom
+      ? InteractionSystem.intersectsDoorwayThreshold(this.currentRoom, pBox)
+      : false;
 
     if (!inDoorway) {
-      // Check world bounds
-      if (pBox.x < TILE_SIZE || pBox.x + pBox.w > CANVAS_WIDTH - TILE_SIZE) return true;
-      if (pBox.y < 2 * TILE_SIZE || pBox.y + pBox.h > CANVAS_HEIGHT - TILE_SIZE / 2) return true;
+      const bounds = this.currentRoom
+        ? InteractionSystem.getRoomPixelBounds(this.currentRoom)
+        : { width: CANVAS_WIDTH, height: CANVAS_HEIGHT };
+
+      if (pBox.x < TILE_SIZE || pBox.x + pBox.w > bounds.width - TILE_SIZE) return true;
+      if (pBox.y < 2 * TILE_SIZE || pBox.y + pBox.h > bounds.height - TILE_SIZE / 2) return true;
     }
 
     // Check obstacle bounding boxes
@@ -282,67 +231,5 @@ export class PlayerController {
     }
 
     return false;
-  }
-
-  public detectActiveZone(): InteractiveZone | null {
-    if (!this.currentRoom) return null;
-    const px = this.x + 12;
-    const py = this.y + 20;
-
-    // Check all interactive stations in the active room
-    for (const station of this.currentRoom.stations) {
-      const sx = station.tileX * TILE_SIZE;
-      const sy = station.tileY * TILE_SIZE;
-      const sw = station.tileWidth * TILE_SIZE;
-      const sh = station.tileHeight * TILE_SIZE;
-
-      // Generous proximity detection around interactive stations
-      const expandedX = sx - 24;
-      const expandedY = sy - 18;
-      const expandedW = sw + 48;
-      const expandedH = sh + 40;
-
-      if (
-        px >= expandedX &&
-        px <= expandedX + expandedW &&
-        py >= expandedY &&
-        py <= expandedY + expandedH
-      ) {
-        return {
-          id: station.id,
-          name: station.name,
-          prompt: station.prompt,
-          x: sx,
-          y: sy,
-          width: sw,
-          height: sh,
-        };
-      }
-    }
-
-    // Check doorways for room transitions
-    for (const door of this.currentRoom.doors) {
-      const dx = door.tileX * TILE_SIZE;
-      const dy = door.tileY * TILE_SIZE;
-      const dw = door.tileWidth * TILE_SIZE;
-      const dh = door.tileHeight * TILE_SIZE;
-
-      if (
-        px >= dx - 20 && px <= dx + dw + 20 &&
-        py >= dy - 16 && py <= dy + dh + 16
-      ) {
-        return {
-          id: `door_${door.id}`,
-          name: door.name,
-          prompt: door.prompt,
-          x: dx,
-          y: dy,
-          width: dw,
-          height: dh,
-        };
-      }
-    }
-
-    return null;
   }
 }

@@ -1,7 +1,6 @@
 import { WorldStation, WorldState, DeepReadonly } from '../../../core/types';
 import { TILE_SIZE } from '../../../core/constants';
 import { drawStarChartDesk } from '../../../render/sprites';
-import { openStarChartModal } from '../../../ui/starChartModal';
 
 export const starChartStation: WorldStation = {
   id: 'starchart',
@@ -31,7 +30,8 @@ export const starChartStation: WorldStation = {
       timeMs
     );
   },
-  onInteract: (stateManager: any, _overlay: any) => {
-    openStarChartModal(stateManager);
+  intent: {
+    type: 'modal',
+    modalId: 'star_chart',
   },
 };

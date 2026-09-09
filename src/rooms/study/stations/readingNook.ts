@@ -1,7 +1,6 @@
 import { WorldStation, WorldState, DeepReadonly } from '../../../core/types';
 import { TILE_SIZE } from '../../../core/constants';
 import { drawReadingNook } from '../../../render/sprites';
-import { openLibraryModal } from '../../../ui/libraryModal';
 
 export const readingNookStation: WorldStation = {
   id: 'reading_nook',
@@ -30,8 +29,8 @@ export const readingNookStation: WorldStation = {
       state.environment.bookOpenOnRug
     );
   },
-  onInteract: (stateManager: any, _overlay: any) => {
-    // Reading nook seamlessly connects to library memories
-    openLibraryModal(stateManager);
+  intent: {
+    type: 'modal',
+    modalId: 'library',
   },
 };

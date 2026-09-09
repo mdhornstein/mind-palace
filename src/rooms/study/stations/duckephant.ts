@@ -1,7 +1,6 @@
 import { WorldStation, WorldState, DeepReadonly } from '../../../core/types';
 import { TILE_SIZE } from '../../../core/constants';
 import { Duckephant } from '../../../entities/duckephant';
-import { openDuckephantModal } from '../../../ui/duckephantModal';
 
 // Singleton Duckephant entity stationed on the warm right side of the hearth
 export const duckephantEntity = new Duckephant(12.5 * TILE_SIZE, 4.5 * TILE_SIZE);
@@ -22,7 +21,8 @@ export const duckephantStation: WorldStation = {
     // Render the woven reed pet mat on the floor (behind characters)
     duckephantEntity.renderHomeMat(ctx);
   },
-  onInteract: () => {
-    openDuckephantModal(duckephantEntity);
+  intent: {
+    type: 'modal',
+    modalId: 'duckephant',
   },
 };

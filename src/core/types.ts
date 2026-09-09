@@ -157,6 +157,36 @@ export interface BoundingBox {
   h: number;
 }
 
+export type ModalId =
+  | 'library'
+  | 'cabinet'
+  | 'workshop'
+  | 'duckephant'
+  | 'telescope'
+  | 'orrery'
+  | 'star_chart'
+  | 'escher_waterfall'
+  | 'escher_drawing_hands'
+  | 'escher_mobius'
+  | 'escher_penrose_stairs';
+
+export type InteractionIntent =
+  | {
+      type: 'modal';
+      modalId: ModalId;
+      params?: Record<string, string | number | boolean>;
+    }
+  | {
+      type: 'door';
+      targetRoomId: string;
+      targetSpawnPoint?: { x: number; y: number; facing: Direction };
+    }
+  | {
+      type: 'custom';
+      actionId: string;
+      params?: Record<string, string | number | boolean>;
+    };
+
 export interface WorldStation {
   id: string;
   name: string;
@@ -172,8 +202,8 @@ export interface WorldStation {
   approachPoint: { x: number; y: number };
   // Visual render hook
   draw: (ctx: CanvasRenderingContext2D, timeMs: number, state: DeepReadonly<WorldState>) => void;
-  // Interaction hook (receives state manager and overlay controller)
-  onInteract: (stateManager: any, overlay: any) => void;
+  // Declarative interaction intent
+  intent: InteractionIntent;
 }
 
 export interface Doorway {
@@ -187,6 +217,10 @@ export interface Doorway {
   targetRoomId: string;
   targetSpawnPoint: { x: number; y: number; facing: Direction };
 }
+
+export type InteractiveTarget =
+  | { kind: 'station'; station: WorldStation }
+  | { kind: 'door'; door: Doorway };
 
 export interface DecorativeProp {
   id: string;
@@ -202,8 +236,9 @@ export interface RoomConfig {
   widthTiles: number;
   heightTiles: number;
   stations: WorldStation[];
-  decorativeProps?: DecorativeProp[];
   doors: Doorway[];
+  decorativeProps?: DecorativeProp[];
+  architecturalCollisions?: BoundingBox[];
   ambientLight: {
     type: 'day' | 'evening' | 'night';
     primaryGlowColor?: string;

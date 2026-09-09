@@ -1,7 +1,6 @@
 import { WorldStation, WorldState, DeepReadonly } from '../../../core/types';
 import { TILE_SIZE } from '../../../core/constants';
 import { drawPedestal } from '../../../render/sprites';
-import { openCabinetModal } from '../../../ui/cabinetModal';
 
 export const pedestalStation: WorldStation = {
   id: 'pedestal',
@@ -32,9 +31,11 @@ export const pedestalStation: WorldStation = {
       featuredSpecimen ? featuredSpecimen.name : null
     );
   },
-  onInteract: (stateManager: any, _overlay: any) => {
-    // Inspecting pedestal opens cabinet view to examine specimen details
-    const state = stateManager.getState();
-    openCabinetModal(stateManager, state.environment.activePedestalSpecimenId || undefined);
+  intent: {
+    type: 'modal',
+    modalId: 'cabinet',
+    params: {
+      initialSpecimenIdSource: 'activePedestal',
+    },
   },
 };

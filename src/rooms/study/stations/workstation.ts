@@ -1,7 +1,6 @@
 import { WorldStation, WorldState, DeepReadonly } from '../../../core/types';
 import { TILE_SIZE } from '../../../core/constants';
 import { drawWorkshop } from '../../../render/sprites';
-import { openWorkshopModal } from '../../../ui/workshopModal';
 
 export const workstationStation: WorldStation = {
   id: 'workshop',
@@ -34,7 +33,8 @@ export const workstationStation: WorldStation = {
       timeMs
     );
   },
-  onInteract: (stateManager: any, _overlay: any) => {
-    openWorkshopModal(stateManager);
+  intent: {
+    type: 'modal',
+    modalId: 'workshop',
   },
 };

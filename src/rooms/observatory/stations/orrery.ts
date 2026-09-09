@@ -1,7 +1,6 @@
 import { WorldStation, WorldState, DeepReadonly } from '../../../core/types';
 import { TILE_SIZE } from '../../../core/constants';
 import { drawOrrery } from '../../../render/sprites';
-import { openOrreryModal } from '../../../ui/orreryModal';
 
 export const orreryStation: WorldStation = {
   id: 'orrery',
@@ -31,7 +30,8 @@ export const orreryStation: WorldStation = {
       timeMs
     );
   },
-  onInteract: (stateManager: any, _overlay: any) => {
-    openOrreryModal(stateManager);
+  intent: {
+    type: 'modal',
+    modalId: 'orrery',
   },
 };
