@@ -155,6 +155,7 @@ export const escherRoomConfig: RoomConfig = {
         y: 6.8 * TILE_SIZE,
         facing: 'right',
       },
+      transitionMode: 'auto',
     },
   ],
 

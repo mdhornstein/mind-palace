@@ -216,6 +216,7 @@ export interface Doorway {
   tileHeight: number;
   targetRoomId: string;
   targetSpawnPoint: { x: number; y: number; facing: Direction };
+  transitionMode?: 'auto' | 'inspect';
 }
 
 export type InteractiveTarget =
@@ -243,6 +244,8 @@ export interface RoomConfig {
     type: 'day' | 'evening' | 'night';
     primaryGlowColor?: string;
   };
+  hasCompanion?: boolean;
+  onUpdate?: (dt: number, player: { x: number; y: number }) => void;
   customDrawBackground?: (ctx: CanvasRenderingContext2D, state: DeepReadonly<WorldState>) => void;
   customDrawAtmosphere?: (ctx: CanvasRenderingContext2D, timeMs: number) => void;
 }

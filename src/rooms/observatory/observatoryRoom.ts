@@ -38,6 +38,7 @@ export const observatoryRoomConfig: RoomConfig = {
         y: 13.0 * TILE_SIZE,
         facing: 'up',
       },
+      transitionMode: 'auto',
     },
   ],
   ambientLight: {

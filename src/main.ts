@@ -9,8 +9,7 @@ import { DevTray } from './ui/devTray';
 import { RoomConfig, Direction, InteractiveTarget } from './core/types';
 import { RoomRegistry } from './rooms/registry';
 import { HearthAudio } from './sound/audio';
-import { duckephantEntity } from './rooms/study/stations/duckephant';
-import { InteractionSystem } from './world/interactionSystem';
+import { InteractionSystem, shouldDispatchPendingInteraction } from './world/interactionSystem';
 import { InteractionDispatcher } from './ui/interactionDispatcher';
 
 class MindPalaceApp {
@@ -277,7 +276,7 @@ class MindPalaceApp {
   }
 
   private updateSpeechUI(state: ReturnType<StateManager['getState']>) {
-    if (this.currentRoom.id === 'study' && state.companion.speech) {
+    if (this.currentRoom.hasCompanion && state.companion.speech) {
       const now = Date.now();
       const elapsed = now - state.companion.speech.timestamp;
       if (elapsed < state.companion.speech.durationMs) {
@@ -316,12 +315,15 @@ class MindPalaceApp {
 
         // Check if player arrived at pending click-to-walk interaction target
         if (this.pendingTarget && this.pendingTarget.kind === 'station') {
-          const arrivedAtDestination = !this.player.isNavigating();
-          const reachedStationProximity =
-            this.activeTarget?.kind === 'station' &&
-            this.activeTarget.station.id === this.pendingTarget.station.id;
+          const navStatus = this.player.getNavigationStatus();
 
-          if (arrivedAtDestination || reachedStationProximity) {
+          if (
+            shouldDispatchPendingInteraction(
+              this.pendingTarget,
+              this.activeTarget,
+              navStatus
+            )
+          ) {
             const station = this.pendingTarget.station;
             this.pendingTarget = null;
             this.player.stop();
@@ -329,27 +331,23 @@ class MindPalaceApp {
               stateManager: this.stateManager,
               transitionToRoom: (roomId, spawn) => this.transitionToRoom(roomId, spawn),
             });
+          } else if (navStatus === 'blocked') {
+            // Path was blocked by an obstacle; cancel pending interaction
+            this.pendingTarget = null;
           }
         }
 
         // Check seamless automatic doorway walking threshold (cooldown prevents instant bounceback)
-        if (
-          this.activeTarget &&
-          this.activeTarget.kind === 'door' &&
-          Date.now() - this.lastTransitionTime > 1000
-        ) {
-          // In Observatory walking up onto the North terrace threshold
-          if (this.currentRoom.id === 'observatory' && this.player.y <= 4.0 * TILE_SIZE) {
+        if (Date.now() - this.lastTransitionTime > 1000) {
+          const steppedDoor = InteractionSystem.findSteppedDoorway(
+            this.currentRoom,
+            this.player.x,
+            this.player.y
+          );
+          if (steppedDoor) {
             this.transitionToRoom(
-              this.activeTarget.door.targetRoomId,
-              this.activeTarget.door.targetSpawnPoint
-            );
-          }
-          // In Study walking down into the South doorway threshold
-          else if (this.currentRoom.id === 'study' && this.player.y >= 13.0 * TILE_SIZE) {
-            this.transitionToRoom(
-              this.activeTarget.door.targetRoomId,
-              this.activeTarget.door.targetSpawnPoint
+              steppedDoor.targetRoomId,
+              steppedDoor.targetSpawnPoint
             );
           }
         }
@@ -366,8 +364,8 @@ class MindPalaceApp {
         }
 
         this.companion.update(dt);
-        if (this.currentRoom.id === 'study') {
-          duckephantEntity.update(dt * 1000, this.player.x, this.player.y);
+        if (this.currentRoom.onUpdate) {
+          this.currentRoom.onUpdate(dt, { x: this.player.x, y: this.player.y });
         }
       }
 

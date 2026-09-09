@@ -17,7 +17,7 @@ import { readingNookStation } from './stations/readingNook';
 import { curioCabinetStation } from './stations/curioCabinet';
 import { pedestalStation } from './stations/pedestal';
 import { workstationStation } from './stations/workstation';
-import { duckephantStation } from './stations/duckephant';
+import { duckephantStation, duckephantEntity } from './stations/duckephant';
 
 export const studyRoomConfig: RoomConfig = {
   id: 'study',
@@ -71,6 +71,7 @@ export const studyRoomConfig: RoomConfig = {
         y: 3 * TILE_SIZE,
         facing: 'down',
       },
+      transitionMode: 'auto',
     },
     // Doorway to The M.C. Escher Paradox Gallery on the West Wall
     {
@@ -87,6 +88,7 @@ export const studyRoomConfig: RoomConfig = {
         y: 7 * TILE_SIZE,
         facing: 'left',
       },
+      transitionMode: 'auto',
     },
   ],
   architecturalCollisions: [
@@ -100,6 +102,10 @@ export const studyRoomConfig: RoomConfig = {
   ambientLight: {
     type: 'evening',
     primaryGlowColor: '#f59e0b',
+  },
+  hasCompanion: true,
+  onUpdate: (dt, player) => {
+    duckephantEntity.update(dt * 1000, player.x, player.y);
   },
 
   // 1. Static Room Architecture (floors, walls, wainscoting, entrance mat, reading rug)

@@ -2,6 +2,8 @@ import { Direction, BoundingBox, RoomConfig } from '../core/types';
 import { TILE_SIZE, CANVAS_WIDTH, CANVAS_HEIGHT } from '../core/constants';
 import { InteractionSystem } from './interactionSystem';
 
+export type NavigationStatus = 'idle' | 'navigating' | 'arrived' | 'blocked';
+
 export class PlayerController {
   public x: number;
   public y: number;
@@ -13,6 +15,7 @@ export class PlayerController {
   private speed = 210;
   private keys: Record<string, boolean> = {};
   private targetPos: { x: number; y: number } | null = null;
+  private navigationStatus: NavigationStatus = 'idle';
 
   // Dynamic Room & Obstacle State
   private currentRoom: RoomConfig | null = null;
@@ -59,6 +62,7 @@ export class PlayerController {
       ];
       if (moveKeys.includes(e.code) || (e.key && moveKeys.includes(e.key.toLowerCase()))) {
         this.targetPos = null; // Keyboard cancels click-to-move
+        this.navigationStatus = 'idle';
       }
     });
 
@@ -78,6 +82,7 @@ export class PlayerController {
     this.x = x;
     this.y = y;
     this.targetPos = null;
+    this.navigationStatus = 'idle';
     this.isMoving = false;
     if (facing) {
       this.facing = facing;
@@ -89,6 +94,7 @@ export class PlayerController {
       ? InteractionSystem.getRoomPixelBounds(this.currentRoom)
       : { width: CANVAS_WIDTH, height: CANVAS_HEIGHT };
 
+    this.navigationStatus = 'navigating';
     this.targetPos = {
       x: Math.max(TILE_SIZE + 10, Math.min(bounds.width - TILE_SIZE - 20, worldX)),
       y: Math.max(2 * TILE_SIZE + 10, Math.min(bounds.height - TILE_SIZE - 20, worldY)),
@@ -97,19 +103,29 @@ export class PlayerController {
 
   public clearTarget(): void {
     this.targetPos = null;
+    this.navigationStatus = 'idle';
   }
 
   public stop(): void {
     this.targetPos = null;
+    this.navigationStatus = 'idle';
     this.isMoving = false;
   }
 
+  public getNavigationStatus(): NavigationStatus {
+    return this.navigationStatus;
+  }
+
+  public hasReachedTarget(): boolean {
+    return this.navigationStatus === 'arrived';
+  }
+
   public isNavigating(): boolean {
-    return this.targetPos !== null;
+    return this.navigationStatus === 'navigating';
   }
 
   public isAtTarget(): boolean {
-    return this.targetPos === null;
+    return this.navigationStatus === 'arrived' || this.targetPos === null;
   }
 
   public update(dt: number): { changed: boolean } {
@@ -153,6 +169,7 @@ export class PlayerController {
       } else {
         // Arrived at target
         this.targetPos = null;
+        this.navigationStatus = 'arrived';
       }
     }
 
@@ -185,9 +202,10 @@ export class PlayerController {
         movedY = true;
       }
 
-      // If clicked into an obstacle and cannot move further, cancel navigation
+      // If clicked into an obstacle and cannot move further, mark navigation as blocked
       if (this.targetPos && !movedX && !movedY) {
         this.targetPos = null;
+        this.navigationStatus = 'blocked';
       }
     }
 

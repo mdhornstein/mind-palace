@@ -223,4 +223,108 @@ describe('InteractionSystem', () => {
       });
     });
   });
+
+  describe('findSteppedDoorway (data-driven automatic doorway transition)', () => {
+    it('detects automatic doorway transition when player steps into doorway threshold', () => {
+      const door = study.doors.find((d) => d.id === 'to_observatory')!;
+      expect(door.transitionMode).toBe('auto');
+
+      // Player feet stepped inside threshold
+      const playerX = door.tileX * TILE_SIZE + 8;
+      const playerY = door.tileY * TILE_SIZE;
+
+      const stepped = InteractionSystem.findSteppedDoorway(study, playerX, playerY);
+      expect(stepped).not.toBeNull();
+      expect(stepped?.id).toBe('to_observatory');
+    });
+
+    it('returns null when player is outside doorway threshold', () => {
+      const stepped = InteractionSystem.findSteppedDoorway(study, 10 * TILE_SIZE, 7 * TILE_SIZE);
+      expect(stepped).toBeNull();
+    });
+  });
+
+  describe('shouldDispatchPendingInteraction (click-to-walk interaction lifecycle)', () => {
+    const libraryStation = study.stations.find((s) => s.id === 'library')!;
+    const cabinetStation = study.stations.find((s) => s.id === 'cabinet')!;
+
+    const pendingLibrary = { kind: 'station' as const, station: libraryStation };
+    const activeLibrary = { kind: 'station' as const, station: libraryStation };
+    const activeCabinet = { kind: 'station' as const, station: cabinetStation };
+
+    it('dispatches when player enters proximity of targeted station', () => {
+      expect(
+        InteractionSystem.shouldDispatchPendingInteraction(
+          pendingLibrary,
+          activeLibrary,
+          'navigating'
+        )
+      ).toBe(true);
+
+      expect(
+        InteractionSystem.shouldDispatchPendingInteraction(
+          pendingLibrary,
+          activeLibrary,
+          'arrived'
+        )
+      ).toBe(true);
+    });
+
+    it('NEVER dispatches when navigation was blocked by an obstacle', () => {
+      expect(
+        InteractionSystem.shouldDispatchPendingInteraction(
+          pendingLibrary,
+          activeLibrary,
+          'blocked'
+        )
+      ).toBe(false);
+
+      expect(
+        InteractionSystem.shouldDispatchPendingInteraction(
+          pendingLibrary,
+          null,
+          'blocked'
+        )
+      ).toBe(false);
+    });
+
+    it('does NOT dispatch when player is not in proximity of targeted station', () => {
+      expect(
+        InteractionSystem.shouldDispatchPendingInteraction(
+          pendingLibrary,
+          null,
+          'navigating'
+        )
+      ).toBe(false);
+
+      expect(
+        InteractionSystem.shouldDispatchPendingInteraction(
+          pendingLibrary,
+          null,
+          'arrived'
+        )
+      ).toBe(false);
+    });
+
+    it('does NOT dispatch if active proximity target is a different station', () => {
+      expect(
+        InteractionSystem.shouldDispatchPendingInteraction(
+          pendingLibrary,
+          activeCabinet,
+          'navigating'
+        )
+      ).toBe(false);
+    });
+
+    it('does NOT dispatch if pendingTarget is null', () => {
+      expect(
+        InteractionSystem.shouldDispatchPendingInteraction(
+          null,
+          activeLibrary,
+          'arrived'
+        )
+      ).toBe(false);
+    });
+  });
 });
+

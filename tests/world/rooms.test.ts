@@ -8,6 +8,7 @@ import { InteractionDispatcher } from '../../src/ui/interactionDispatcher';
 import { StateManager } from '../../src/core/state';
 import { MemoryStore } from '../../src/core/store';
 import { BoundingBox, WorldStation } from '../../src/core/types';
+import { TILE_SIZE } from '../../src/core/constants';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -51,12 +52,12 @@ describe('Room Graph, Registry, and Architectural Invariants', () => {
           expect(door.targetSpawnPoint).toBeDefined();
           const spawn = door.targetSpawnPoint!;
 
-          // 3. Spawn point is within target room pixel bounds
+          // 3. Spawn point is within target room pixel bounds with planned room-edge clearance
           const bounds = InteractionSystem.getRoomPixelBounds(targetRoom);
-          expect(spawn.x).toBeGreaterThanOrEqual(0);
-          expect(spawn.x).toBeLessThanOrEqual(bounds.width);
-          expect(spawn.y).toBeGreaterThanOrEqual(0);
-          expect(spawn.y).toBeLessThanOrEqual(bounds.height);
+          expect(spawn.x).toBeGreaterThanOrEqual(TILE_SIZE);
+          expect(spawn.x).toBeLessThanOrEqual(bounds.width - TILE_SIZE);
+          expect(spawn.y).toBeGreaterThanOrEqual(TILE_SIZE);
+          expect(spawn.y).toBeLessThanOrEqual(bounds.height - TILE_SIZE);
 
           // 4. Player bounding box at spawn point does not collide with obstacles
           const playerSpawnBox: BoundingBox = {
@@ -94,12 +95,11 @@ describe('Room Graph, Registry, and Architectural Invariants', () => {
       expect(uniqueStationIds.size).toBe(stationIds.length);
     });
 
-    it('has unique door IDs within each room', () => {
-      rooms.forEach((room) => {
-        const doorIds = room.doors.map((d) => d.id);
-        const uniqueDoorIds = new Set(doorIds);
-        expect(uniqueDoorIds.size).toBe(doorIds.length);
-      });
+    it('has globally unique door IDs across the entire palace', () => {
+      const allDoors = rooms.flatMap((room) => room.doors);
+      const doorIds = allDoors.map((d) => d.id);
+      const uniqueDoorIds = new Set(doorIds);
+      expect(uniqueDoorIds.size).toBe(doorIds.length);
     });
   });
 

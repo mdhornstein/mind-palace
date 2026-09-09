@@ -1,5 +1,6 @@
-import { RoomConfig, InteractiveTarget, BoundingBox } from '../core/types';
+import { RoomConfig, InteractiveTarget, BoundingBox, Doorway } from '../core/types';
 import { TILE_SIZE } from '../core/constants';
+import { NavigationStatus } from './player';
 
 /**
  * Unified Interaction System.
@@ -197,4 +198,75 @@ export class InteractionSystem {
       height: room.heightTiles * TILE_SIZE,
     };
   }
+
+  /**
+   * Checks if the player has stepped into an automatic doorway threshold.
+   * Player feet area: (playerX + 4, playerY + 20, 16, 10).
+   */
+  public static findSteppedDoorway(
+    room: RoomConfig,
+    playerX: number,
+    playerY: number
+  ): Doorway | null {
+    const pBox: BoundingBox = {
+      x: playerX + 4,
+      y: playerY + 20,
+      w: 16,
+      h: 10,
+    };
+
+    for (const door of room.doors) {
+      if (door.transitionMode !== 'auto') {
+        continue;
+      }
+
+      const dx = door.tileX * TILE_SIZE;
+      const dy = door.tileY * TILE_SIZE;
+      const dw = door.tileWidth * TILE_SIZE;
+      const dh = door.tileHeight * TILE_SIZE;
+
+      // Check if player's foot bounding box has stepped into the doorway portal
+      const stepped =
+        pBox.x + pBox.w >= dx - 8 &&
+        pBox.x <= dx + dw + 8 &&
+        pBox.y + pBox.h >= dy - 8 &&
+        pBox.y <= dy + dh + 8;
+
+      if (stepped) {
+        return door;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Pure decision helper for pending station interaction dispatch.
+   * Ensures that blocked or cancelled navigation NEVER triggers an interaction.
+   * Dispatch occurs ONLY when the player is in foot proximity of the targeted station.
+   */
+  public static shouldDispatchPendingInteraction(
+    pendingTarget: InteractiveTarget | null,
+    activeTarget: InteractiveTarget | null,
+    navStatus: NavigationStatus
+  ): boolean {
+    if (!pendingTarget || pendingTarget.kind !== 'station') {
+      return false;
+    }
+
+    // A blocked path must NEVER be interpreted as arrival
+    if (navStatus === 'blocked') {
+      return false;
+    }
+
+    // Authoritative interaction condition: player has reached proximity of the pending station
+    const inStationProximity =
+      activeTarget?.kind === 'station' &&
+      activeTarget.station.id === pendingTarget.station.id;
+
+    return inStationProximity;
+  }
 }
+
+export const shouldDispatchPendingInteraction = InteractionSystem.shouldDispatchPendingInteraction;
+
