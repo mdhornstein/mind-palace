@@ -1,5 +1,5 @@
 import './ui/styles.css';
-import { CANVAS_WIDTH, CANVAS_HEIGHT, TILE_SIZE } from './core/constants';
+import { CANVAS_WIDTH, CANVAS_HEIGHT } from './core/constants';
 import { StateManager } from './core/state';
 import { PlayerController } from './world/player';
 import { CompanionController } from './world/companion';
@@ -11,6 +11,8 @@ import { RoomRegistry } from './rooms/registry';
 import { HearthAudio } from './sound/audio';
 import { InteractionSystem, shouldDispatchPendingInteraction } from './world/interactionSystem';
 import { InteractionDispatcher } from './ui/interactionDispatcher';
+import { GameLoop } from './core/gameLoop';
+import { HudManager } from './ui/hudManager';
 
 class MindPalaceApp {
   private canvas: HTMLCanvasElement;
@@ -20,14 +22,14 @@ class MindPalaceApp {
   private companion: CompanionController;
   private renderer: RoomRenderer;
   private overlay: ModalOverlay;
-  private promptEl: HTMLDivElement;
-  private speechEl: HTMLDivElement;
+  private hudManager: HudManager;
+  private gameLoop: GameLoop;
   private activeTarget: InteractiveTarget | null = null;
   private pendingTarget: InteractiveTarget | null = null;
   private currentRoom: RoomConfig;
   private lastSaveTime = Date.now();
-  private lastLoopTime = performance.now();
   private lastTransitionTime = 0;
+  private lastDtSeconds: number = 1 / 60;
 
   constructor() {
     this.canvas = document.getElementById('gameCanvas') as HTMLCanvasElement;
@@ -40,8 +42,9 @@ class MindPalaceApp {
     }
     this.ctx = context;
 
-    this.promptEl = document.getElementById('interaction-prompt') as HTMLDivElement;
-    this.speechEl = document.getElementById('companion-speech-bubble') as HTMLDivElement;
+    const promptEl = document.getElementById('interaction-prompt') as HTMLDivElement;
+    const speechEl = document.getElementById('companion-speech-bubble') as HTMLDivElement;
+    this.hudManager = new HudManager(promptEl, speechEl);
 
     this.stateManager = StateManager.getInstance();
     const savedState = this.stateManager.getState();
@@ -60,8 +63,13 @@ class MindPalaceApp {
     new DevTray(this.stateManager);
 
     this.setupViewportScaling();
-    this.setupInteractions();
-    this.startLoop();
+    this.setupInteractions(promptEl);
+
+    this.gameLoop = new GameLoop({
+      onUpdate: (dtSeconds, nowMs) => this.update(dtSeconds, nowMs),
+      onRender: (nowMs) => this.render(nowMs),
+    });
+    this.gameLoop.start();
   }
 
   private setupViewportScaling() {
@@ -79,13 +87,15 @@ class MindPalaceApp {
 
       this.canvas.style.width = `${displayW}px`;
       this.canvas.style.height = `${displayH}px`;
+
+      this.hudManager.handleViewportChange(this.canvas);
     };
 
     window.addEventListener('resize', resize);
     resize();
   }
 
-  private setupInteractions() {
+  private setupInteractions(promptEl: HTMLElement) {
     // Keyboard inspection trigger (Space, Enter, E) and movement key handling
     window.addEventListener('keydown', (e) => {
       if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
@@ -116,7 +126,7 @@ class MindPalaceApp {
     });
 
     // Clicking the prompt pill directly triggers the interaction
-    this.promptEl.addEventListener('click', () => {
+    promptEl.addEventListener('click', () => {
       if (this.overlay.isOpen()) return;
       if (this.activeTarget) {
         this.triggerActiveInteraction();
@@ -130,11 +140,9 @@ class MindPalaceApp {
         return;
       }
 
-      const rect = this.canvas.getBoundingClientRect();
-      const scaleX = CANVAS_WIDTH / rect.width;
-      const scaleY = CANVAS_HEIGHT / rect.height;
-      const mouseX = (e.clientX - rect.left) * scaleX;
-      const mouseY = (e.clientY - rect.top) * scaleY;
+      const transform = this.hudManager.getTransform();
+      const mouseX = (e.clientX - transform.left) / transform.scale;
+      const mouseY = (e.clientY - transform.top) / transform.scale;
 
       const hoveredTarget = InteractionSystem.findInteractiveAt(this.currentRoom, mouseX, mouseY);
       this.canvas.style.cursor = hoveredTarget ? 'pointer' : 'default';
@@ -144,12 +152,9 @@ class MindPalaceApp {
     this.canvas.addEventListener('click', (e) => {
       if (this.overlay.isOpen()) return;
 
-      const rect = this.canvas.getBoundingClientRect();
-      const scaleX = CANVAS_WIDTH / rect.width;
-      const scaleY = CANVAS_HEIGHT / rect.height;
-
-      const clickX = (e.clientX - rect.left) * scaleX;
-      const clickY = (e.clientY - rect.top) * scaleY;
+      const transform = this.hudManager.getTransform();
+      const clickX = (e.clientX - transform.left) / transform.scale;
+      const clickY = (e.clientY - transform.top) / transform.scale;
 
       const clickedTarget = InteractionSystem.findInteractiveAt(this.currentRoom, clickX, clickY);
 
@@ -211,182 +216,102 @@ class MindPalaceApp {
     }
     this.activeTarget = null;
     this.pendingTarget = null;
-    this.updatePromptUI();
-    this.updateSpeechUI(this.stateManager.getState());
+    this.hudManager.clear();
     HearthAudio.getInstance().setRoom(roomId);
     this.lastTransitionTime = Date.now();
   }
 
-  private updatePromptUI() {
-    if (this.overlay.isOpen() || !this.activeTarget) {
-      this.promptEl.className = '';
-      return;
-    }
+  private update(dtSeconds: number, nowMs: number) {
+    this.lastDtSeconds = dtSeconds;
 
-    const rect = this.canvas.getBoundingClientRect();
-    const scale = rect.width / CANVAS_WIDTH;
+    // If modal dialog is open, pause player walking updates
+    if (!this.overlay.isOpen()) {
+      const { changed } = this.player.update(dtSeconds);
 
-    let zoneX: number;
-    let zoneY: number;
-    let zoneW: number;
-    let zoneH: number;
-    let name: string;
-    let prompt: string;
-    const isPortal = this.activeTarget.kind === 'door';
+      // Update active target via unified foot proximity detection
+      this.activeTarget = InteractionSystem.findNearbyInteractive(
+        this.currentRoom,
+        this.player.x,
+        this.player.y
+      );
 
-    if (this.activeTarget.kind === 'door') {
-      const door = this.activeTarget.door;
-      zoneX = door.tileX * TILE_SIZE;
-      zoneY = door.tileY * TILE_SIZE;
-      zoneW = door.tileWidth * TILE_SIZE;
-      zoneH = door.tileHeight * TILE_SIZE;
-      name = door.name;
-      prompt = door.prompt;
-    } else {
-      const station = this.activeTarget.station;
-      zoneX = station.tileX * TILE_SIZE;
-      zoneY = station.tileY * TILE_SIZE;
-      zoneW = station.tileWidth * TILE_SIZE;
-      zoneH = station.tileHeight * TILE_SIZE;
-      name = station.name;
-      prompt = station.prompt;
-    }
+      // Check if player arrived at pending click-to-walk interaction target
+      if (this.pendingTarget && this.pendingTarget.kind === 'station') {
+        const navStatus = this.player.getNavigationStatus();
 
-    const zoneCenterX = zoneX + zoneW / 2;
-    // Anchor prompt dynamically above the zone
-    let targetCanvasY = zoneY - 12;
-    if (targetCanvasY < 40) {
-      targetCanvasY = zoneY + zoneH + 22;
-    }
-
-    const screenX = rect.left + zoneCenterX * scale;
-    const screenY = rect.top + targetCanvasY * scale;
-
-    this.promptEl.style.left = `${screenX}px`;
-    this.promptEl.style.top = `${screenY}px`;
-    this.promptEl.className = isPortal ? 'visible portal-prompt' : 'visible';
-    this.promptEl.innerHTML = `
-      <div class="prompt-keys">
-        <kbd>Space</kbd>
-        <kbd>Click</kbd>
-      </div>
-      <span class="prompt-name">${name}</span>
-      <span class="prompt-action">${prompt}</span>
-    `;
-  }
-
-  private updateSpeechUI(state: ReturnType<StateManager['getState']>) {
-    if (this.currentRoom.hasCompanion && state.companion.speech) {
-      const now = Date.now();
-      const elapsed = now - state.companion.speech.timestamp;
-      if (elapsed < state.companion.speech.durationMs) {
-        const rect = this.canvas.getBoundingClientRect();
-        const scale = rect.width / CANVAS_WIDTH;
-        const screenX = rect.left + (state.companion.x + 8) * scale;
-        const screenY = rect.top + (state.companion.y - 8) * scale;
-        this.speechEl.style.left = `${screenX}px`;
-        this.speechEl.style.top = `${screenY}px`;
-        this.speechEl.textContent = state.companion.speech.text;
-        this.speechEl.className = 'visible';
-        return;
+        if (
+          shouldDispatchPendingInteraction(
+            this.pendingTarget,
+            this.activeTarget,
+            navStatus
+          )
+        ) {
+          const station = this.pendingTarget.station;
+          this.pendingTarget = null;
+          this.player.stop();
+          InteractionDispatcher.dispatch(station.intent, {
+            stateManager: this.stateManager,
+            transitionToRoom: (roomId, spawn) => this.transitionToRoom(roomId, spawn),
+          });
+        } else if (navStatus === 'blocked') {
+          // Path was blocked by an obstacle; cancel pending interaction
+          this.pendingTarget = null;
+        }
       }
-    }
-    this.speechEl.className = '';
-  }
 
-  private startLoop() {
-    this.lastLoopTime = performance.now();
-
-    const loop = (now: number) => {
-      // Calculate delta time in seconds, capped at 100ms
-      const dt = Math.min(0.1, (now - this.lastLoopTime) / 1000);
-      this.lastLoopTime = now;
-
-      // If modal dialog is open, pause player walking updates
-      if (!this.overlay.isOpen()) {
-        const { changed } = this.player.update(dt);
-
-        // Update active target via unified foot proximity detection
-        this.activeTarget = InteractionSystem.findNearbyInteractive(
+      // Check seamless automatic doorway walking threshold (cooldown prevents instant bounceback)
+      if (Date.now() - this.lastTransitionTime > 1000) {
+        const steppedDoor = InteractionSystem.findSteppedDoorway(
           this.currentRoom,
           this.player.x,
           this.player.y
         );
-
-        // Check if player arrived at pending click-to-walk interaction target
-        if (this.pendingTarget && this.pendingTarget.kind === 'station') {
-          const navStatus = this.player.getNavigationStatus();
-
-          if (
-            shouldDispatchPendingInteraction(
-              this.pendingTarget,
-              this.activeTarget,
-              navStatus
-            )
-          ) {
-            const station = this.pendingTarget.station;
-            this.pendingTarget = null;
-            this.player.stop();
-            InteractionDispatcher.dispatch(station.intent, {
-              stateManager: this.stateManager,
-              transitionToRoom: (roomId, spawn) => this.transitionToRoom(roomId, spawn),
-            });
-          } else if (navStatus === 'blocked') {
-            // Path was blocked by an obstacle; cancel pending interaction
-            this.pendingTarget = null;
-          }
-        }
-
-        // Check seamless automatic doorway walking threshold (cooldown prevents instant bounceback)
-        if (Date.now() - this.lastTransitionTime > 1000) {
-          const steppedDoor = InteractionSystem.findSteppedDoorway(
-            this.currentRoom,
-            this.player.x,
-            this.player.y
+        if (steppedDoor) {
+          this.transitionToRoom(
+            steppedDoor.targetRoomId,
+            steppedDoor.targetSpawnPoint
           );
-          if (steppedDoor) {
-            this.transitionToRoom(
-              steppedDoor.targetRoomId,
-              steppedDoor.targetSpawnPoint
-            );
-          }
-        }
-
-        // Synchronize live player position to in-memory state every single frame!
-        this.stateManager.syncPlayerPosition(this.player.x, this.player.y, this.player.facing);
-
-        if (changed) {
-          const nowMs = Date.now();
-          if (nowMs - this.lastSaveTime > 2000) {
-            this.stateManager.persist();
-            this.lastSaveTime = nowMs;
-          }
-        }
-
-        this.companion.update(dt);
-        if (this.currentRoom.onUpdate) {
-          this.currentRoom.onUpdate(dt, { x: this.player.x, y: this.player.y });
         }
       }
 
-      const state = this.stateManager.getState();
-      // Update DOM Overlays for 100% crisp native-DPI text
-      this.updatePromptUI();
-      this.updateSpeechUI(state);
+      // Synchronize live player position to in-memory state every single frame
+      this.stateManager.syncPlayerPosition(this.player.x, this.player.y, this.player.facing);
 
-      // Render room and player with LIVE coordinates every frame (60fps)
-      this.renderer.render(
-        state,
-        this.player,
-        this.activeTarget,
-        now,
-        this.currentRoom
-      );
+      if (changed) {
+        if (nowMs - this.lastSaveTime > 2000) {
+          this.stateManager.persist();
+          this.lastSaveTime = nowMs;
+        }
+      }
 
-      requestAnimationFrame(loop);
-    };
+      this.companion.update(dtSeconds);
+      if (this.currentRoom.onUpdate) {
+        this.currentRoom.onUpdate(dtSeconds, { x: this.player.x, y: this.player.y });
+      }
+    }
+  }
 
-    requestAnimationFrame(loop);
+  private render(nowMs: number) {
+    const state = this.stateManager.getState();
+
+    // 1. Derive and update HUD presentation with zero layout queries
+    const hudState = this.hudManager.derive(
+      this.activeTarget,
+      state.companion,
+      Boolean(this.currentRoom.hasCompanion),
+      this.overlay.isOpen(),
+      Date.now()
+    );
+    this.hudManager.update(hudState);
+
+    // 2. Render room, entities, and player with typed RenderPlayer and frame-rate normalized dtSeconds
+    this.renderer.render(
+      state,
+      this.player.getRenderPlayer(),
+      nowMs,
+      this.currentRoom,
+      this.lastDtSeconds
+    );
   }
 }
 

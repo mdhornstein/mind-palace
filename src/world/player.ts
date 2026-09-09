@@ -1,4 +1,4 @@
-import { Direction, BoundingBox, RoomConfig, NavigationStatus } from '../core/types';
+import { Direction, BoundingBox, RoomConfig, NavigationStatus, RenderPlayer } from '../core/types';
 import { TILE_SIZE, CANVAS_WIDTH, CANVAS_HEIGHT } from '../core/constants';
 import { InteractionSystem } from './interactionSystem';
 
@@ -10,6 +10,16 @@ export class PlayerController {
   public facing: Direction = 'up';
   public isMoving: boolean = false;
   public walkFrame: number = 0;
+
+  public getRenderPlayer(): RenderPlayer {
+    return {
+      x: this.x,
+      y: this.y,
+      facing: this.facing,
+      isMoving: this.isMoving,
+      walkFrame: this.walkFrame,
+    };
+  }
 
   // Speed in pixels per second (brisk and responsive)
   private speed = 210;

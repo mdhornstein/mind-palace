@@ -231,6 +231,19 @@ export interface DecorativeProp {
   draw: (ctx: CanvasRenderingContext2D, timeMs: number) => void;
 }
 
+export interface RenderPlayer {
+  x: number;
+  y: number;
+  facing: Direction;
+  isMoving: boolean;
+  walkFrame: number;
+}
+
+export interface RenderableEntity {
+  y: number;
+  draw: (ctx: CanvasRenderingContext2D, timeMs: number) => void;
+}
+
 export interface RoomConfig {
   id: string;
   name: string;
@@ -245,6 +258,7 @@ export interface RoomConfig {
     primaryGlowColor?: string;
   };
   hasCompanion?: boolean;
+  getEntities?: (state: DeepReadonly<WorldState>, timeMs: number) => RenderableEntity[];
   onUpdate?: (dt: number, player: { x: number; y: number }) => void;
   customDrawBackground?: (ctx: CanvasRenderingContext2D, state: DeepReadonly<WorldState>) => void;
   customDrawAtmosphere?: (ctx: CanvasRenderingContext2D, timeMs: number) => void;

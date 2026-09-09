@@ -1,4 +1,4 @@
-import { WorldState, RoomConfig, DeepReadonly } from '../core/types';
+import { WorldState, RoomConfig, DeepReadonly, RenderPlayer } from '../core/types';
 import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
@@ -10,7 +10,6 @@ import {
   drawCompanionSprite,
   drawPlayerSprite,
 } from './sprites';
-import { duckephantEntity } from '../rooms/study/stations/duckephant';
 
 interface DustMote {
   x: number;
@@ -92,10 +91,10 @@ export class RoomRenderer {
 
   public render(
     state: DeepReadonly<WorldState>,
-    player: { x: number; y: number; facing: WorldState['player']['facing']; isMoving: boolean; walkFrame: number },
-    _activeZone: any,
+    player: RenderPlayer,
     timeMs: number,
-    room: RoomConfig
+    room: RoomConfig,
+    dtSeconds: number = 1 / 60
   ) {
     const ctx = this.ctx;
 
@@ -125,7 +124,7 @@ export class RoomRenderer {
       station.draw(ctx, timeMs, state);
     }
 
-    // 4. Characters (Render sorted by Y for correct isometric depth)
+    // 4. Dynamic Entities & Characters (Render sorted by Y for correct isometric depth)
     const renderables: Array<{ y: number; draw: () => void }> = [
       {
         y: player.y,
@@ -141,8 +140,8 @@ export class RoomRenderer {
       },
     ];
 
-    // The scholar companion resides in the Study room
-    if (room.id === 'study') {
+    // Companion rendering is driven declaratively by room.hasCompanion
+    if (room.hasCompanion) {
       renderables.push({
         y: state.companion.y,
         draw: () =>
@@ -155,12 +154,17 @@ export class RoomRenderer {
             timeMs
           ),
       });
+    }
 
-      // The chimeric Duckephant resides near the hearth
-      renderables.push({
-        y: duckephantEntity.y,
-        draw: () => duckephantEntity.render(ctx, timeMs),
-      });
+    // Dynamic entities provided by the room (e.g. Barnaby the Duckephant)
+    if (room.getEntities) {
+      const dynamicEntities = room.getEntities(state, timeMs);
+      for (const entity of dynamicEntities) {
+        renderables.push({
+          y: entity.y,
+          draw: () => entity.draw(ctx, timeMs),
+        });
+      }
     }
 
     // Decorative Props (Render sorted by Y with characters for natural isometric depth)
@@ -176,19 +180,30 @@ export class RoomRenderer {
     renderables.sort((a, b) => a.y - b.y);
     renderables.forEach((r) => r.draw());
 
-    // 5. Floating Ambient Dust Motes
-    this.renderDustMotes(ctx, timeMs);
+    // 5. Floating Ambient Dust Motes (frame-rate independent via dtSeconds)
+    this.renderDustMotes(ctx, timeMs, dtSeconds);
 
+    ctx.restore();
   }
 
-  private renderDustMotes(ctx: CanvasRenderingContext2D, timeMs: number) {
-    ctx.save();
+  public stepDustMotes(dtSeconds: number) {
     for (const mote of this.dustMotes) {
-      mote.y += mote.speedY;
+      mote.y += mote.speedY * (dtSeconds * 60);
       if (mote.y > CANVAS_HEIGHT) {
         mote.y = 0;
         mote.x = Math.random() * CANVAS_WIDTH;
       }
+    }
+  }
+
+  public getDustMotes(): readonly DustMote[] {
+    return this.dustMotes;
+  }
+
+  private renderDustMotes(ctx: CanvasRenderingContext2D, timeMs: number, dtSeconds: number) {
+    this.stepDustMotes(dtSeconds);
+    ctx.save();
+    for (const mote of this.dustMotes) {
       const wobble = Math.sin(timeMs * 0.002 + mote.phase) * 6;
       const alpha = Math.sin(timeMs * 0.0015 + mote.phase) * 0.3 + 0.45;
 
@@ -198,3 +213,4 @@ export class RoomRenderer {
     ctx.restore();
   }
 }
+

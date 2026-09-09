@@ -104,6 +104,12 @@ export const studyRoomConfig: RoomConfig = {
     primaryGlowColor: '#f59e0b',
   },
   hasCompanion: true,
+  getEntities: () => [
+    {
+      y: duckephantEntity.y,
+      draw: (ctx, timeMs) => duckephantEntity.render(ctx, timeMs),
+    },
+  ],
   onUpdate: (dt, player) => {
     duckephantEntity.update(dt * 1000, player.x, player.y);
   },

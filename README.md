@@ -10,7 +10,7 @@ Built with pure TypeScript, HTML5 Canvas, and the native Web Audio API — featu
 
 ## The World & Architecture
 
-The Mind Palace currently features two interconnected spatial environments connected by seamless bidirectional architectural portals:
+The Mind Palace currently features three interconnected spatial environments connected by seamless bidirectional architectural portals:
 
 ### 1. The Study & Curiosity Workshop
 * **Floors & Wainscoting**: Herringbone hardwood floorboards, walnut wainscoting, and warm plaster masonry.
@@ -27,6 +27,14 @@ The Mind Palace currently features two interconnected spatial environments conne
 * **Keplerian Clockwork Orrery**: Interlocking geared brass armillary spheres with miniature orbital gemstones tracking celestial bodies.
 * **Star Chart Drafting Desk**: Astronomy cartography table with celestial projection maps, calipers, and astrolabe notes.
 * **North Portal Threshold**: Arched stone doorway inscribed with `THE STUDY ⮤`, allowing immediate return to the study.
+
+### 3. The Paradox Gallery (M.C. Escher)
+* **Isometric Architectural Enigma**: Interlocking tessellated staircases, impossible geometric arches, colonnades, and monochrome lithographic aesthetics inspired by Maurits Cornelis Escher.
+* **Waterfall (Perpetual Millwheel)**: The iconic impossible perpetual-motion watercourse cycling water uphill along serpentine aqueducts to turn a grinding millwheel.
+* **Drawing Hands (Lithographer's Drafting Desk)**: Two-dimensional hands holding drafting pencils, emerging from parchment in a mutual act of paradoxical self-creation.
+* **Möbius Strip II (Ant Terrarium)**: Interlocking wooden terrarium featuring marching wood ants traversing an endless single-sided topological surface.
+* **Ascending and Descending (Penrose Staircase Loop)**: Continuous quadrilateral staircase where robed figures eternally ascend and descend without changing elevation.
+* **East Portal Threshold**: Arched stone doorway inscribed with `THE STUDY ⮤`, allowing immediate return to the study.
 
 ---
 
@@ -46,9 +54,34 @@ Zero audio assets or audio files are downloaded. The entire soundscape is synthe
 
 * **Study Soundtrack (*Hearthside Chiptune*)**: 68 BPM cozy major progression (`Cmaj7 - Am7 - Fmaj7 - G6`), warm pulse lead with 4.5Hz vibrato, walking triangle bassline, broken-chord music box arpeggios, and a warm 1750 Hz lowpass filter.
 * **Observatory Soundtrack (*Starlight Chiptune*)**: 50 BPM cosmic Lydian/Dorian progression (`Em9 - Cmaj7#11 - Dadd9 - Bm7`), soaring crystalline pulse lead, resonant sub-bass triangle drones (E2, C2, D2, B1), and rippling high-register sine bell sparkles.
-* **Smooth Room Crossfading**: Crossing between the Study and the Observatory dynamically dips volume, shifts harmonic modes and tempo, ramps filter cutoffs, and fades in the new theme over 500ms without clicks or pops.
+* **Paradox Gallery Soundtrack (*Lithograph Chiptune*)**: 72 BPM contemplative Dorian progression (`Dm9 - G13 - Bbmaj7#11 - A7alt`), weaving contrapuntal canons and endless melodic loops.
+* **Smooth Room Crossfading**: Crossing between rooms dynamically dips volume, shifts harmonic modes and tempo, ramps filter cutoffs, and fades in the new theme over 500ms without clicks or pops.
 * **Procedural Sound FX**: Dual-oscillator trumpet-quack, peanut munching crunch, footstep taps, and interaction cues.
-* **HUD Audio Toggle**: Dynamic top-right button displaying audio state (`🎶 8-Bit Music: Study` / `Observatory` / `Muted`).
+* **HUD Audio Toggle**: Dynamic top-right button displaying audio state (`🎶 8-Bit Music: Study` / `Observatory` / `Paradox Gallery` / `Muted`).
+
+---
+
+## Architecture & Engineering Rigor
+
+The Mind Palace is built upon a modular, highly decoupled three-phase architectural foundation:
+
+1. **Phase 1 — Deterministic State & Persistence**:
+   * Single-source-of-truth `StateManager` with injectable `StateStore` (`LocalStorageStore`, `MemoryStore`) and `Clock` (`SystemClock`, `SimulationClock`).
+   * Pure `evolveWorld(state, elapsedSeconds)` simulation engine for offline time-jumps.
+   * `DeepReadonly<WorldState>` compile-time immutability protecting domain state against accidental in-place mutations.
+   * Collection-preserving state migrations distinguishing empty arrays from missing fields.
+
+2. **Phase 2 — World & Room System Extensibility**:
+   * Declarative room configurations with structured `InteractionIntent` definitions (`modal`, `door`, `custom`).
+   * Parameter contract validation in `InteractionDispatcher` with compile-time type safety.
+   * Centralized spatial geometry in `InteractionSystem` unifying solid obstacle collisions, foot-proximity detection, and doorway transition thresholds.
+   * Architectural invariant: Room definitions in `src/rooms/**` are completely decoupled from UI and presentation code.
+
+3. **Phase 3 — Presentation, Rendering & Decoupling**:
+   * Pure timing engine `GameLoop` with frame-only delta clamping (`dtSeconds ∈ [0, 0.1]s`), double-start protection, and explicit rAF cancellation.
+   * Truly room-agnostic `RoomRenderer` consuming typed `RenderPlayer` and dynamic entity hooks (`getEntities`, `hasCompanion`) with frame-rate normalized particle physics (`mote.y += mote.speedY * dtSeconds * 60`).
+   * State-diffed `HudManager` caching the viewport coordinate transform on layout/resize events, eliminating layout thrashing (`getBoundingClientRect()` is never called in the per-frame loop).
+   * Comprehensive automated test suite: **88 unit tests** across 7 test suites asserting system contracts, state evolution, interaction mechanics, and strict architectural boundary invariants.
 
 ---
 
