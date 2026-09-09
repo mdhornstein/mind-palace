@@ -44,7 +44,7 @@ class MindPalaceApp {
 
     const promptEl = document.getElementById('interaction-prompt') as HTMLDivElement;
     const speechEl = document.getElementById('companion-speech-bubble') as HTMLDivElement;
-    this.hudManager = new HudManager(promptEl, speechEl);
+    this.hudManager = new HudManager(promptEl, speechEl, this.canvas);
 
     this.stateManager = StateManager.getInstance();
     const savedState = this.stateManager.getState();

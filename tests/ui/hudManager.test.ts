@@ -315,5 +315,44 @@ describe('HUD Presentation & HudManager', () => {
       expect(promptEl.className).toBe('');
       expect(speechEl.className).toBe('');
     });
+
+    it('observes canvas layout changes via ResizeObserver and updates cached transform', () => {
+      let observerCallback: (() => void) | null = null;
+      const disconnectSpy = vi.fn();
+      const observeSpy = vi.fn();
+
+      class MockResizeObserver {
+        constructor(cb: () => void) {
+          observerCallback = cb;
+        }
+        observe = observeSpy;
+        disconnect = disconnectSpy;
+      }
+
+      vi.stubGlobal('ResizeObserver', MockResizeObserver);
+
+      let rectWidth = 1000;
+      const mockCanvas: any = {
+        getBoundingClientRect: vi.fn(() => ({
+          left: 50,
+          top: 25,
+          width: rectWidth,
+          height: 600,
+        })),
+      };
+
+      manager.attachCanvas(mockCanvas);
+      expect(observeSpy).toHaveBeenCalledWith(mockCanvas);
+      expect(manager.getTransform().scale).toBe(1000 / CANVAS_WIDTH);
+
+      // Simulate a layout/canvas resize occurring without window.resize
+      rectWidth = 1400;
+      observerCallback!();
+      expect(manager.getTransform().scale).toBe(1400 / CANVAS_WIDTH);
+
+      manager.disconnect();
+      expect(disconnectSpy).toHaveBeenCalled();
+    });
   });
 });
+

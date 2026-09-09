@@ -122,10 +122,40 @@ export class HudManager {
   private speechEl: HTMLElement;
   private transform: CanvasViewportTransform = { left: 0, top: 0, scale: 1 };
   private lastState: HudState = { prompt: null, speech: null };
+  private resizeObserver: ResizeObserver | null = null;
+  private observedCanvas: HTMLCanvasElement | null = null;
 
-  constructor(promptEl: HTMLElement, speechEl: HTMLElement) {
+  constructor(promptEl: HTMLElement, speechEl: HTMLElement, canvas?: HTMLCanvasElement) {
     this.promptEl = promptEl;
     this.speechEl = speechEl;
+    if (canvas) {
+      this.attachCanvas(canvas);
+    }
+  }
+
+  public attachCanvas(canvas: HTMLCanvasElement): void {
+    this.observedCanvas = canvas;
+    this.handleViewportChange(canvas);
+
+    if (typeof ResizeObserver !== 'undefined') {
+      if (this.resizeObserver) {
+        this.resizeObserver.disconnect();
+      }
+      this.resizeObserver = new ResizeObserver(() => {
+        if (this.observedCanvas) {
+          this.handleViewportChange(this.observedCanvas);
+        }
+      });
+      this.resizeObserver.observe(canvas);
+    }
+  }
+
+  public disconnect(): void {
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    }
+    this.observedCanvas = null;
   }
 
   public handleViewportChange(canvas: HTMLCanvasElement): void {

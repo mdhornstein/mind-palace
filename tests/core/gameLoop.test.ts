@@ -127,6 +127,27 @@ describe('GameLoop', () => {
     loop.stop();
   });
 
+  it('correctly handles rAF timestamp starting at 0ms and calculates next frame delta', () => {
+    const dtValues: number[] = [];
+    const loop = new GameLoop({
+      onUpdate: (dt) => dtValues.push(dt),
+      onRender: () => {},
+    });
+
+    loop.start();
+    // Theoretical browser edge case: first frame begins exactly at 0ms
+    stepFrame(0);
+    // Second frame arrives 16ms later
+    stepFrame(16);
+    // Third frame arrives 32ms later
+    stepFrame(32);
+
+    expect(dtValues[0]).toBe(0);
+    expect(dtValues[1]).toBeCloseTo(0.016, 3);
+    expect(dtValues[2]).toBeCloseTo(0.016, 3);
+    loop.stop();
+  });
+
   it('clamps dtSeconds to 0.1s (100ms) maximum when frame gap is large', () => {
     const dtValues: number[] = [];
     const loop = new GameLoop({

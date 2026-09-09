@@ -80,8 +80,8 @@ The Mind Palace is built upon a modular, highly decoupled three-phase architectu
 3. **Phase 3 — Presentation, Rendering & Decoupling**:
    * Pure timing engine `GameLoop` with frame-only delta clamping (`dtSeconds ∈ [0, 0.1]s`), double-start protection, and explicit rAF cancellation.
    * Truly room-agnostic `RoomRenderer` consuming typed `RenderPlayer` and dynamic entity hooks (`getEntities`, `hasCompanion`) with frame-rate normalized particle physics (`mote.y += mote.speedY * dtSeconds * 60`).
-   * State-diffed `HudManager` caching the viewport coordinate transform on layout/resize events, eliminating layout thrashing (`getBoundingClientRect()` is never called in the per-frame loop).
-   * Comprehensive automated test suite: **88 unit tests** across 7 test suites asserting system contracts, state evolution, interaction mechanics, and strict architectural boundary invariants.
+   * State-diffed `HudManager` caching the viewport coordinate transform on layout/resize events (via `ResizeObserver`), eliminating layout thrashing (`getBoundingClientRect()` is never called in the per-frame loop).
+   * Comprehensive automated test suite: **90 unit tests** across 7 test suites asserting system contracts, state evolution, interaction mechanics, and strict architectural boundary invariants.
 
 ---
 

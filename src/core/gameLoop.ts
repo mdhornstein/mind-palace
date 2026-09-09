@@ -19,7 +19,7 @@ export class GameLoop {
   private callbacks: GameLoopCallbacks;
   private running: boolean = false;
   private rafId: number | null = null;
-  private lastTimeMs: number = 0;
+  private lastTimeMs: number | null = null;
 
   constructor(callbacks: GameLoopCallbacks) {
     this.callbacks = callbacks;
@@ -30,7 +30,7 @@ export class GameLoop {
       return;
     }
     this.running = true;
-    this.lastTimeMs = 0;
+    this.lastTimeMs = null;
     this.scheduleNext();
   }
 
@@ -53,7 +53,7 @@ export class GameLoop {
       }
 
       let dtSeconds: number;
-      if (this.lastTimeMs === 0) {
+      if (this.lastTimeMs === null) {
         // First frame after startup: nominal zero delta
         dtSeconds = 0;
       } else {
