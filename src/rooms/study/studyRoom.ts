@@ -1,4 +1,4 @@
-import { RoomConfig, WorldState } from '../../core/types';
+import { RoomConfig, WorldState, DeepReadonly } from '../../core/types';
 import { TILE_SIZE, ROOM_WIDTH_TILES, ROOM_HEIGHT_TILES, CANVAS_WIDTH, CANVAS_HEIGHT } from '../../core/constants';
 import {
   drawFloorPlank,
@@ -21,82 +21,69 @@ import { duckephantStation } from './stations/duckephant';
 
 export const studyRoomConfig: RoomConfig = {
   id: 'study',
-  name: 'The Study & Curiosity Workshop',
+  name: 'The Scholar\'s Study',
   widthTiles: ROOM_WIDTH_TILES,
   heightTiles: ROOM_HEIGHT_TILES,
   stations: [
     bookshelfStation,
     readingNookStation,
+    workstationStation,
     curioCabinetStation,
     pedestalStation,
-    workstationStation,
     duckephantStation,
   ],
   decorativeProps: [
+    // 1. Monstera Deliciosa nestled between Bookshelf and Window
     {
-      id: 'study_monstera',
-      name: 'Potted Monstera Deliciosa',
-      y: 104,
-      collisionBox: {
-        x: 180,
-        y: 92,
-        w: 24,
-        h: 14,
-      },
-      draw: (ctx: CanvasRenderingContext2D, timeMs: number) => {
-        drawMonsteraPlant(ctx, 182, 90, timeMs);
-      },
+      id: 'prop_monstera',
+      name: 'Monstera Deliciosa',
+      y: 3.2 * TILE_SIZE,
+      draw: (ctx: CanvasRenderingContext2D) => drawMonsteraPlant(ctx, 5.8 * TILE_SIZE, 1.4 * TILE_SIZE, 0),
     },
+    // 2. Cascading English Ivy climbing down the fireplace brickwork
     {
-      id: 'study_cascading_ivy',
+      id: 'prop_fireplace_ivy',
       name: 'Cascading English Ivy',
-      y: 45,
-      draw: (ctx: CanvasRenderingContext2D, timeMs: number) => {
-        drawCascadingIvy(ctx, 568, 30, timeMs);
-      },
+      y: 2.8 * TILE_SIZE,
+      draw: (ctx: CanvasRenderingContext2D) => drawCascadingIvy(ctx, 8.4 * TILE_SIZE, 1.2 * TILE_SIZE, 0),
     },
+    // 3. Lush Boston Fern on turned plant stand in northeast corner
     {
-      id: 'study_boston_fern',
-      name: 'Victorian Boston Fern in Brass Urn',
-      y: 106,
-      collisionBox: {
-        x: 366,
-        y: 94,
-        w: 20,
-        h: 14,
-      },
-      draw: (ctx: CanvasRenderingContext2D, timeMs: number) => {
-        drawBostonFern(ctx, 366, 92, timeMs);
-      },
+      id: 'prop_boston_fern',
+      name: 'Boston Fern on Stand',
+      y: 3.2 * TILE_SIZE,
+      draw: (ctx: CanvasRenderingContext2D) => drawBostonFern(ctx, 18.2 * TILE_SIZE, 1.3 * TILE_SIZE, 0),
     },
   ],
   doors: [
+    // Doorway to The Royal Observatory on the South Wall
     {
       id: 'to_observatory',
       name: 'Portal to The Observatory',
-      prompt: 'Enter The Stargazing Observatory',
+      prompt: 'Enter Observatory',
       tileX: 8.5,
-      tileY: 13.8,
+      tileY: 13.0,
       tileWidth: 3.0,
-      tileHeight: 1.5,
+      tileHeight: 2.0,
       targetRoomId: 'observatory',
       targetSpawnPoint: {
         x: 10 * TILE_SIZE,
-        y: 2.8 * TILE_SIZE,
+        y: 3 * TILE_SIZE,
         facing: 'down',
       },
     },
+    // Doorway to The M.C. Escher Paradox Gallery on the West Wall
     {
       id: 'to_escher',
-      name: 'Portal to Paradox Gallery',
-      prompt: 'Enter The Paradox Gallery',
+      name: 'Portal to The Paradox Gallery',
+      prompt: 'Enter Paradox Gallery (M.C. Escher)',
       tileX: 0,
       tileY: 5.5,
       tileWidth: 1.5,
       tileHeight: 2.5,
       targetRoomId: 'escher',
       targetSpawnPoint: {
-        x: 17 * TILE_SIZE,
+        x: 17.5 * TILE_SIZE,
         y: 7 * TILE_SIZE,
         facing: 'left',
       },
@@ -108,7 +95,7 @@ export const studyRoomConfig: RoomConfig = {
   },
 
   // 1. Static Room Architecture (floors, walls, wainscoting, entrance mat, reading rug)
-  customDrawBackground: (ctx: CanvasRenderingContext2D, _state: WorldState) => {
+  customDrawBackground: (ctx: CanvasRenderingContext2D, _state: DeepReadonly<WorldState>) => {
     // Fill deep room void
     ctx.fillStyle = '#0f0a07';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);

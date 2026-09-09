@@ -1,4 +1,4 @@
-import { WorldStation, WorldState } from '../../../core/types';
+import { WorldStation, WorldState, DeepReadonly } from '../../../core/types';
 import { TILE_SIZE } from '../../../core/constants';
 import { drawReadingNook } from '../../../render/sprites';
 import { openLibraryModal } from '../../../ui/libraryModal';
@@ -21,7 +21,7 @@ export const readingNookStation: WorldStation = {
     x: 4.2 * TILE_SIZE,
     y: 7.2 * TILE_SIZE,
   },
-  draw: (ctx: CanvasRenderingContext2D, timeMs: number, state: WorldState) => {
+  draw: (ctx: CanvasRenderingContext2D, timeMs: number, state: DeepReadonly<WorldState>) => {
     drawReadingNook(
       ctx,
       3.2 * TILE_SIZE,

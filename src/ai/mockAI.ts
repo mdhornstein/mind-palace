@@ -1,12 +1,13 @@
 import { IAIService, MemoryEncounterResponse, TrainingEvaluationResponse, DiscoveryEncounterResponse } from './aiService';
-import { WorldState } from '../core/types';
+import { WorldState, DeepReadonly, MemoryItem, SpecimenItem } from '../core/types';
 
 export class MockAIService implements IAIService {
-  public async remember(memoryId: string, context: WorldState): Promise<MemoryEncounterResponse> {
+  public async remember(memoryId: string, context: DeepReadonly<WorldState>): Promise<MemoryEncounterResponse> {
     // Simulate brief asynchronous processing
     await new Promise((r) => setTimeout(r, 80));
 
-    const memory = context.memories.find((m) => m.id === memoryId) || context.memories[0];
+    const foundMemory = context.memories.find((m) => m.id === memoryId) || context.memories[0];
+    const memory = structuredClone(foundMemory) as unknown as MemoryItem;
 
     const reflectionMap: Record<string, { notes: string[]; companion: string }> = {
       mem_pallotta_dinosaurs: {
@@ -37,7 +38,7 @@ export class MockAIService implements IAIService {
     };
   }
 
-  public async teach(projectId: string, userAnswer: string, context: WorldState): Promise<TrainingEvaluationResponse> {
+  public async teach(projectId: string, userAnswer: string, context: DeepReadonly<WorldState>): Promise<TrainingEvaluationResponse> {
     await new Promise((r) => setTimeout(r, 120));
 
     const project = context.projects.find((p) => p.id === projectId) || context.projects[0];
@@ -85,10 +86,11 @@ export class MockAIService implements IAIService {
     };
   }
 
-  public async discover(specimenId: string, topicId: string, context: WorldState): Promise<DiscoveryEncounterResponse> {
+  public async discover(specimenId: string, topicId: string, context: DeepReadonly<WorldState>): Promise<DiscoveryEncounterResponse> {
     await new Promise((r) => setTimeout(r, 100));
 
-    const specimen = context.specimens.find((s) => s.id === specimenId) || context.specimens[0];
+    const foundSpecimen = context.specimens.find((s) => s.id === specimenId) || context.specimens[0];
+    const specimen = structuredClone(foundSpecimen) as unknown as SpecimenItem;
     let topic = specimen.topics.find((t) => t.id === topicId);
     if (!topic) {
       topic = specimen.topics[0];

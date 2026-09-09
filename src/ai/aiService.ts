@@ -1,4 +1,4 @@
-import { WorldState, MemoryItem, SpecimenItem, ExplorationTopic } from '../core/types';
+import { WorldState, MemoryItem, SpecimenItem, ExplorationTopic, DeepReadonly } from '../core/types';
 
 export interface MemoryEncounterResponse {
   memory: MemoryItem;
@@ -24,7 +24,7 @@ export interface DiscoveryEncounterResponse {
 }
 
 export interface IAIService {
-  remember(memoryId: string, context: WorldState): Promise<MemoryEncounterResponse>;
-  teach(projectId: string, userAnswer: string, context: WorldState): Promise<TrainingEvaluationResponse>;
-  discover(specimenId: string, topicId: string, context: WorldState): Promise<DiscoveryEncounterResponse>;
+  remember(memoryId: string, context: DeepReadonly<WorldState>): Promise<MemoryEncounterResponse>;
+  teach(projectId: string, userAnswer: string, context: DeepReadonly<WorldState>): Promise<TrainingEvaluationResponse>;
+  discover(specimenId: string, topicId: string, context: DeepReadonly<WorldState>): Promise<DiscoveryEncounterResponse>;
 }

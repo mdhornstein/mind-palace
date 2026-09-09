@@ -1,4 +1,4 @@
-import { RoomConfig, WorldState } from '../../core/types';
+import { RoomConfig, WorldState, DeepReadonly } from '../../core/types';
 import {
   TILE_SIZE,
   ROOM_WIDTH_TILES,
@@ -46,7 +46,7 @@ export const observatoryRoomConfig: RoomConfig = {
   },
 
   // 1. Static Room Architecture (Midnight Stone Flagstones, Open Panoramic Dome, Brass Inlays)
-  customDrawBackground: (ctx: CanvasRenderingContext2D, _state: WorldState) => {
+  customDrawBackground: (ctx: CanvasRenderingContext2D, _state: DeepReadonly<WorldState>) => {
     // Fill background void
     ctx.fillStyle = '#020617';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);

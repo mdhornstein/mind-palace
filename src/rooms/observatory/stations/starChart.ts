@@ -1,4 +1,4 @@
-import { WorldStation, WorldState } from '../../../core/types';
+import { WorldStation, WorldState, DeepReadonly } from '../../../core/types';
 import { TILE_SIZE } from '../../../core/constants';
 import { drawStarChartDesk } from '../../../render/sprites';
 import { openStarChartModal } from '../../../ui/starChartModal';
@@ -21,7 +21,7 @@ export const starChartStation: WorldStation = {
     x: 3.5 * TILE_SIZE,
     y: 9.6 * TILE_SIZE,
   },
-  draw: (ctx: CanvasRenderingContext2D, timeMs: number, _state: WorldState) => {
+  draw: (ctx: CanvasRenderingContext2D, timeMs: number, _state: DeepReadonly<WorldState>) => {
     drawStarChartDesk(
       ctx,
       1.8 * TILE_SIZE,

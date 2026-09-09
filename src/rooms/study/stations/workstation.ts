@@ -1,4 +1,4 @@
-import { WorldStation, WorldState } from '../../../core/types';
+import { WorldStation, WorldState, DeepReadonly } from '../../../core/types';
 import { TILE_SIZE } from '../../../core/constants';
 import { drawWorkshop } from '../../../render/sprites';
 import { openWorkshopModal } from '../../../ui/workshopModal';
@@ -21,7 +21,7 @@ export const workstationStation: WorldStation = {
     x: 14.8 * TILE_SIZE,
     y: 12.2 * TILE_SIZE,
   },
-  draw: (ctx: CanvasRenderingContext2D, timeMs: number, state: WorldState) => {
+  draw: (ctx: CanvasRenderingContext2D, timeMs: number, state: DeepReadonly<WorldState>) => {
     const activeProject = state.projects[0];
     drawWorkshop(
       ctx,

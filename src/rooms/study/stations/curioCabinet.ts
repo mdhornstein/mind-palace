@@ -1,4 +1,4 @@
-import { WorldStation, WorldState } from '../../../core/types';
+import { WorldStation, WorldState, DeepReadonly } from '../../../core/types';
 import { TILE_SIZE } from '../../../core/constants';
 import { drawFossilCabinet } from '../../../render/sprites';
 import { openCabinetModal } from '../../../ui/cabinetModal';
@@ -21,7 +21,7 @@ export const curioCabinetStation: WorldStation = {
     x: 15.5 * TILE_SIZE,
     y: 3.5 * TILE_SIZE,
   },
-  draw: (ctx: CanvasRenderingContext2D, timeMs: number, state: WorldState) => {
+  draw: (ctx: CanvasRenderingContext2D, timeMs: number, state: DeepReadonly<WorldState>) => {
     const hasUndiscovered = state.specimens.some((s) => !s.discovered);
     drawFossilCabinet(
       ctx,

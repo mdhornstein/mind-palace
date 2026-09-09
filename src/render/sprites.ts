@@ -1,5 +1,5 @@
 import { TILE_SIZE } from '../core/constants';
-import { Direction, CompanionActivity, ProjectItem } from '../core/types';
+import { Direction, CompanionActivity, ProjectItem, DeepReadonly } from '../core/types';
 
 // Helper to draw a pixel-perfect rectangle
 export function pRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string) {
@@ -508,7 +508,7 @@ export function drawWorkshop(
   y: number,
   _w: number,
   _h: number,
-  project: ProjectItem,
+  project: ProjectItem | DeepReadonly<ProjectItem>,
   _equation: string,
   timeMs: number
 ) {

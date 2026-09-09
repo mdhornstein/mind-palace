@@ -1,4 +1,4 @@
-import { WorldStation, WorldState } from '../../../core/types';
+import { WorldStation, WorldState, DeepReadonly } from '../../../core/types';
 import { TILE_SIZE } from '../../../core/constants';
 import { Duckephant } from '../../../entities/duckephant';
 import { openDuckephantModal } from '../../../ui/duckephantModal';
@@ -18,7 +18,7 @@ export const duckephantStation: WorldStation = {
     x: 12.5 * TILE_SIZE,
     y: 5.5 * TILE_SIZE,
   },
-  draw: (ctx: CanvasRenderingContext2D, _timeMs: number, _state: WorldState) => {
+  draw: (ctx: CanvasRenderingContext2D, _timeMs: number, _state: DeepReadonly<WorldState>) => {
     // Render the woven reed pet mat on the floor (behind characters)
     duckephantEntity.renderHomeMat(ctx);
   },

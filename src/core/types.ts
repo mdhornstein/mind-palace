@@ -1,5 +1,11 @@
 export type Direction = 'up' | 'down' | 'left' | 'right';
 
+export type DeepReadonly<T> =
+  T extends (...args: never[]) => unknown ? T :
+  T extends readonly (infer U)[] ? readonly DeepReadonly<U>[] :
+  T extends object ? { readonly [K in keyof T]: DeepReadonly<T[K]> } :
+  T;
+
 export interface MemoryItem {
   id: string;
   targetObjectId: string;
@@ -165,7 +171,7 @@ export interface WorldStation {
   // Walkable approach destination coordinate in pixels for click-to-walk
   approachPoint: { x: number; y: number };
   // Visual render hook
-  draw: (ctx: CanvasRenderingContext2D, timeMs: number, state: WorldState) => void;
+  draw: (ctx: CanvasRenderingContext2D, timeMs: number, state: DeepReadonly<WorldState>) => void;
   // Interaction hook (receives state manager and overlay controller)
   onInteract: (stateManager: any, overlay: any) => void;
 }
@@ -202,7 +208,7 @@ export interface RoomConfig {
     type: 'day' | 'evening' | 'night';
     primaryGlowColor?: string;
   };
-  customDrawBackground?: (ctx: CanvasRenderingContext2D, state: WorldState) => void;
+  customDrawBackground?: (ctx: CanvasRenderingContext2D, state: DeepReadonly<WorldState>) => void;
   customDrawAtmosphere?: (ctx: CanvasRenderingContext2D, timeMs: number) => void;
 }
 

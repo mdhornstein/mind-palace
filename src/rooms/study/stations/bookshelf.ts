@@ -1,4 +1,4 @@
-import { WorldStation, WorldState } from '../../../core/types';
+import { WorldStation, WorldState, DeepReadonly } from '../../../core/types';
 import { TILE_SIZE } from '../../../core/constants';
 import { drawBookshelf } from '../../../render/sprites';
 import { openLibraryModal } from '../../../ui/libraryModal';
@@ -21,7 +21,7 @@ export const bookshelfStation: WorldStation = {
     x: 3.5 * TILE_SIZE,
     y: 3.5 * TILE_SIZE,
   },
-  draw: (ctx: CanvasRenderingContext2D, _timeMs: number, _state: WorldState) => {
+  draw: (ctx: CanvasRenderingContext2D, _timeMs: number, _state: DeepReadonly<WorldState>) => {
     drawBookshelf(ctx, 1.5 * TILE_SIZE, 1.0 * TILE_SIZE, 4.0 * TILE_SIZE, 2.5 * TILE_SIZE);
   },
   onInteract: (stateManager: any, _overlay: any) => {

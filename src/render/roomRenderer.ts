@@ -1,4 +1,4 @@
-import { WorldState, RoomConfig } from '../core/types';
+import { WorldState, RoomConfig, DeepReadonly } from '../core/types';
 import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
@@ -56,7 +56,7 @@ export class RoomRenderer {
     }
   }
 
-  private renderStaticBackground(state: WorldState, room: RoomConfig) {
+  private renderStaticBackground(state: DeepReadonly<WorldState>, room: RoomConfig) {
     const ctx = this.bgCtx;
     ctx.imageSmoothingEnabled = false;
 
@@ -91,7 +91,7 @@ export class RoomRenderer {
   }
 
   public render(
-    state: WorldState,
+    state: DeepReadonly<WorldState>,
     player: { x: number; y: number; facing: WorldState['player']['facing']; isMoving: boolean; walkFrame: number },
     _activeZone: any,
     timeMs: number,

@@ -1,4 +1,4 @@
-import { WorldStation, WorldState } from '../../../core/types';
+import { WorldStation, WorldState, DeepReadonly } from '../../../core/types';
 import { TILE_SIZE } from '../../../core/constants';
 import { drawPedestal } from '../../../render/sprites';
 import { openCabinetModal } from '../../../ui/cabinetModal';
@@ -21,7 +21,7 @@ export const pedestalStation: WorldStation = {
     x: 14.0 * TILE_SIZE,
     y: 5.5 * TILE_SIZE,
   },
-  draw: (ctx: CanvasRenderingContext2D, _timeMs: number, state: WorldState) => {
+  draw: (ctx: CanvasRenderingContext2D, _timeMs: number, state: DeepReadonly<WorldState>) => {
     const featuredSpecimen = state.specimens.find(
       (s) => s.id === state.environment.activePedestalSpecimenId
     );

@@ -1,4 +1,4 @@
-import { RoomConfig, WorldState } from '../../core/types';
+import { RoomConfig, WorldState, DeepReadonly } from '../../core/types';
 import {
   TILE_SIZE,
   ROOM_WIDTH_TILES,
@@ -50,7 +50,7 @@ export const escherRoomConfig: RoomConfig = {
         x: 3.5 * TILE_SIZE,
         y: 5.8 * TILE_SIZE,
       },
-      draw: (ctx: CanvasRenderingContext2D, timeMs: number, _state: WorldState) => {
+      draw: (ctx: CanvasRenderingContext2D, timeMs: number, _state: DeepReadonly<WorldState>) => {
         drawWaterfallStation(ctx, 1.0 * TILE_SIZE, 1.5 * TILE_SIZE, timeMs);
       },
       onInteract: (stateManager: any, _overlay: any) => {
@@ -77,7 +77,7 @@ export const escherRoomConfig: RoomConfig = {
         x: 16.0 * TILE_SIZE,
         y: 4.6 * TILE_SIZE,
       },
-      draw: (ctx: CanvasRenderingContext2D, timeMs: number, _state: WorldState) => {
+      draw: (ctx: CanvasRenderingContext2D, timeMs: number, _state: DeepReadonly<WorldState>) => {
         drawLithographerDesk(ctx, 14.2 * TILE_SIZE, 1.6 * TILE_SIZE, timeMs);
       },
       onInteract: (stateManager: any, _overlay: any) => {
@@ -104,7 +104,7 @@ export const escherRoomConfig: RoomConfig = {
         x: 15.8 * TILE_SIZE,
         y: 8.6 * TILE_SIZE,
       },
-      draw: (ctx: CanvasRenderingContext2D, timeMs: number, _state: WorldState) => {
+      draw: (ctx: CanvasRenderingContext2D, timeMs: number, _state: DeepReadonly<WorldState>) => {
         drawMobiusTerrarium(ctx, 14.0 * TILE_SIZE, 9.0 * TILE_SIZE, timeMs);
       },
       onInteract: (stateManager: any, _overlay: any) => {
@@ -131,7 +131,7 @@ export const escherRoomConfig: RoomConfig = {
         x: 10.0 * TILE_SIZE,
         y: 9.4 * TILE_SIZE,
       },
-      draw: (ctx: CanvasRenderingContext2D, timeMs: number, _state: WorldState) => {
+      draw: (ctx: CanvasRenderingContext2D, timeMs: number, _state: DeepReadonly<WorldState>) => {
         drawPenroseStairs(ctx, 10.0 * TILE_SIZE, 7.2 * TILE_SIZE, timeMs);
       },
       onInteract: (stateManager: any, _overlay: any) => {
@@ -165,7 +165,7 @@ export const escherRoomConfig: RoomConfig = {
   },
 
   // 1. Static Room Architecture & Dynamic Tessellation Floor
-  customDrawBackground: (ctx: CanvasRenderingContext2D, _state: WorldState) => {
+  customDrawBackground: (ctx: CanvasRenderingContext2D, _state: DeepReadonly<WorldState>) => {
     // Dynamic Tessellated Floor (True Interlocking periodic division of the plane)
     drawTessellatedFloor(ctx, performance.now());
 
