@@ -13,6 +13,10 @@ import {
   openMobiusModal,
   openPenroseModal,
 } from './escherModals';
+import {
+  openEscherArtworkModal,
+  openEscherVariantDialModal,
+} from './escherArtModal';
 import { duckephantEntity } from '../rooms/study/stations/duckephant';
 
 export interface InteractionContext {
@@ -133,6 +137,41 @@ export class InteractionDispatcher {
       (intent, context) => {
         InteractionDispatcher.validateNoParams('escher_penrose_stairs', intent.params);
         openPenroseModal(context.stateManager);
+      },
+    ],
+    [
+      'escher_artwork',
+      (intent) => {
+        let artworkId = 'print_gallery';
+        if (intent.params) {
+          const allowedKeys = ['artworkId'];
+          for (const key of Object.keys(intent.params)) {
+            if (!allowedKeys.includes(key)) {
+              throw new Error(
+                `[InteractionDispatcher] Unknown parameter "${key}" for modal "escher_artwork"`
+              );
+            }
+          }
+          if (intent.params.artworkId !== undefined) {
+            if (typeof intent.params.artworkId === 'string' && intent.params.artworkId.length > 0) {
+              artworkId = intent.params.artworkId;
+            } else {
+              throw new Error(
+                `[InteractionDispatcher] Invalid artworkId "${String(
+                  intent.params.artworkId
+                )}" for modal "escher_artwork"`
+              );
+            }
+          }
+        }
+        openEscherArtworkModal(artworkId);
+      },
+    ],
+    [
+      'escher_variant_dial',
+      (intent) => {
+        InteractionDispatcher.validateNoParams('escher_variant_dial', intent.params);
+        openEscherVariantDialModal();
       },
     ],
   ]);

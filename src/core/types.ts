@@ -168,7 +168,9 @@ export type ModalId =
   | 'escher_waterfall'
   | 'escher_drawing_hands'
   | 'escher_mobius'
-  | 'escher_penrose_stairs';
+  | 'escher_penrose_stairs'
+  | 'escher_artwork'
+  | 'escher_variant_dial';
 
 export type InteractionIntent =
   | {

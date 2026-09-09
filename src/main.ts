@@ -13,6 +13,7 @@ import { InteractionSystem, shouldDispatchPendingInteraction } from './world/int
 import { InteractionDispatcher } from './ui/interactionDispatcher';
 import { GameLoop } from './core/gameLoop';
 import { HudManager } from './ui/hudManager';
+import { onEscherVariantChange } from './rooms/escher/variants';
 
 class MindPalaceApp {
   private canvas: HTMLCanvasElement;
@@ -61,6 +62,17 @@ class MindPalaceApp {
     this.renderer = new RoomRenderer(this.ctx);
     this.overlay = ModalOverlay.getInstance();
     new DevTray(this.stateManager);
+
+    onEscherVariantChange(() => {
+      const currentRoomId = this.stateManager.getState().currentRoomId;
+      if (currentRoomId === 'escher' || currentRoomId === 'escher_v1' || currentRoomId === 'escher_v2') {
+        this.currentRoom = RoomRegistry.getRoom('escher');
+        this.player.setRoom(this.currentRoom);
+        this.activeTarget = null;
+        this.pendingTarget = null;
+        this.hudManager.clear();
+      }
+    });
 
     this.setupViewportScaling();
     this.setupInteractions(promptEl);

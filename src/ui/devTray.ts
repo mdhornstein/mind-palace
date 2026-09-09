@@ -1,5 +1,11 @@
 import { StateManager } from '../core/state';
 import { HearthAudio } from '../sound/audio';
+import {
+  getActiveEscherVariantId,
+  getEscherVariantMeta,
+  onEscherVariantChange,
+} from '../rooms/escher/variants';
+import { openEscherVariantDialModal } from './escherArtModal';
 
 export class DevTray {
   private el: HTMLElement;
@@ -24,6 +30,7 @@ export class DevTray {
 
     this.renderHud();
     this.hearthAudio.onRoomChange(() => this.renderHud());
+    onEscherVariantChange(() => this.renderHud());
     this.setupListeners();
     this.render();
   }
@@ -31,9 +38,15 @@ export class DevTray {
   private renderHud() {
     const isPlaying = this.hearthAudio.getIsPlaying();
     const roomName = this.hearthAudio.getRoomName();
+    const activeVariantId = getActiveEscherVariantId();
+    const activeMeta = getEscherVariantMeta(activeVariantId);
+
     this.hudEl.innerHTML = `
       <button id="btn-audio-toggle" class="hud-pill ${isPlaying ? 'active' : ''}" title="Toggle procedural 8-bit soundtrack for ${roomName} (Press M to mute/unmute)">
         ${isPlaying ? `🎶 8-Bit Music: ${roomName}` : '🔇 8-Bit Music: Muted'}
+      </button>
+      <button id="btn-escher-variant" class="hud-pill" title="Switch Escher Room Prototype (Currently: ${activeMeta.label})">
+        🌀 Escher: ${activeMeta.shortName} ▾
       </button>
       <button id="btn-time-warp" class="hud-pill highlight" title="Simulate closing the app and returning hours or days later (~ or Shift+D)">
         ⏱️ Time Warp
@@ -43,6 +56,10 @@ export class DevTray {
     this.hudEl.querySelector('#btn-audio-toggle')?.addEventListener('click', () => {
       this.hearthAudio.toggle();
       this.renderHud();
+    });
+
+    this.hudEl.querySelector('#btn-escher-variant')?.addEventListener('click', () => {
+      openEscherVariantDialModal();
     });
 
     this.hudEl.querySelector('#btn-time-warp')?.addEventListener('click', () => {

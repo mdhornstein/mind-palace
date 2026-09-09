@@ -1,7 +1,10 @@
 import { RoomConfig } from '../core/types';
 import { studyRoomConfig } from './study/studyRoom';
 import { observatoryRoomConfig } from './observatory/observatoryRoom';
-import { escherRoomConfig } from './escher/escherRoom';
+import {
+  getActiveEscherRoomConfig,
+  getAllEscherRoomConfigs,
+} from './escher/escherRoom';
 
 class RoomRegistryManager {
   private rooms: Map<string, RoomConfig> = new Map();
@@ -9,7 +12,10 @@ class RoomRegistryManager {
   constructor() {
     this.register(studyRoomConfig);
     this.register(observatoryRoomConfig);
-    this.register(escherRoomConfig);
+    // Register all concrete Escher prototype variants (v1 and v2)
+    for (const variant of getAllEscherRoomConfigs()) {
+      this.register(variant);
+    }
   }
 
   public register(room: RoomConfig) {
@@ -17,6 +23,9 @@ class RoomRegistryManager {
   }
 
   public getRoom(id: string): RoomConfig {
+    if (id === 'escher') {
+      return getActiveEscherRoomConfig();
+    }
     const room = this.rooms.get(id);
     if (!room) {
       console.warn(`Room '${id}' not found in registry, falling back to 'study'`);

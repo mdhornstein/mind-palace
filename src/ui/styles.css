@@ -193,6 +193,8 @@ canvas#gameCanvas {
   flex-direction: column;
   overflow: hidden;
   animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 @keyframes modalPop {
@@ -207,6 +209,8 @@ canvas#gameCanvas {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .modal-header h2 {
@@ -215,6 +219,8 @@ canvas#gameCanvas {
   font-weight: 600;
   color: #fef08a;
   letter-spacing: 0.5px;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .modal-header .subtitle {
@@ -223,6 +229,8 @@ canvas#gameCanvas {
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-top: 2px;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .modal-close-btn {
@@ -238,6 +246,8 @@ canvas#gameCanvas {
   align-items: center;
   justify-content: center;
   transition: all 0.15s ease;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .modal-close-btn:hover {
@@ -252,6 +262,20 @@ canvas#gameCanvas {
   font-size: 0.95rem;
   line-height: 1.6;
   color: var(--text-secondary);
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.modal-dialog p,
+.modal-dialog span,
+.modal-dialog li,
+.modal-dialog pre,
+.modal-dialog code,
+.modal-dialog blockquote,
+.modal-dialog dt,
+.modal-dialog dd {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .modal-footer {
