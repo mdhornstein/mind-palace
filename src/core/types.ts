@@ -250,3 +250,6 @@ export interface RoomConfig {
   customDrawAtmosphere?: (ctx: CanvasRenderingContext2D, timeMs: number) => void;
 }
 
+export type NavigationStatus = 'idle' | 'navigating' | 'arrived' | 'blocked';
+
+

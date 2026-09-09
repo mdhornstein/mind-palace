@@ -1,6 +1,5 @@
-import { RoomConfig, InteractiveTarget, BoundingBox, Doorway } from '../core/types';
+import { RoomConfig, InteractiveTarget, BoundingBox, Doorway, NavigationStatus } from '../core/types';
 import { TILE_SIZE } from '../core/constants';
-import { NavigationStatus } from './player';
 
 /**
  * Unified Interaction System.

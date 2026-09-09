@@ -1,8 +1,8 @@
-import { Direction, BoundingBox, RoomConfig } from '../core/types';
+import { Direction, BoundingBox, RoomConfig, NavigationStatus } from '../core/types';
 import { TILE_SIZE, CANVAS_WIDTH, CANVAS_HEIGHT } from '../core/constants';
 import { InteractionSystem } from './interactionSystem';
 
-export type NavigationStatus = 'idle' | 'navigating' | 'arrived' | 'blocked';
+export type { NavigationStatus };
 
 export class PlayerController {
   public x: number;
