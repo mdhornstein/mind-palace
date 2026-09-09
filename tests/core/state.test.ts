@@ -79,6 +79,126 @@ describe('migrateState', () => {
     warnSpy.mockRestore();
   });
 
+  it('preserves valid collection items when structurally sound', () => {
+    const singleMemory = {
+      id: 'custom_mem_1',
+      targetObjectId: 'bookshelf',
+      title: 'Structural Geology Notes',
+      subtitle: 'Field Observations',
+      date: '1904',
+      snippet: 'Observations on fold geometry.',
+      fullContent: ['Detailed notes on anticlines.'],
+      tags: ['geology'],
+      unlocked: true,
+      lastRecalledAt: 1234567,
+    };
+
+    const raw = {
+      version: 1,
+      memories: [singleMemory],
+    };
+
+    const migrated = migrateState(raw, INITIAL_SEED_STATE);
+    expect(migrated.memories).toEqual([singleMemory]);
+  });
+
+  it('rejects arrays with malformed collection elements (e.g. [42, null], [{}]) and safely defaults with warning', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const rawWithMalformedItems = {
+      version: 1,
+      memories: [42, 'garbage', null],
+      projects: [{}],
+      specimens: [{ id: 'partial_spec' }],
+      encounters: {
+        history: ['not-an-encounter-record', 99],
+      },
+    };
+
+    const migrated = migrateState(rawWithMalformedItems, INITIAL_SEED_STATE);
+
+    expect(warnSpy).toHaveBeenCalled();
+    // Memories, projects, specimens fall back to valid seed collections
+    expect(migrated.memories).toEqual(INITIAL_SEED_STATE.memories);
+    expect(migrated.projects).toEqual(INITIAL_SEED_STATE.projects);
+    expect(migrated.specimens).toEqual(INITIAL_SEED_STATE.specimens);
+    // Encounter history safely defaults to empty array
+    expect(migrated.encounters.history).toEqual([]);
+
+    warnSpy.mockRestore();
+  });
+
+  it('validates nested companion fields and recovers from malformed unions and speech/pendingRemark objects', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const rawWithMalformedCompanion = {
+      version: 1,
+      companion: {
+        location: 'spaceship', // invalid union
+        activity: 'eating_pizza', // invalid union
+        presenceLevel: 99, // invalid presenceLevel
+        speech: { banana: true }, // invalid speech shape
+        pendingRemark: { trigger: 'flying_saucer' }, // invalid trigger & missing presenceLevel
+      },
+    };
+
+    const migrated = migrateState(rawWithMalformedCompanion, INITIAL_SEED_STATE);
+
+    expect(warnSpy).toHaveBeenCalled();
+    expect(migrated.companion.location).toBe(INITIAL_SEED_STATE.companion.location);
+    expect(migrated.companion.activity).toBe(INITIAL_SEED_STATE.companion.activity);
+    expect(migrated.companion.presenceLevel).toBe(INITIAL_SEED_STATE.companion.presenceLevel);
+    expect(migrated.companion.speech).toBe(INITIAL_SEED_STATE.companion.speech);
+    expect(migrated.companion.pendingRemark).toBe(INITIAL_SEED_STATE.companion.pendingRemark);
+
+    warnSpy.mockRestore();
+  });
+
+  it('accepts structurally valid speech, pendingRemark, and nulls on companion', () => {
+    const rawWithValidCompanion = {
+      version: 1,
+      companion: {
+        location: 'cabinet',
+        activity: 'examining_fossil',
+        presenceLevel: 2,
+        speech: {
+          text: 'Notice the texture.',
+          timestamp: 5000,
+          durationMs: 4000,
+        },
+        pendingRemark: {
+          text: 'Remark queued.',
+          trigger: 'fossil_displayed',
+          presenceLevel: 2,
+        },
+      },
+    };
+
+    const migrated = migrateState(rawWithValidCompanion, INITIAL_SEED_STATE);
+    expect(migrated.companion.location).toBe('cabinet');
+    expect(migrated.companion.activity).toBe('examining_fossil');
+    expect(migrated.companion.presenceLevel).toBe(2);
+    expect(migrated.companion.speech?.text).toBe('Notice the texture.');
+    expect(migrated.companion.pendingRemark?.trigger).toBe('fossil_displayed');
+  });
+
+  it('validates environment ambientLight and recovers from invalid values', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const raw = {
+      version: 1,
+      environment: {
+        ambientLight: 'disco_lights',
+      },
+    };
+
+    const migrated = migrateState(raw, INITIAL_SEED_STATE);
+    expect(warnSpy).toHaveBeenCalled();
+    expect(migrated.environment.ambientLight).toBe(INITIAL_SEED_STATE.environment.ambientLight);
+
+    warnSpy.mockRestore();
+  });
+
   it('returns cloned INITIAL_SEED_STATE when raw data is not a plain object', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 

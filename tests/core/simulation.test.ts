@@ -3,6 +3,20 @@ import { evolveWorld } from '../../src/core/simulation';
 import { INITIAL_SEED_STATE } from '../../src/core/constants';
 import { WorldState, ProjectItem, SpecimenItem } from '../../src/core/types';
 
+function deepFreeze<T>(obj: T): T {
+  if (obj === null || typeof obj !== 'object') {
+    return obj;
+  }
+  Object.freeze(obj);
+  for (const key of Object.getOwnPropertyNames(obj)) {
+    const prop = (obj as Record<string, unknown>)[key];
+    if (typeof prop === 'object' && prop !== null && !Object.isFrozen(prop)) {
+      deepFreeze(prop);
+    }
+  }
+  return obj;
+}
+
 describe('evolveWorld', () => {
   it('is deterministic: identical inputs yield identical outputs', () => {
     const inputState: WorldState = structuredClone(INITIAL_SEED_STATE);
@@ -15,16 +29,9 @@ describe('evolveWorld', () => {
     expect(result1).not.toBe(result2); // New reference
   });
 
-  it('is purely functional and does not mutate the input state', () => {
-    const inputState: WorldState = structuredClone(INITIAL_SEED_STATE);
+  it('is purely functional and does not mutate the input state (deeply frozen)', () => {
+    const inputState: WorldState = deepFreeze(structuredClone(INITIAL_SEED_STATE));
     const snapshotBefore = JSON.stringify(inputState);
-
-    // Deep freeze top levels to verify no mutation occurs
-    Object.freeze(inputState);
-    Object.freeze(inputState.projects);
-    Object.freeze(inputState.specimens);
-    Object.freeze(inputState.companion);
-    Object.freeze(inputState.environment);
 
     const result = evolveWorld(inputState, { elapsedSeconds: 100, currentTime: 1700000000000 });
 
