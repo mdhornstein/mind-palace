@@ -388,8 +388,8 @@ export function openWishingWellModal() {
 
   body.querySelector('#btn-toss-coin')?.addEventListener('click', () => {
     audio.playFountainSplash();
-    // Toss 1 coin into fountain and spray back 2 lucky ones!
-    engine.spawnBurst(CANVAS_WIDTH / 2, 280, 2, 'star');
+    // Toss 1 coin into fountain and spray back 2 lucky ones (suppress coin press audio)
+    engine.spawnBurst(CANVAS_WIDTH / 2, 280, 2, 'star', 32, false);
     closeActiveModal();
   });
 }

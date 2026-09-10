@@ -628,55 +628,73 @@ export class HearthAudio {
 
   /**
    * Mechanical coin stamping / dispenser chute burst sound
+   * Warm, tactile, steam-cushioned mechanical press with zero harsh transient clicks.
    */
   public playCoinEject() {
     this.initContext();
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
 
-    // Heavy piston thud
+    // 1. Warm Piston Cushion (Low-passed, soft 10ms attack to eliminate speaker pops)
     const oscThud = this.ctx.createOscillator();
     const gainThud = this.ctx.createGain();
+    const filterThud = this.ctx.createBiquadFilter();
+
     oscThud.type = 'triangle';
-    oscThud.frequency.setValueAtTime(140, now);
-    oscThud.frequency.exponentialRampToValueAtTime(45, now + 0.09);
+    oscThud.frequency.setValueAtTime(110, now);
+    oscThud.frequency.exponentialRampToValueAtTime(45, now + 0.08);
 
-    gainThud.gain.setValueAtTime(0.35, now);
-    gainThud.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+    filterThud.type = 'lowpass';
+    filterThud.frequency.setValueAtTime(260, now);
 
-    oscThud.connect(gainThud);
+    // Soft attack prevents any harsh percussive DC step or click at t=0
+    gainThud.gain.setValueAtTime(0.001, now);
+    gainThud.gain.linearRampToValueAtTime(0.14, now + 0.010);
+    gainThud.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+
+    oscThud.connect(filterThud);
+    filterThud.connect(gainThud);
     gainThud.connect(this.ctx.destination);
     oscThud.start(now);
-    oscThud.stop(now + 0.11);
+    oscThud.stop(now + 0.10);
 
-    // Mechanical gear/latch snap
-    const oscLatch = this.ctx.createOscillator();
-    const gainLatch = this.ctx.createGain();
-    oscLatch.type = 'square';
-    oscLatch.frequency.setValueAtTime(2400, now + 0.02);
-    oscLatch.frequency.exponentialRampToValueAtTime(800, now + 0.05);
+    // 2. Gentle Mechanical Slide (warm filtered triangle, NO harsh square wave)
+    const oscSlide = this.ctx.createOscillator();
+    const gainSlide = this.ctx.createGain();
+    const filterSlide = this.ctx.createBiquadFilter();
 
-    gainLatch.gain.setValueAtTime(0.18, now + 0.02);
-    gainLatch.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+    oscSlide.type = 'triangle';
+    oscSlide.frequency.setValueAtTime(580, now + 0.015);
+    oscSlide.frequency.exponentialRampToValueAtTime(260, now + 0.05);
 
-    oscLatch.connect(gainLatch);
-    gainLatch.connect(this.ctx.destination);
-    oscLatch.start(now + 0.02);
-    oscLatch.stop(now + 0.07);
+    filterSlide.type = 'bandpass';
+    filterSlide.frequency.setValueAtTime(420, now + 0.015);
+    filterSlide.Q.value = 2.5;
 
-    // Metallic chime ring of freshly minted coin
+    gainSlide.gain.setValueAtTime(0.001, now + 0.015);
+    gainSlide.gain.linearRampToValueAtTime(0.06, now + 0.022);
+    gainSlide.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+
+    oscSlide.connect(filterSlide);
+    filterSlide.connect(gainSlide);
+    gainSlide.connect(this.ctx.destination);
+    oscSlide.start(now + 0.015);
+    oscSlide.stop(now + 0.07);
+
+    // 3. Subtle, mellow brass coin clink
     const oscRing = this.ctx.createOscillator();
     const gainRing = this.ctx.createGain();
     oscRing.type = 'sine';
-    oscRing.frequency.setValueAtTime(1760, now + 0.04);
+    oscRing.frequency.setValueAtTime(1480, now + 0.025);
 
-    gainRing.gain.setValueAtTime(0.12, now + 0.04);
-    gainRing.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+    gainRing.gain.setValueAtTime(0.001, now + 0.025);
+    gainRing.gain.linearRampToValueAtTime(0.045, now + 0.035);
+    gainRing.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
 
     oscRing.connect(gainRing);
     gainRing.connect(this.ctx.destination);
-    oscRing.start(now + 0.04);
-    oscRing.stop(now + 0.3);
+    oscRing.start(now + 0.025);
+    oscRing.stop(now + 0.24);
   }
 
   /**
@@ -796,26 +814,52 @@ export class HearthAudio {
   }
 
   /**
-   * Fountain water drop / splash for the wishing well
+   * Fountain water drop / splash for the wishing well.
+   * Gentle, natural resonant water bloop and soft ripple echo with zero harsh high-frequency chirps.
    */
   public playFountainSplash() {
     this.initContext();
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
 
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(700, now);
-    osc.frequency.exponentialRampToValueAtTime(1400, now + 0.08);
+    // 1. Primary resonant water bubble (natural downward pitch drop)
+    const osc1 = this.ctx.createOscillator();
+    const gain1 = this.ctx.createGain();
+    const filter1 = this.ctx.createBiquadFilter();
 
-    gain.gain.setValueAtTime(0.16, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(540, now);
+    osc1.frequency.exponentialRampToValueAtTime(320, now + 0.12);
 
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.2);
+    filter1.type = 'lowpass';
+    filter1.frequency.setValueAtTime(800, now);
+
+    gain1.gain.setValueAtTime(0.001, now);
+    gain1.gain.linearRampToValueAtTime(0.08, now + 0.012);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+    osc1.connect(filter1);
+    filter1.connect(gain1);
+    gain1.connect(this.ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.20);
+
+    // 2. Secondary soft droplet ripple
+    const osc2 = this.ctx.createOscillator();
+    const gain2 = this.ctx.createGain();
+
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(720, now + 0.04);
+    osc2.frequency.exponentialRampToValueAtTime(460, now + 0.14);
+
+    gain2.gain.setValueAtTime(0.001, now + 0.04);
+    gain2.gain.linearRampToValueAtTime(0.04, now + 0.05);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+
+    osc2.connect(gain2);
+    gain2.connect(this.ctx.destination);
+    osc2.start(now + 0.04);
+    osc2.stop(now + 0.18);
   }
 }
 

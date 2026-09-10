@@ -185,10 +185,13 @@ export class CoinPhysicsEngine {
     originY: number,
     count: number = 6,
     forcedDenomination?: CoinDenomination,
-    originZ: number = 32
+    originZ: number = 32,
+    playAudio: boolean = true
   ) {
-    const audio = HearthAudio.getInstance();
-    audio.playCoinEject();
+    if (playAudio) {
+      const audio = HearthAudio.getInstance();
+      audio.playCoinEject();
+    }
 
     for (let i = 0; i < count; i++) {
       let denom: CoinDenomination = forcedDenomination || 'copper';
