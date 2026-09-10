@@ -55,6 +55,7 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
 
   it('tracks station looping states for all musical cadences', () => {
     const conductor = MintConductor.getInstance();
+    conductor.setRoomActive(true);
 
     conductor.setPressCadence('four_on_the_floor');
     expect(conductor.getPressCadence()).toBe('four_on_the_floor');
@@ -498,15 +499,23 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     expect(conductor.getPlinkoCadence()).toBe('sixteenth_shaker');
     expect(conductor.getStoneCadence()).toBe('pentatonic_arp');
 
-    // Toggle off: stops transport while keeping cadences intact
+    // Toggle off: disengages all machines into idle state (setting cadences to 'off')
     const turnedOff = conductor.toggleMasterTransport();
     expect(turnedOff).toBe(false);
     expect(conductor.isRunning()).toBe(false);
-    expect(conductor.getPressCadence()).toBe('four_on_the_floor');
+    expect(conductor.getPressCadence()).toBe('off');
+    expect(conductor.getTallyCadence()).toBe('off');
+    expect(conductor.getPlinkoCadence()).toBe('off');
+    expect(conductor.getStoneCadence()).toBe('off');
+    expect(conductor.isStationLooping('mint_coin_press')).toBe(false);
 
-    // Toggle on again: resumes running with preserved cadences
+    // Toggle on again: engages signature orchestrion defaults
     conductor.toggleMasterTransport();
     expect(conductor.isRunning()).toBe(true);
+    expect(conductor.getPressCadence()).toBe('four_on_the_floor');
+    expect(conductor.getTallyCadence()).toBe('backbeat_snare');
+    expect(conductor.getPlinkoCadence()).toBe('sixteenth_shaker');
+    expect(conductor.getStoneCadence()).toBe('pentatonic_arp');
   });
 
   it('applies curated orchestral score presets accurately', () => {

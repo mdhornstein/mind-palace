@@ -60,6 +60,12 @@ const mockWindow: any = {
       keydownListeners.push(handler);
     }
   },
+  removeEventListener(event: string, handler: (e: any) => void) {
+    if (event === 'keydown') {
+      const idx = keydownListeners.indexOf(handler);
+      if (idx !== -1) keydownListeners.splice(idx, 1);
+    }
+  },
   dispatchEvent(event: any) {
     if (event.type === 'keydown') {
       for (const listener of keydownListeners) {

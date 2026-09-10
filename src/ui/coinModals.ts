@@ -89,9 +89,13 @@ function createModalContainer(
 export function openCoinPressModal() {
   const engine = CoinPhysicsEngine.getInstance();
   const conductor = MintConductor.getInstance();
+  let cleanupConductor: (() => void) | null = null;
   const { body } = createModalContainer(
     '⚙️ The Grand Minting Engine',
-    'Industrial Steam Coining Press — Sovereign Stamping Station'
+    'Industrial Steam Coining Press — Sovereign Stamping Station',
+    () => {
+      if (cleanupConductor) cleanupConductor();
+    }
   );
 
   body.innerHTML = `
@@ -205,6 +209,18 @@ export function openCoinPressModal() {
 
   updateCadenceUI();
 
+  const onConductorChange = () => {
+    updateCadenceUI();
+  };
+  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+    window.addEventListener('mint-conductor-state-change', onConductorChange);
+  }
+  cleanupConductor = () => {
+    if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function') {
+      window.removeEventListener('mint-conductor-state-change', onConductorChange);
+    }
+  };
+
   btnOff?.addEventListener('click', () => {
     conductor.setPressCadence('off');
     updateCadenceUI();
@@ -243,11 +259,13 @@ export function openPlinkoModal() {
   const audio = HearthAudio.getInstance();
   const conductor = MintConductor.getInstance();
   let isPlinkoRunning = true;
+  let cleanupConductor: (() => void) | null = null;
   const { body } = createModalContainer(
     '🎰 The Gilded Chute',
     'Galton Pegboard & Continuous Hopper Groove',
     () => {
       isPlinkoRunning = false;
+      if (cleanupConductor) cleanupConductor();
     }
   );
 
@@ -355,6 +373,18 @@ export function openPlinkoModal() {
   }
 
   updatePlinkoCadenceUI();
+
+  const onConductorChange = () => {
+    updatePlinkoCadenceUI();
+  };
+  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+    window.addEventListener('mint-conductor-state-change', onConductorChange);
+  }
+  cleanupConductor = () => {
+    if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function') {
+      window.removeEventListener('mint-conductor-state-change', onConductorChange);
+    }
+  };
 
   btnPlinkoOff?.addEventListener('click', () => {
     conductor.setPlinkoCadence('off');
@@ -649,6 +679,7 @@ export function openRingingStoneModal() {
   const audio = HearthAudio.getInstance();
 
   let animFrameId: number | null = null;
+  let cleanupConductor: (() => void) | null = null;
 
   const { body } = createModalContainer(
     '🔔 The Assayer\'s Ringing Stone',
@@ -658,6 +689,7 @@ export function openRingingStoneModal() {
         cancelAnimationFrame(animFrameId);
         animFrameId = null;
       }
+      if (cleanupConductor) cleanupConductor();
     }
   );
 
@@ -807,6 +839,18 @@ export function openRingingStoneModal() {
   }
 
   updateStoneCadenceUI();
+
+  const onConductorChange = () => {
+    updateStoneCadenceUI();
+  };
+  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+    window.addEventListener('mint-conductor-state-change', onConductorChange);
+  }
+  cleanupConductor = () => {
+    if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function') {
+      window.removeEventListener('mint-conductor-state-change', onConductorChange);
+    }
+  };
 
   btnStoneOff?.addEventListener('click', () => {
     conductor.setStoneCadence('off');
@@ -990,10 +1034,14 @@ export function openTallyBoardModal() {
   const audio = HearthAudio.getInstance();
   const engine = CoinPhysicsEngine.getInstance();
   const conductor = MintConductor.getInstance();
+  let cleanupConductor: (() => void) | null = null;
 
   const { body } = createModalContainer(
     "📋 The Moneyer's Tally Board",
-    'Mechanical Sovereign Telling Tray & Automated Strike-Bar Backbeat'
+    'Mechanical Sovereign Telling Tray & Automated Strike-Bar Backbeat',
+    () => {
+      if (cleanupConductor) cleanupConductor();
+    }
   );
 
   let filledCoins = 50;
@@ -1135,6 +1183,18 @@ export function openTallyBoardModal() {
 
   updateTallyCadenceUI();
 
+  const onConductorChange = () => {
+    updateTallyCadenceUI();
+  };
+  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+    window.addEventListener('mint-conductor-state-change', onConductorChange);
+  }
+  cleanupConductor = () => {
+    if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function') {
+      window.removeEventListener('mint-conductor-state-change', onConductorChange);
+    }
+  };
+
   btnTallyOff?.addEventListener('click', () => {
     conductor.setTallyCadence('off');
     updateTallyCadenceUI();
@@ -1243,9 +1303,13 @@ export function openTallyBoardModal() {
  * - 1-Click Curated Orchestral Presets
  */
 export function openConductorVitrineModal(): void {
-  const { overlay, body } = createModalContainer(
+  let cleanupConductor: (() => void) | null = null;
+  const { body } = createModalContainer(
     "THE CONDUCTOR'S HOROLOGICAL VITRINE",
-    'Victorian Kinetic DAW • Central Escapement & Mechanical Orchestra Mixer'
+    'Victorian Kinetic DAW • Central Escapement & Mechanical Orchestra Mixer',
+    () => {
+      if (cleanupConductor) cleanupConductor();
+    }
   );
 
   const container = body.parentElement;
@@ -1503,13 +1567,14 @@ export function openConductorVitrineModal(): void {
 
   // Listen to conductor state broadcasts to stay perfectly synchronized
   const onStateChange = () => updateMixerUI();
-  window.addEventListener('mint-conductor-state-change', onStateChange);
-
-  // Clean up listener when modal closes
-  const originalClose = overlay.querySelector('.modal-close-btn');
-  originalClose?.addEventListener('click', () => {
-    window.removeEventListener('mint-conductor-state-change', onStateChange);
-  });
+  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+    window.addEventListener('mint-conductor-state-change', onStateChange);
+  }
+  cleanupConductor = () => {
+    if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function') {
+      window.removeEventListener('mint-conductor-state-change', onStateChange);
+    }
+  };
 
   // Master Clutch Button
   btnMasterClutch.addEventListener('click', () => {

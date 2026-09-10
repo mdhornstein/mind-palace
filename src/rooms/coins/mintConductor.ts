@@ -196,13 +196,22 @@ export class MintConductor {
   }
 
   public isStationLooping(stationId: string): boolean {
+    if (!this.running) {
+      return false;
+    }
     if (stationId === 'mint_coin_press' || stationId === 'vault_coin_press') {
       return this.pressCadence !== 'off';
     }
     if (stationId === 'mint_ringing_stone') {
       return this.stoneCadence !== 'off';
     }
-    if (stationId === 'plinko_drop' || stationId === 'mint_plinko' || stationId === 'gilded_chute') {
+    if (
+      stationId === 'plinko_drop' ||
+      stationId === 'mint_plinko' ||
+      stationId === 'gilded_chute' ||
+      stationId === 'mint_gilded_chute' ||
+      stationId === 'mint_galton_board'
+    ) {
       return this.plinkoCadence !== 'off';
     }
     if (stationId === 'mint_tally_board' || stationId === 'tally_board') {
@@ -247,35 +256,45 @@ export class MintConductor {
   }
 
   /**
+   * Disengages all machine cadences, resets mutes, and stops transport.
+   * Completely silences and idles all workshop machinery.
+   */
+  public disengageAll(): void {
+    this.pressCadence = 'off';
+    this.stoneCadence = 'off';
+    this.plinkoCadence = 'off';
+    this.tallyCadence = 'off';
+    this.pressMuted = false;
+    this.stoneMuted = false;
+    this.plinkoMuted = false;
+    this.tallyMuted = false;
+    this.stop();
+    this.notifyStateChange();
+  }
+
+  /**
    * Toggles master transport engagement.
-   * If running -> stops transport, preserving cadence choices.
-   * If stopped -> starts transport. If all cadences are 'off', activates signature 'full_orchestrion'.
+   * If running -> disengages all machines into idle state (setting cadences to 'off').
+   * If stopped -> engages signature full orchestrion preset and starts transport.
    * @returns true if transport is now running, false if stopped.
    */
   public toggleMasterTransport(): boolean {
     if (this.running) {
-      this.stop();
+      this.disengageAll();
       return false;
     }
 
-    const hasActiveCadence =
-      this.pressCadence !== 'off' ||
-      this.stoneCadence !== 'off' ||
-      this.plinkoCadence !== 'off' ||
-      this.tallyCadence !== 'off';
-
-    if (!hasActiveCadence) {
-      this.pressCadence = 'four_on_the_floor';
-      this.tallyCadence = 'backbeat_snare';
-      this.plinkoCadence = 'sixteenth_shaker';
-      this.stoneCadence = 'pentatonic_arp';
-      this.pressMuted = false;
-      this.stoneMuted = false;
-      this.plinkoMuted = false;
-      this.tallyMuted = false;
-    }
+    this.pressCadence = 'four_on_the_floor';
+    this.tallyCadence = 'backbeat_snare';
+    this.plinkoCadence = 'sixteenth_shaker';
+    this.stoneCadence = 'pentatonic_arp';
+    this.pressMuted = false;
+    this.stoneMuted = false;
+    this.plinkoMuted = false;
+    this.tallyMuted = false;
 
     this.start();
+    this.notifyStateChange();
     return true;
   }
 
@@ -314,11 +333,8 @@ export class MintConductor {
       this.tallyMuted = false;
       if (this.inActiveRoom && !this.running) this.start();
     } else if (preset === 'silent_workshop') {
-      this.pressCadence = 'off';
-      this.tallyCadence = 'off';
-      this.plinkoCadence = 'off';
-      this.stoneCadence = 'off';
-      if (this.running) this.stop();
+      this.disengageAll();
+      return;
     }
     this.notifyStateChange();
   }
