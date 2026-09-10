@@ -170,7 +170,10 @@ export type ModalId =
   | 'escher_mobius'
   | 'escher_penrose_stairs'
   | 'escher_artwork'
-  | 'escher_variant_dial';
+  | 'coin_press'
+  | 'plinko_game'
+  | 'vault_wishing_well'
+  | 'vault_scale';
 
 export type InteractionIntent =
   | {
@@ -189,6 +192,11 @@ export type InteractionIntent =
       params?: Record<string, string | number | boolean>;
     };
 
+export interface StationPrimaryAction {
+  label: string;
+  intent: InteractionIntent;
+}
+
 export interface WorldStation {
   id: string;
   name: string;
@@ -204,8 +212,10 @@ export interface WorldStation {
   approachPoint: { x: number; y: number };
   // Visual render hook
   draw: (ctx: CanvasRenderingContext2D, timeMs: number, state: DeepReadonly<WorldState>) => void;
-  // Declarative interaction intent
+  // Declarative interaction intent (default/inspect intent)
   intent: InteractionIntent;
+  // Optional declarative primary in-world action (e.g. F key / Direct in-world action)
+  primaryAction?: StationPrimaryAction;
 }
 
 export interface Doorway {

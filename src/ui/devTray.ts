@@ -1,11 +1,10 @@
 import { StateManager } from '../core/state';
 import { HearthAudio } from '../sound/audio';
-import {
-  getActiveEscherVariantId,
-  getEscherVariantMeta,
-  onEscherVariantChange,
-} from '../rooms/escher/variants';
-import { openEscherVariantDialModal } from './escherArtModal';
+import { RoomVariantManager } from '../rooms/variants/roomVariantManager';
+import { RoomRegistry } from '../rooms/registry';
+import { openRoomVariantModal } from './escherArtModal';
+import { openVaultScaleModal } from './coinModals';
+import { CoinPhysicsEngine } from '../rooms/coins/coinPhysics';
 
 export class DevTray {
   private el: HTMLElement;
@@ -30,7 +29,9 @@ export class DevTray {
 
     this.renderHud();
     this.hearthAudio.onRoomChange(() => this.renderHud());
-    onEscherVariantChange(() => this.renderHud());
+    this.stateManager.subscribe(() => this.renderHud());
+    RoomVariantManager.onVariantChange(() => this.renderHud());
+    CoinPhysicsEngine.getInstance().onCollect(() => this.renderHud());
     this.setupListeners();
     this.render();
   }
@@ -38,16 +39,41 @@ export class DevTray {
   private renderHud() {
     const isPlaying = this.hearthAudio.getIsPlaying();
     const roomName = this.hearthAudio.getRoomName();
-    const activeVariantId = getActiveEscherVariantId();
-    const activeMeta = getEscherVariantMeta(activeVariantId);
+    const currentRoomId = this.stateManager.getState().currentRoomId;
+    let roomTitle = 'Room';
+    try {
+      const roomConfig = RoomRegistry.getRoom(currentRoomId);
+      roomTitle = roomConfig.name || currentRoomId;
+    } catch {
+      roomTitle = currentRoomId;
+    }
+
+    const hasVariants = RoomVariantManager.hasVariants(currentRoomId);
+
+    let variantButtonHtml = '';
+    if (hasVariants) {
+      const activeVariantId = RoomVariantManager.getActiveVariantId(currentRoomId);
+      const activeMeta = RoomVariantManager.getVariantMeta(currentRoomId, activeVariantId);
+      const shortName = activeMeta ? activeMeta.shortName : activeVariantId;
+      const fullLabel = activeMeta ? activeMeta.label : activeVariantId;
+
+      variantButtonHtml = `
+        <button id="btn-room-variant" class="hud-pill" title="Switch ${roomTitle} Prototype (Currently: ${fullLabel})">
+          🌀 ${roomTitle}: ${shortName} ▾
+        </button>
+      `;
+    }
+
+    const coinsCollected = CoinPhysicsEngine.getInstance().getTotalCollected();
 
     this.hudEl.innerHTML = `
       <button id="btn-audio-toggle" class="hud-pill ${isPlaying ? 'active' : ''}" title="Toggle procedural 8-bit soundtrack for ${roomName} (Press M to mute/unmute)">
         ${isPlaying ? `🎶 8-Bit Music: ${roomName}` : '🔇 8-Bit Music: Muted'}
       </button>
-      <button id="btn-escher-variant" class="hud-pill" title="Switch Escher Room Prototype (Currently: ${activeMeta.label})">
-        🌀 Escher: ${activeMeta.shortName} ▾
+      <button id="btn-coin-purse" class="hud-pill" style="color: #facc15; border-color: #854d0e; font-weight: 600;" title="Sovereign Coins in Purse (Click to inspect)">
+        🪙 ${coinsCollected}
       </button>
+      ${variantButtonHtml}
       <button id="btn-time-warp" class="hud-pill highlight" title="Simulate closing the app and returning hours or days later (~ or Shift+D)">
         ⏱️ Time Warp
       </button>
@@ -58,9 +84,15 @@ export class DevTray {
       this.renderHud();
     });
 
-    this.hudEl.querySelector('#btn-escher-variant')?.addEventListener('click', () => {
-      openEscherVariantDialModal();
+    this.hudEl.querySelector('#btn-coin-purse')?.addEventListener('click', () => {
+      openVaultScaleModal();
     });
+
+    if (hasVariants) {
+      this.hudEl.querySelector('#btn-room-variant')?.addEventListener('click', () => {
+        openRoomVariantModal(currentRoomId);
+      });
+    }
 
     this.hudEl.querySelector('#btn-time-warp')?.addEventListener('click', () => {
       this.toggle();

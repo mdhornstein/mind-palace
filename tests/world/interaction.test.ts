@@ -326,5 +326,84 @@ describe('InteractionSystem', () => {
       ).toBe(false);
     });
   });
+
+  describe('Declarative Primary Actions & Custom Action Dispatcher', () => {
+    it('verifies that coinPressStation declares primaryAction without imperative callbacks', () => {
+      const coinRoom = RoomRegistry.getRoom('coins');
+      const pressStation = coinRoom.stations.find((s) => s.id === 'mint_coin_press')!;
+      expect(pressStation).toBeDefined();
+      expect(pressStation.primaryAction).toBeDefined();
+      expect(pressStation.primaryAction?.label).toBe('Crank Press');
+      expect(pressStation.primaryAction?.intent.type).toBe('custom');
+      if (pressStation.primaryAction?.intent.type === 'custom') {
+        expect(pressStation.primaryAction.intent.actionId).toBe('mint_crank_press');
+      }
+    });
+
+    it('dispatches custom actions via InteractionDispatcher router', async () => {
+      const { InteractionDispatcher } = await import('../../src/ui/interactionDispatcher');
+      const { CoinPhysicsEngine } = await import('../../src/rooms/coins/coinPhysics');
+      const { resetMintCrankCooldown } = await import('../../src/rooms/coins/coinMachineActions');
+
+      resetMintCrankCooldown();
+      const engine = CoinPhysicsEngine.getInstance();
+      engine.clearCoins();
+      expect(engine.getCoins().length).toBe(0);
+
+      const dummyContext: any = {
+        stateManager: { getState: () => ({ environment: {} }) },
+        transitionToRoom: () => {},
+      };
+
+      InteractionDispatcher.dispatch(
+        { type: 'custom', actionId: 'mint_crank_press' },
+        dummyContext
+      );
+
+      // Between 2 and 4 coins should have been stamped and spawned
+      expect(engine.getCoins().length).toBeGreaterThanOrEqual(2);
+      expect(engine.getCoins().length).toBeLessThanOrEqual(4);
+    });
+
+    it('supports registering new custom actions in InteractionDispatcher', async () => {
+      const { InteractionDispatcher } = await import('../../src/ui/interactionDispatcher');
+      let customTriggered = false;
+
+      InteractionDispatcher.registerAction('test_pulse_action', () => {
+        customTriggered = true;
+      });
+
+      const dummyContext: any = {
+        stateManager: {},
+        transitionToRoom: () => {},
+      };
+
+      InteractionDispatcher.dispatch(
+        { type: 'custom', actionId: 'test_pulse_action' },
+        dummyContext
+      );
+
+      expect(customTriggered).toBe(true);
+      expect(InteractionDispatcher.getRegisteredActionIds()).toContain('test_pulse_action');
+    });
+
+    it('throttles rapid mashing via coinMachineActions cooldown', async () => {
+      const { executeMintCrankPress, resetMintCrankCooldown } = await import(
+        '../../src/rooms/coins/coinMachineActions'
+      );
+
+      resetMintCrankCooldown();
+      const first = executeMintCrankPress(1000);
+      expect(first).toBe(true);
+
+      // Immediate second call at t=1050ms (< 140ms cooldown) should be throttled
+      const second = executeMintCrankPress(1050);
+      expect(second).toBe(false);
+
+      // Call at t=1200ms (> 140ms cooldown) should succeed
+      const third = executeMintCrankPress(1200);
+      expect(third).toBe(true);
+    });
+  });
 });
 

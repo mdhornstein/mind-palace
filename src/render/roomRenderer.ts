@@ -43,6 +43,16 @@ export class RoomRenderer {
     this.bgCtx.imageSmoothingEnabled = false;
   }
 
+  /**
+   * Force the background cache to be rebuilt on the next render call.
+   * Must be called when the room's visual identity changes but room.id stays the same
+   * (e.g. Escher variant hot-swap where both variants share id 'escher').
+   */
+  public invalidateBackground(): void {
+    this.bgDirty = true;
+    this.currentCachedRoomId = null;
+  }
+
   private initDustMotes() {
     for (let i = 0; i < 28; i++) {
       this.dustMotes.push({

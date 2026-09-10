@@ -1,10 +1,9 @@
 import { RoomConfig } from '../core/types';
 import { studyRoomConfig } from './study/studyRoom';
 import { observatoryRoomConfig } from './observatory/observatoryRoom';
-import {
-  getActiveEscherRoomConfig,
-  getAllEscherRoomConfigs,
-} from './escher/escherRoom';
+import { RoomVariantManager } from './variants/roomVariantManager';
+import './escher/variants';
+import './coins/variants';
 
 class RoomRegistryManager {
   private rooms: Map<string, RoomConfig> = new Map();
@@ -12,10 +11,6 @@ class RoomRegistryManager {
   constructor() {
     this.register(studyRoomConfig);
     this.register(observatoryRoomConfig);
-    // Register all concrete Escher prototype variants (v1 and v2)
-    for (const variant of getAllEscherRoomConfigs()) {
-      this.register(variant);
-    }
   }
 
   public register(room: RoomConfig) {
@@ -23,8 +18,8 @@ class RoomRegistryManager {
   }
 
   public getRoom(id: string): RoomConfig {
-    if (id === 'escher') {
-      return getActiveEscherRoomConfig();
+    if (RoomVariantManager.hasVariants(id)) {
+      return RoomVariantManager.getActiveRoomConfig(id);
     }
     const room = this.rooms.get(id);
     if (!room) {
@@ -35,7 +30,9 @@ class RoomRegistryManager {
   }
 
   public getAllRooms(): RoomConfig[] {
-    return Array.from(this.rooms.values());
+    const staticRooms = Array.from(this.rooms.values());
+    const variantRooms = RoomVariantManager.getAllConfigs();
+    return [...staticRooms, ...variantRooms];
   }
 }
 

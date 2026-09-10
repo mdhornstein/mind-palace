@@ -96,43 +96,58 @@ export function drawSideWallPortal(
 }
 
 /**
- * 2. TRUE INTERLOCKING ESCHER TESSELLATION FLOOR
+ * 2. TRUE INTERLOCKING ESCHER TESSELLATION FLOOR/**
  * Mathematically exact periodic division of the plane: Interlocking Birds (Symmetry 73).
- * Every dark bird and light bird share identical boundary curves (E_top = E_bottom, E_left = E_right).
+ * Every dark bird and light bird share identical boundary curves (E_top = E_bottom, E_left = E_right)
+ * constructed from smooth cubic bezier curves forming graceful wings, sharp beaks, rounded breasts,
+ * and notched tail feathers.
  * ZERO background showing, zero gaps, authentic Dutch woodcut lithograph tones.
  */
 export function drawTessellatedFloor(ctx: CanvasRenderingContext2D, _timeMs: number) {
   // Clear room background void
-  ctx.fillStyle = '#080c14';
+  ctx.fillStyle = '#060910';
   ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
   const TILE_W = 32;
 
-  // Upper Wall (Rows 0 and 1)
+  // Upper Monastery Courtyard Wall (Rows 0 and 1, y: 0..64)
   for (let tx = 0; tx < ROOM_WIDTH_TILES; tx++) {
     const x = tx * TILE_W;
-    pRect(ctx, x, 0, TILE_W, 32, '#060910');
-    pRect(ctx, x, 32, TILE_W, 32, '#0e1420');
-    pRect(ctx, x, 58, TILE_W, 6, '#182130');
-    pRect(ctx, x, 62, TILE_W, 2, '#2d3b4e');
-    pRect(ctx, x + 4, 60, 6, 2, '#4d5d73');
-    pRect(ctx, x + 20, 60, 6, 2, '#4d5d73');
+    pRect(ctx, x, 0, TILE_W, 28, '#080c14');
+    pRect(ctx, x, 28, TILE_W, 26, '#0f1726');
+    // Stone masonry joint lines
+    pRect(ctx, x, 28, 1, 26, '#080c14');
+    pRect(ctx, x, 54, TILE_W, 8, '#1b2536');
+    pRect(ctx, x, 60, TILE_W, 2, '#334155'); // stone molding highlight
+    pRect(ctx, x, 62, TILE_W, 2, '#080c14'); // bottom shadow line
+    // Corbel brackets along cornice
+    if (tx % 2 === 0) {
+      pRect(ctx, x + 8, 54, 8, 8, '#26354a');
+      pRect(ctx, x + 9, 54, 2, 8, '#475569');
+      pRect(ctx, x + 15, 54, 1, 8, '#0f172a');
+    }
   }
 
-  // Palette: Antique Woodcut Lithograph
-  const DARK_BIRD = '#101726';       // Deep blue-black printing ink
-  const DARK_STROKE = '#080c14';     // Engraved ink contour
-  const LIGHT_BIRD = '#586b84';      // Weathered parchment slate
-  const LIGHT_STROKE = '#223044';    // Slate contour
+  // Palette: Antique Dutch Woodcut Lithograph
+  const DARK_BIRD = '#0e1422';       // Deep midnight woodcut ink
+  const DARK_STROKE = '#05080f';     // Engraved ink contour
+  const LIGHT_BIRD = '#586b86';      // Weathered parchment slate
+  const LIGHT_STROKE = '#1c2838';    // Slate contour
   const LIGHT_FEATHER = '#8ca0ba';   // Slate feather highlight
 
   // Fundamental domain tile dimension
-  const UNIT_W = 48;
-  const UNIT_H = 32;
+  const UNIT_W = 56;
+  const UNIT_H = 36;
 
   const startY = 64;
-  const rows = Math.ceil((CANVAS_HEIGHT - startY) / UNIT_H) + 1;
-  const cols = Math.ceil(CANVAS_WIDTH / UNIT_W) + 2;
+  const rows = Math.ceil((CANVAS_HEIGHT - startY) / UNIT_H) + 2;
+  const cols = Math.ceil(CANVAS_WIDTH / UNIT_W) + 3;
+
+  ctx.save();
+  // Clip floor to Courtyard lower ground
+  ctx.beginPath();
+  ctx.rect(0, startY, CANVAS_WIDTH, CANVAS_HEIGHT - startY);
+  ctx.clip();
 
   // Render all interlocking bird tiles
   for (let r = -1; r < rows; r++) {
@@ -143,79 +158,131 @@ export function drawTessellatedFloor(ctx: CanvasRenderingContext2D, _timeMs: num
 
       ctx.fillStyle = isDark ? DARK_BIRD : LIGHT_BIRD;
       ctx.strokeStyle = isDark ? DARK_STROKE : LIGHT_STROKE;
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 1.2;
 
-      // Exact mathematical closed periodic curve
-      // E_top matches E_bottom shifted by H; E_left matches E_right shifted by W
+      // -----------------------------------------------------------------------
+      // EXACT MATHEMATICAL CLOSED PERIODIC CURVE (Interlocking Escher Birds)
+      // Top curve matches Bottom curve shifted by (0, H).
+      // Right curve matches Left curve shifted by (-W, 0).
+      // -----------------------------------------------------------------------
       ctx.beginPath();
-      // 1. Top Edge: (0, 0) to (W, 0)
+
+      // 1. Top Edge: (0, 0) to (W, 0) — Sweeping wings & crest
       ctx.moveTo(x, y);
-      ctx.lineTo(x + 10, y - 5);
-      ctx.lineTo(x + 20, y - 10); // Wing peak
-      ctx.lineTo(x + 30, y - 5);
-      ctx.lineTo(x + 40, y - 1);
-      ctx.lineTo(x + UNIT_W, y);
+      ctx.bezierCurveTo(x + 4, y - 2, x + 10, y - 8, x + 18, y - 12);
+      ctx.bezierCurveTo(x + 22, y - 16, x + 25, y - 20, x + 28, y - 20); // Arched wingtip peak
+      ctx.bezierCurveTo(x + 34, y - 18, x + 40, y - 12, x + 44, y - 7);  // Trailing wing edge
+      ctx.bezierCurveTo(x + 48, y - 3, x + 52, y - 1, x + UNIT_W, y);   // Nape & crown
 
-      // 2. Right Edge: (W, 0) to (W, H)
-      ctx.lineTo(x + UNIT_W + 6, y + 6);
-      ctx.lineTo(x + UNIT_W + 12, y + 11);
-      ctx.lineTo(x + UNIT_W + 18, y + 16); // Beak tip protruding
-      ctx.lineTo(x + UNIT_W + 10, y + 22);
-      ctx.lineTo(x + UNIT_W + 4, y + 27);
-      ctx.lineTo(x + UNIT_W, y + UNIT_H);
+      // 2. Right Edge: (W, 0) to (W, H) — Rounded forehead, sharp beak, swelling breast
+      ctx.bezierCurveTo(x + UNIT_W + 5, y + 2, x + UNIT_W + 13, y + 6, x + UNIT_W + 19, y + 11); // Beak tip
+      ctx.bezierCurveTo(x + UNIT_W + 15, y + 14, x + UNIT_W + 11, y + 16, x + UNIT_W + 7, y + 18); // Chin & throat
+      ctx.bezierCurveTo(x + UNIT_W + 5, y + 22, x + UNIT_W + 3, y + 26, x + UNIT_W + 2, y + 29); // Swelling breast
+      ctx.bezierCurveTo(x + UNIT_W + 1, y + 31, x + UNIT_W, y + 34, x + UNIT_W, y + UNIT_H);    // Belly to tail root
 
-      // 3. Bottom Edge: (W, H) to (0, H) [Reverse of Top Edge shifted down by H]
-      ctx.lineTo(x + 40, y + UNIT_H - 1);
-      ctx.lineTo(x + 30, y + UNIT_H - 5);
-      ctx.lineTo(x + 20, y + UNIT_H - 10); // Wing notch receiving bird below
-      ctx.lineTo(x + 10, y + UNIT_H - 5);
-      ctx.lineTo(x, y + UNIT_H);
+      // 3. Bottom Edge: (W, H) to (0, H) — Exact reverse of Top Edge translated down by H
+      ctx.bezierCurveTo(x + 52, y + UNIT_H - 1, x + 48, y + UNIT_H - 3, x + 44, y + UNIT_H - 7);
+      ctx.bezierCurveTo(x + 40, y + UNIT_H - 12, x + 34, y + UNIT_H - 18, x + 28, y + UNIT_H - 20); // Wing notch
+      ctx.bezierCurveTo(x + 25, y + UNIT_H - 20, x + 22, y + UNIT_H - 16, x + 18, y + UNIT_H - 12);
+      ctx.bezierCurveTo(x + 10, y + UNIT_H - 8, x + 4, y + UNIT_H - 2, x, y + UNIT_H);
 
-      // 4. Left Edge: (0, H) to (0, 0) [Reverse of Right Edge shifted left by W]
-      ctx.lineTo(x + 4, y + 27);
-      ctx.lineTo(x + 10, y + 22);
-      ctx.lineTo(x + 18, y + 16); // Tail notch receiving beak from bird behind
-      ctx.lineTo(x + 12, y + 11);
-      ctx.lineTo(x + 6, y + 6);
+      // 4. Left Edge: (0, H) to (0, 0) — Exact reverse of Right Edge translated left by W
+      ctx.bezierCurveTo(x + 1, y + 31, x + 2, y + 29, x + 2, y + 29);
+      ctx.bezierCurveTo(x + 3, y + 26, x + 5, y + 22, x + 7, y + 18); // Throat notch
+      ctx.bezierCurveTo(x + 11, y + 16, x + 15, y + 14, x + 19, y + 11); // Beak notch receiving bird behind
+      ctx.bezierCurveTo(x + 13, y + 6, x + 5, y + 2, x, y);
+
       ctx.closePath();
-
       ctx.fill();
       ctx.stroke();
 
-      // Engraved Woodcut Feather & Anatomical Linework
+      // -----------------------------------------------------------------------
+      // Authentic Woodcut Anatomical Linework
+      // -----------------------------------------------------------------------
       if (isDark) {
-        // Dark bird eye (white/ivory pupil with dark center)
-        pRect(ctx, x + 38, y + 14, 2, 2, '#f8fafc');
-        pRect(ctx, x + 39, y + 14, 1, 1, '#080c14');
+        // Dark bird eye: Ivory almond eye with midnight pupil
+        pRect(ctx, x + 49, y + 8, 3, 3, '#f8fafc');
+        pRect(ctx, x + 50, y + 9, 1, 1, '#05080f');
 
-        // Engraved wing feather hatching
-        ctx.strokeStyle = '#080c14';
+        // Beak seam
+        ctx.strokeStyle = '#05080f';
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(x + 18, y - 5);
-        ctx.lineTo(x + 24, y + 7);
-        ctx.moveTo(x + 24, y - 2);
-        ctx.lineTo(x + 30, y + 8);
-        ctx.moveTo(x + 14, y + 16);
-        ctx.lineTo(x + 26, y + 16); // Spine
+        ctx.moveTo(x + UNIT_W + 18, y + 11);
+        ctx.lineTo(x + UNIT_W + 6, y + 12);
+        ctx.stroke();
+
+        // Primary flight feather grooves along wing
+        ctx.strokeStyle = '#1b2536';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x + 28, y - 18);
+        ctx.quadraticCurveTo(x + 26, y - 4, x + 22, y + 4);
+        ctx.moveTo(x + 34, y - 14);
+        ctx.quadraticCurveTo(x + 32, y - 2, x + 28, y + 8);
+        ctx.moveTo(x + 40, y - 8);
+        ctx.quadraticCurveTo(x + 38, y + 2, x + 34, y + 12);
+        ctx.stroke();
+
+        // Wing highlight streaks
+        ctx.strokeStyle = '#384c68';
+        ctx.beginPath();
+        ctx.moveTo(x + 29, y - 16);
+        ctx.lineTo(x + 24, y + 2);
+        ctx.moveTo(x + 35, y - 12);
+        ctx.lineTo(x + 30, y + 6);
+        ctx.stroke();
+
+        // Breast contour line
+        ctx.strokeStyle = '#05080f';
+        ctx.beginPath();
+        ctx.moveTo(x + 53, y + 16);
+        ctx.quadraticCurveTo(x + 50, y + 22, x + 46, y + 27);
         ctx.stroke();
       } else {
-        // Light bird eye (ink pupil with white glint)
-        pRect(ctx, x + 38, y + 14, 2, 2, '#080c14');
-        pRect(ctx, x + 39, y + 14, 1, 1, '#f8fafc');
+        // Light bird eye: Midnight iris with bright starlight glint
+        pRect(ctx, x + 49, y + 8, 3, 3, '#05080f');
+        pRect(ctx, x + 50, y + 8, 1, 1, '#f8fafc');
 
-        // Engraved wing feather highlight hatching
+        // Beak seam
+        ctx.strokeStyle = '#1c2838';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x + UNIT_W + 18, y + 11);
+        ctx.lineTo(x + UNIT_W + 6, y + 12);
+        ctx.stroke();
+
+        // Primary flight feather grooves along wing
+        ctx.strokeStyle = '#2b394d';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x + 28, y - 18);
+        ctx.quadraticCurveTo(x + 26, y - 4, x + 22, y + 4);
+        ctx.moveTo(x + 34, y - 14);
+        ctx.quadraticCurveTo(x + 32, y - 2, x + 28, y + 8);
+        ctx.moveTo(x + 40, y - 8);
+        ctx.quadraticCurveTo(x + 38, y + 2, x + 34, y + 12);
+        ctx.stroke();
+
+        // Starlight feather highlight streaks
         ctx.strokeStyle = LIGHT_FEATHER;
         ctx.beginPath();
-        ctx.moveTo(x + 18, y - 5);
-        ctx.lineTo(x + 24, y + 7);
-        ctx.moveTo(x + 24, y - 2);
-        ctx.lineTo(x + 30, y + 8);
-        ctx.moveTo(x + 14, y + 16);
-        ctx.lineTo(x + 26, y + 16); // Spine
+        ctx.moveTo(x + 29, y - 16);
+        ctx.lineTo(x + 24, y + 2);
+        ctx.moveTo(x + 35, y - 12);
+        ctx.lineTo(x + 30, y + 6);
+        ctx.stroke();
+
+        // Breast contour line
+        ctx.strokeStyle = '#2b394d';
+        ctx.beginPath();
+        ctx.moveTo(x + 53, y + 16);
+        ctx.quadraticCurveTo(x + 50, y + 22, x + 46, y + 27);
         ctx.stroke();
       }
     }
   }
+  ctx.restore();
 
   // Outer Room Border Shadow
   ctx.strokeStyle = '#080c14';

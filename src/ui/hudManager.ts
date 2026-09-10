@@ -14,6 +14,7 @@ export interface HudPromptPresentation {
   isPortal: boolean;
   x: number;
   y: number;
+  primaryActionLabel?: string;
 }
 
 export interface HudSpeechPresentation {
@@ -51,6 +52,7 @@ export function deriveHudState(
     let name: string;
     let action: string;
     let isPortal: boolean;
+    let primaryActionLabel: string | undefined;
 
     if (activeTarget.kind === 'door') {
       const door = activeTarget.door;
@@ -70,6 +72,9 @@ export function deriveHudState(
       name = station.name;
       action = station.prompt;
       isPortal = false;
+      if (station.primaryAction) {
+        primaryActionLabel = station.primaryAction.label;
+      }
     }
 
     const zoneCenterX = zoneX + zoneW / 2;
@@ -88,6 +93,7 @@ export function deriveHudState(
       isPortal,
       x: screenX,
       y: screenY,
+      primaryActionLabel,
     };
   }
 
@@ -205,9 +211,19 @@ export class HudManager {
         !prevPrompt ||
         prevPrompt.name !== nextPrompt.name ||
         prevPrompt.action !== nextPrompt.action ||
-        prevPrompt.isPortal !== nextPrompt.isPortal
+        prevPrompt.isPortal !== nextPrompt.isPortal ||
+        prevPrompt.primaryActionLabel !== nextPrompt.primaryActionLabel
       ) {
-        this.promptEl.innerHTML = `
+        if (nextPrompt.primaryActionLabel) {
+          this.promptEl.innerHTML = `
+      <div class="prompt-keys">
+        <button class="prompt-action-pill primary" data-action="primary" type="button"><kbd>F</kbd> ${nextPrompt.primaryActionLabel}</button>
+        <button class="prompt-action-pill inspect" data-action="inspect" type="button"><kbd>Space</kbd> ${nextPrompt.action}</button>
+      </div>
+      <span class="prompt-name">${nextPrompt.name}</span>
+    `;
+        } else {
+          this.promptEl.innerHTML = `
       <div class="prompt-keys">
         <kbd>Space</kbd>
         <kbd>Click</kbd>
@@ -215,6 +231,7 @@ export class HudManager {
       <span class="prompt-name">${nextPrompt.name}</span>
       <span class="prompt-action">${nextPrompt.action}</span>
     `;
+        }
       }
     }
 

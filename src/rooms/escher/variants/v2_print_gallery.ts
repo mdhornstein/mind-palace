@@ -9,7 +9,6 @@ import {
   drawPrintGalleryAtmosphere,
   drawFramedArtworkStation,
   drawFolioStand,
-  drawVariantDialStation,
   drawYoungObserver,
 } from '../../../render/printGallerySprites';
 
@@ -228,34 +227,7 @@ export const escherV2PrintGalleryConfig: RoomConfig = {
         params: { artworkId: 'printmaker_folio' },
       },
     },
-
-    // 8. In-World Diegetic Paradox Variant Dial (Near East Wall Doorway)
-    {
-      id: 'escher_v2_variant_dial',
-      name: 'The Chrono-Spatial Dial',
-      prompt: 'Turn Dial: Switch to Paradox Courtyard (v1)',
-      tileX: 16.8,
-      tileY: 3.5,
-      tileWidth: 1.6,
-      tileHeight: 1.6,
-      collisionBox: {
-        x: 16.8 * TILE_SIZE,
-        y: 3.8 * TILE_SIZE,
-        w: 1.4 * TILE_SIZE,
-        h: 1.0 * TILE_SIZE,
-      },
-      approachPoint: {
-        x: 17.0 * TILE_SIZE,
-        y: 5.0 * TILE_SIZE,
-      },
-      draw: (ctx: CanvasRenderingContext2D, timeMs: number, _state: DeepReadonly<WorldState>) => {
-        drawVariantDialStation(ctx, 16.8 * TILE_SIZE, 3.5 * TILE_SIZE, timeMs, 'v2_print_gallery');
-      },
-      intent: {
-        type: 'modal',
-        modalId: 'escher_variant_dial',
-      },
-    },
+    // (Dial is now strictly controlled via Developer HUD)
   ],
 
   doors: [
@@ -299,21 +271,7 @@ export const escherV2PrintGalleryConfig: RoomConfig = {
       w: 4.0 * TILE_SIZE,
       h: 2.5 * TILE_SIZE,
     },
-    // 3. Colonnade Pillar 1 (North-Center)
-    {
-      x: 11 * TILE_SIZE - 8,
-      y: 52,
-      w: 20,
-      h: 68,
-    },
-    // 4. Colonnade Pillar 2 (South-Center)
-    {
-      x: 11 * TILE_SIZE - 8,
-      y: 9 * TILE_SIZE + 10,
-      w: 20,
-      h: 68,
-    },
-    // 5. Young Observer collision
+    // 3. Young Observer collision
     {
       x: 11.2 * TILE_SIZE + 2,
       y: 6.8 * TILE_SIZE + 22,

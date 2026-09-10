@@ -1,26 +1,6 @@
 import { RoomConfig } from '../../core/types';
-import {
-  getActiveEscherRoomConfig,
-  getActiveEscherVariantId,
-  setActiveEscherVariantId,
-  onEscherVariantChange,
-  getAllEscherRoomConfigs,
-  EscherVariantId,
-  EscherVariantMeta,
-  getEscherVariantMeta,
-  getAllEscherVariantsMeta,
-} from './variants';
-
-export {
-  getActiveEscherRoomConfig,
-  getActiveEscherVariantId,
-  setActiveEscherVariantId,
-  onEscherVariantChange,
-  getAllEscherRoomConfigs,
-  getEscherVariantMeta,
-  getAllEscherVariantsMeta,
-};
-export type { EscherVariantId, EscherVariantMeta };
+import { RoomVariantManager } from '../variants/roomVariantManager';
+import './variants'; // Trigger registration
 
 /**
  * Proxy for the active Escher room config.
@@ -28,7 +8,7 @@ export type { EscherVariantId, EscherVariantMeta };
  */
 export const escherRoomConfig: RoomConfig = new Proxy({} as RoomConfig, {
   get(_target, prop) {
-    const config = getActiveEscherRoomConfig();
+    const config = RoomVariantManager.getActiveRoomConfig('escher');
     return (config as any)[prop];
   },
 });

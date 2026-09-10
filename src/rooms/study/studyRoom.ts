@@ -90,6 +90,23 @@ export const studyRoomConfig: RoomConfig = {
       },
       transitionMode: 'auto',
     },
+    // Doorway to The Royal Mint on the East Wall
+    {
+      id: 'to_coins',
+      name: 'Portal to The Royal Mint',
+      prompt: 'Enter The Royal Mint (Coins & Mechanics)',
+      tileX: 18.5,
+      tileY: 5.5,
+      tileWidth: 1.5,
+      tileHeight: 2.5,
+      targetRoomId: 'coins',
+      targetSpawnPoint: {
+        x: 2.5 * TILE_SIZE,
+        y: 7.0 * TILE_SIZE,
+        facing: 'right',
+      },
+      transitionMode: 'auto',
+    },
   ],
   architecturalCollisions: [
     {
@@ -161,6 +178,33 @@ export const studyRoomConfig: RoomConfig = {
       'OBSERVATORY',
       false
     );
+
+    // East Doorway Portal leading to The Royal Mint
+    const eastDoorX = CANVAS_WIDTH - 24;
+    const eastDoorY = 5.5 * TILE_SIZE;
+    ctx.fillStyle = '#1e140c';
+    ctx.fillRect(eastDoorX, eastDoorY, 24, 2.5 * TILE_SIZE);
+    ctx.strokeStyle = '#d97706';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(eastDoorX, eastDoorY, 24, 2.5 * TILE_SIZE);
+
+    // Warm golden metallic gleam spilling out
+    const mintSpill = ctx.createLinearGradient(eastDoorX, eastDoorY, eastDoorX - 45, eastDoorY);
+    mintSpill.addColorStop(0, 'rgba(245, 158, 11, 0.35)');
+    mintSpill.addColorStop(1, 'transparent');
+    ctx.fillStyle = mintSpill;
+    ctx.fillRect(eastDoorX - 45, eastDoorY, 45, 2.5 * TILE_SIZE);
+
+    // Inscribed plaque above doorway
+    ctx.fillStyle = '#1c1511';
+    ctx.fillRect(CANVAS_WIDTH - 84, eastDoorY - 14, 80, 12);
+    ctx.strokeStyle = '#d97706';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(CANVAS_WIDTH - 84, eastDoorY - 14, 80, 12);
+    ctx.fillStyle = '#fef08a';
+    ctx.font = 'bold 8px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('ROYAL MINT ⮞', CANVAS_WIDTH - 44, eastDoorY - 5);
   },
 
   // 2. Dynamic Room Architecture & Atmospheric Light (Windows, Fireplace, Light Shafts, Hearth Glow)

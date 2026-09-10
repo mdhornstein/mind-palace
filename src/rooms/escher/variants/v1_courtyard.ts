@@ -14,7 +14,6 @@ import {
   drawLithographerDesk,
   drawMobiusTerrarium,
 } from '../../../render/escherSprites';
-import { drawVariantDialStation } from '../../../render/printGallerySprites';
 
 // =============================================================================
 // VARIANT 1: THE M.C. ESCHER PARADOX COURTYARD
@@ -138,33 +137,7 @@ export const escherV1CourtyardConfig: RoomConfig = {
       },
     },
 
-    // 5. In-World Diegetic Paradox Variant Dial (Near East Wall)
-    {
-      id: 'escher_v1_variant_dial',
-      name: 'The Chrono-Spatial Dial',
-      prompt: 'Turn Dial: Switch to Print Gallery (1956)',
-      tileX: 16.5,
-      tileY: 3.8,
-      tileWidth: 1.6,
-      tileHeight: 1.6,
-      collisionBox: {
-        x: 16.6 * TILE_SIZE,
-        y: 4.2 * TILE_SIZE,
-        w: 1.4 * TILE_SIZE,
-        h: 1.0 * TILE_SIZE,
-      },
-      approachPoint: {
-        x: 17.3 * TILE_SIZE,
-        y: 5.2 * TILE_SIZE,
-      },
-      draw: (ctx: CanvasRenderingContext2D, timeMs: number, _state: DeepReadonly<WorldState>) => {
-        drawVariantDialStation(ctx, 16.5 * TILE_SIZE, 3.8 * TILE_SIZE, timeMs, 'v1_courtyard');
-      },
-      intent: {
-        type: 'modal',
-        modalId: 'escher_variant_dial',
-      },
-    },
+    // (Dial is now strictly controlled via Developer HUD)
   ],
 
   doors: [

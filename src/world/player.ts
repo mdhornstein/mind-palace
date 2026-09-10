@@ -44,6 +44,54 @@ export class PlayerController {
   public setRoom(room: RoomConfig) {
     this.currentRoom = room;
     this.rebuildObstacles();
+    this.ensureWalkablePosition();
+  }
+
+  /**
+   * Ensures the player is not trapped inside an obstacle or wall (e.g. after a room variant hot-swap).
+   * If collision is detected at the player's current position, searches in expanding concentric rings
+   * for the nearest free walkable coordinate and gently repositions the player there.
+   */
+  public ensureWalkablePosition(): boolean {
+    if (!this.checkCollision(this.x, this.y)) {
+      return false; // Already in a walkable position
+    }
+
+    // Radial search in expanding concentric steps (8px increments up to 180px)
+    const angles = 16;
+    for (let r = 8; r <= 180; r += 8) {
+      for (let a = 0; a < angles; a++) {
+        const theta = (a / angles) * Math.PI * 2;
+        const testX = Math.round(this.x + Math.cos(theta) * r);
+        const testY = Math.round(this.y + Math.sin(theta) * r);
+
+        if (!this.checkCollision(testX, testY)) {
+          this.x = testX;
+          this.y = testY;
+          this.targetPos = null;
+          this.navigationStatus = 'idle';
+          this.isMoving = false;
+          return true;
+        }
+      }
+    }
+
+    // Fallback: If no neighboring position is free, reposition near the first door approach/spawn point
+    if (this.currentRoom && this.currentRoom.doors.length > 0) {
+      const door = this.currentRoom.doors[0];
+      const fallbackX = (door.tileX + door.tileWidth / 2) * TILE_SIZE;
+      const fallbackY = (door.tileY + door.tileHeight + 0.5) * TILE_SIZE;
+      if (!this.checkCollision(fallbackX, fallbackY)) {
+        this.x = fallbackX;
+        this.y = fallbackY;
+        this.targetPos = null;
+        this.navigationStatus = 'idle';
+        this.isMoving = false;
+        return true;
+      }
+    }
+
+    return false;
   }
 
   private rebuildObstacles() {
@@ -55,6 +103,8 @@ export class PlayerController {
   }
 
   private setupListeners() {
+    if (typeof window === 'undefined') return;
+
     window.addEventListener('keydown', (e) => {
       // Don't capture keys if user is typing in a modal textarea/input
       if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {

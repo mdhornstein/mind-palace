@@ -21,7 +21,7 @@
  * Pure Web Audio API: zero audio files, instant loading, seamless procedural looping, smooth room crossfading.
  */
 
-export type RoomMusicTheme = 'study' | 'observatory' | 'escher';
+export type RoomMusicTheme = 'study' | 'observatory' | 'escher' | 'coins';
 
 export class HearthAudio {
   private static instance: HearthAudio;
@@ -132,6 +132,39 @@ export class HearthAudio {
     [369.99, 493.88, 587.33, 739.99, 880.00, 739.99, 587.33, 987.77],  // Bm7
   ];
 
+  // ==================== COIN ROOM / ROYAL MINT SOUNDTRACK ====================
+  // Upbeat, mechanical, rhythmic steampunk clockwork theme (84 BPM)
+  // Harmonic progression: Fmaj -> Dm -> Bb -> C (Lively, industrious)
+  private readonly mintLeadMelody: Array<{ note: number | null; dur: number }> = [
+    { note: 349.23, dur: 0.35 }, // F4
+    { note: 440.00, dur: 0.35 }, // A4
+    { note: 523.25, dur: 0.5 },  // C5
+    { note: 698.46, dur: 0.6 },  // F5
+    { note: 587.33, dur: 0.4 },  // D5
+    { note: 523.25, dur: 0.6 },  // C5
+    { note: null,   dur: 0.2 },
+    { note: 440.00, dur: 0.35 }, // A4
+    { note: 523.25, dur: 0.35 }, // C5
+    { note: 587.33, dur: 0.6 },  // D5
+    { note: 659.25, dur: 0.5 },  // E5
+    { note: 698.46, dur: 0.7 },  // F5
+    { note: null,   dur: 0.3 },
+  ];
+
+  private readonly mintBass = [
+    87.31, 130.81, 87.31, 174.61,  // F2 / C3 / F2 / F3
+    73.42, 110.00, 73.42, 146.83,  // D2 / A2 / D2 / D3
+    116.54, 116.54, 174.61, 116.54, // Bb2 / F3
+    130.81, 130.81, 196.00, 130.81, // C3 / G3
+  ];
+
+  private readonly mintArps = [
+    [349.23, 440.00, 523.25, 698.46], // F
+    [293.66, 349.23, 440.00, 587.33], // Dm
+    [233.08, 293.66, 349.23, 466.16], // Bb
+    [261.63, 329.63, 392.00, 523.25], // C
+  ];
+
   public static getInstance(): HearthAudio {
     if (!HearthAudio.instance) {
       HearthAudio.instance = new HearthAudio();
@@ -140,10 +173,12 @@ export class HearthAudio {
   }
 
   private initContext() {
+    if (typeof window === 'undefined') return;
     if (!this.ctx) {
       const AudioContextClass =
         window.AudioContext ||
         (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AudioContextClass) return;
       this.ctx = new AudioContextClass();
     }
     if (this.ctx.state === 'suspended') {
@@ -172,6 +207,7 @@ export class HearthAudio {
   public getRoomName(): string {
     if (this.currentRoom === 'escher') return 'Paradox Gallery';
     if (this.currentRoom === 'observatory') return 'Observatory';
+    if (this.currentRoom === 'coins') return 'The Royal Mint';
     return 'Study';
   }
 
@@ -183,6 +219,7 @@ export class HearthAudio {
     let targetRoom: RoomMusicTheme = 'study';
     if (room === 'observatory') targetRoom = 'observatory';
     else if (room === 'escher') targetRoom = 'escher';
+    else if (room === 'coins' || room === 'mint') targetRoom = 'coins';
 
     if (this.currentRoom === targetRoom) return;
 
@@ -203,6 +240,9 @@ export class HearthAudio {
         if (this.currentRoom === 'escher') {
           this.filterNode.frequency.setTargetAtTime(3200, rampNow, 0.2);
           this.filterNode.Q.setTargetAtTime(1.8, rampNow, 0.2);
+        } else if (this.currentRoom === 'coins') {
+          this.filterNode.frequency.setTargetAtTime(3000, rampNow, 0.2);
+          this.filterNode.Q.setTargetAtTime(1.4, rampNow, 0.2);
         } else if (this.currentRoom === 'observatory') {
           this.filterNode.frequency.setTargetAtTime(2400, rampNow, 0.2);
           this.filterNode.Q.setTargetAtTime(1.2, rampNow, 0.2);
@@ -233,8 +273,22 @@ export class HearthAudio {
     // Warm vintage console filter
     this.filterNode = this.ctx.createBiquadFilter();
     this.filterNode.type = 'lowpass';
-    const initialFreq = this.currentRoom === 'escher' ? 3200 : this.currentRoom === 'observatory' ? 2400 : 1750;
-    const initialQ = this.currentRoom === 'escher' ? 1.8 : this.currentRoom === 'observatory' ? 1.2 : 0.7;
+    const initialFreq =
+      this.currentRoom === 'escher'
+        ? 3200
+        : this.currentRoom === 'coins'
+        ? 3000
+        : this.currentRoom === 'observatory'
+        ? 2400
+        : 1750;
+    const initialQ =
+      this.currentRoom === 'escher'
+        ? 1.8
+        : this.currentRoom === 'coins'
+        ? 1.4
+        : this.currentRoom === 'observatory'
+        ? 1.2
+        : 0.7;
     this.filterNode.frequency.setValueAtTime(initialFreq, this.ctx.currentTime);
     this.filterNode.Q.setValueAtTime(initialQ, this.ctx.currentTime);
 
@@ -342,50 +396,53 @@ export class HearthAudio {
         return;
       }
 
-      // ----------------- STUDY & OBSERVATORY SOUNDTRACKS -----------------
+      // ----------------- ROOM MUSIC SEQUENCING -----------------
+      const isMint = this.currentRoom === 'coins';
+      const isObs = this.currentRoom === 'observatory';
       const measure = Math.floor((step % 64) / 16);
       const beatInMeasure = step % 16;
-      const isObs = this.currentRoom === 'observatory';
 
       // 1. Bassline (quarter note pulse)
       if (step % 4 === 0) {
-        const bassList = isObs ? this.observatoryBass : this.studyBass;
+        const bassList = isMint ? this.mintBass : isObs ? this.observatoryBass : this.studyBass;
         const bassNoteIdx = (Math.floor(step / 4)) % bassList.length;
         const bassFreq = bassList[bassNoteIdx];
-        const bassVol = isObs ? 0.32 : 0.28;
-        const bassDur = isObs ? 0.9 : 0.7;
-        this.playTone(bassFreq, now, bassDur, 'triangle', bassVol, 0.04);
+        const bassVol = isMint ? 0.30 : isObs ? 0.32 : 0.28;
+        const bassDur = isMint ? 0.55 : isObs ? 0.9 : 0.7;
+        this.playTone(bassFreq, now, bassDur, 'triangle', bassVol, 0.03);
       }
 
       // 2. Delicate Arpeggios (eighth note pulse)
       if (step % 2 === 0) {
-        const arpMatrix = isObs ? this.observatoryArps : this.studyArps;
+        const arpMatrix = isMint ? this.mintArps : isObs ? this.observatoryArps : this.studyArps;
         const arpPattern = arpMatrix[measure];
         const arpNote = arpPattern[(beatInMeasure / 2) % arpPattern.length];
-        const arpVol = isObs ? 0.15 : 0.12;
-        const arpDur = isObs ? 0.45 : 0.35;
-        this.playTone(arpNote, now, arpDur, 'sine', arpVol, 0.015);
+        const arpVol = isMint ? 0.14 : isObs ? 0.15 : 0.12;
+        const arpDur = isMint ? 0.28 : isObs ? 0.45 : 0.35;
+        this.playTone(arpNote, now, arpDur, isMint ? 'triangle' : 'sine', arpVol, 0.015);
       }
 
       // 3. Melodic Chiptune Lead
-      const leadTicks = [0, 2, 4, 8, 10, 16, 18, 20, 24, 26, 32, 34, 36, 40, 43, 48, 50, 52, 56, 59];
+      const leadTicks = isMint
+        ? [0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48]
+        : [0, 2, 4, 8, 10, 16, 18, 20, 24, 26, 32, 34, 36, 40, 43, 48, 50, 52, 56, 59];
       const tickPos = step % 64;
       const leadIdx = leadTicks.indexOf(tickPos);
-      const melody = isObs ? this.observatoryLeadMelody : this.studyLeadMelody;
+      const melody = isMint ? this.mintLeadMelody : isObs ? this.observatoryLeadMelody : this.studyLeadMelody;
 
       if (leadIdx !== -1 && leadIdx < melody.length) {
         const m = melody[leadIdx];
         if (m.note !== null) {
-          const leadVol = isObs ? 0.16 : 0.14;
-          const attack = isObs ? 0.05 : 0.025;
+          const leadVol = isMint ? 0.17 : isObs ? 0.16 : 0.14;
+          const attack = isMint ? 0.02 : isObs ? 0.05 : 0.025;
           this.playTone(m.note, now, m.dur, 'square', leadVol, attack);
         }
       }
 
       this.stepIndex++;
 
-      // Adaptive tempo: Observatory is 50 BPM (0.28s), Study is 68 BPM (0.22s)
-      const stepDurationSec = isObs ? 0.28 : 0.22;
+      // Adaptive tempo: Mint is 84 BPM (0.18s), Observatory is 50 BPM (0.28s), Study is 68 BPM (0.22s)
+      const stepDurationSec = isMint ? 0.18 : isObs ? 0.28 : 0.22;
       this.sequenceTimer = window.setTimeout(tick, stepDurationSec * 1000);
     };
 
@@ -565,6 +622,200 @@ export class HearthAudio {
       osc.start(t);
       osc.stop(t + 0.035);
     }
+  }
+
+  // ==================== COIN & PHYSICAL SFX SYNTHESIS ====================
+
+  /**
+   * Mechanical coin stamping / dispenser chute burst sound
+   */
+  public playCoinEject() {
+    this.initContext();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    // Heavy piston thud
+    const oscThud = this.ctx.createOscillator();
+    const gainThud = this.ctx.createGain();
+    oscThud.type = 'triangle';
+    oscThud.frequency.setValueAtTime(140, now);
+    oscThud.frequency.exponentialRampToValueAtTime(45, now + 0.09);
+
+    gainThud.gain.setValueAtTime(0.35, now);
+    gainThud.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+
+    oscThud.connect(gainThud);
+    gainThud.connect(this.ctx.destination);
+    oscThud.start(now);
+    oscThud.stop(now + 0.11);
+
+    // Mechanical gear/latch snap
+    const oscLatch = this.ctx.createOscillator();
+    const gainLatch = this.ctx.createGain();
+    oscLatch.type = 'square';
+    oscLatch.frequency.setValueAtTime(2400, now + 0.02);
+    oscLatch.frequency.exponentialRampToValueAtTime(800, now + 0.05);
+
+    gainLatch.gain.setValueAtTime(0.18, now + 0.02);
+    gainLatch.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+
+    oscLatch.connect(gainLatch);
+    gainLatch.connect(this.ctx.destination);
+    oscLatch.start(now + 0.02);
+    oscLatch.stop(now + 0.07);
+
+    // Metallic chime ring of freshly minted coin
+    const oscRing = this.ctx.createOscillator();
+    const gainRing = this.ctx.createGain();
+    oscRing.type = 'sine';
+    oscRing.frequency.setValueAtTime(1760, now + 0.04);
+
+    gainRing.gain.setValueAtTime(0.12, now + 0.04);
+    gainRing.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+
+    oscRing.connect(gainRing);
+    gainRing.connect(this.ctx.destination);
+    oscRing.start(now + 0.04);
+    oscRing.stop(now + 0.3);
+  }
+
+  /**
+   * Resonant metallic coin bounce on stone/wood floor
+   * Synthesized using dual-carrier FM metallic impact with rapid decay
+   */
+  public playCoinBounce(coinType: 'copper' | 'silver' | 'gold' | 'star' = 'gold', impactSpeed: number = 80) {
+    this.initContext();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    const normSpeed = Math.min(Math.max(impactSpeed / 180, 0.15), 1.0);
+
+    // Base pitch depends on coin density/denomination
+    let baseFreq = 1864.66; // A#6 (Gold)
+    if (coinType === 'copper') baseFreq = 3135.96; // G7 (Copper)
+    else if (coinType === 'silver') baseFreq = 2489.02; // D#7 (Silver)
+    else if (coinType === 'star') baseFreq = 4186.01; // C8 (Special Star)
+
+    // Slight random micro-detune for realistic acoustic variation
+    const detune = (Math.random() - 0.5) * 80;
+    const freq = baseFreq + detune;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    // Inharmonic metallic partial via FM carrier
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(freq, now);
+
+    const dur = 0.04 + normSpeed * 0.08;
+    gain.gain.setValueAtTime(0.14 * normSpeed, now);
+    gain.gain.exponentialRampToValueAtTime(0.0005, now + dur);
+
+    // Resonant metallic ping filter
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(freq, now);
+    filter.Q.value = 8.0;
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + dur + 0.02);
+  }
+
+  /**
+   * Rewarding ascending musical chime when player collects a coin
+   * Scales up musically as coins are collected in rapid combo succession!
+   */
+  public playCoinPickup(comboCount: number = 0) {
+    this.initContext();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    // Major pentatonic collection notes: C6, D6, E6, G6, A6, C7
+    const scale = [1046.50, 1174.66, 1318.51, 1567.98, 1760.00, 2093.00, 2637.02];
+    const noteIdx = Math.min(comboCount, scale.length - 1);
+    const rootFreq = scale[noteIdx];
+    const fifthFreq = rootFreq * 1.5;
+
+    // Primary bell sine
+    const osc1 = this.ctx.createOscillator();
+    const gain1 = this.ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(rootFreq, now);
+
+    gain1.gain.setValueAtTime(0.001, now);
+    gain1.gain.linearRampToValueAtTime(0.24, now + 0.015);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+
+    osc1.connect(gain1);
+    gain1.connect(this.ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.35);
+
+    // Harmonic crystalline fifth
+    const osc2 = this.ctx.createOscillator();
+    const gain2 = this.ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(fifthFreq, now + 0.025);
+
+    gain2.gain.setValueAtTime(0.001, now + 0.025);
+    gain2.gain.linearRampToValueAtTime(0.18, now + 0.04);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+    osc2.connect(gain2);
+    gain2.connect(this.ctx.destination);
+    osc2.start(now + 0.025);
+    osc2.stop(now + 0.42);
+  }
+
+  /**
+   * Plinko peg click for the gilded coin chute
+   */
+  public playPlinkoPegHit() {
+    this.initContext();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    const pegFreq = 2200 + (Math.random() - 0.5) * 400;
+    osc.frequency.setValueAtTime(pegFreq, now);
+    osc.frequency.exponentialRampToValueAtTime(800, now + 0.025);
+
+    gain.gain.setValueAtTime(0.12, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.035);
+  }
+
+  /**
+   * Fountain water drop / splash for the wishing well
+   */
+  public playFountainSplash() {
+    this.initContext();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(700, now);
+    osc.frequency.exponentialRampToValueAtTime(1400, now + 0.08);
+
+    gain.gain.setValueAtTime(0.16, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.2);
   }
 }
 

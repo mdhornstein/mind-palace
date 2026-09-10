@@ -1,10 +1,5 @@
 import { ESCHER_ARTWORKS, EscherArtItem } from '../rooms/escher/artworks';
-import {
-  getActiveEscherVariantId,
-  setActiveEscherVariantId,
-  getAllEscherVariantsMeta,
-  EscherVariantId,
-} from '../rooms/escher/variants';
+import { RoomVariantManager } from '../rooms/variants/roomVariantManager';
 import { ModalOverlay } from './overlay';
 
 // =============================================================================
@@ -523,27 +518,30 @@ function drawArtworkDetail(canvas: HTMLCanvasElement, artworkId: string): void {
 // IN-WORLD CHRONO-SPATIAL PARADOX DIAL MODAL
 // =============================================================================
 
-export function openEscherVariantDialModal(): void {
+export function openRoomVariantModal(roomId: string = 'escher'): void {
   const overlay = ModalOverlay.getInstance();
-  const activeVariant = getActiveEscherVariantId();
-  const variants = getAllEscherVariantsMeta();
+  if (!RoomVariantManager.hasVariants(roomId)) return;
+
+  const activeVariant = RoomVariantManager.getActiveVariantId(roomId);
+  const variants = RoomVariantManager.getAllVariantsMeta(roomId);
+  const roomTitle = roomId.charAt(0).toUpperCase() + roomId.slice(1);
 
   const renderContent = () => `
     <div class="modal-dialog" style="max-width: 620px;">
       <div class="modal-header">
         <div>
           <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.12em; color: #f59e0b; font-weight: 700; margin-bottom: 4px;">
-            Chrono-Spatial Dial Mechanism
+            Chrono-Spatial Prototype Selector
           </div>
-          <h2>Select Escher Prototype Chamber</h2>
+          <h2>Select ${roomTitle} Prototype Chamber</h2>
         </div>
         <button class="modal-close-btn" aria-label="Close modal">&times;</button>
       </div>
 
       <div class="modal-body">
         <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 16px;">
-          Turn the brass dial to shift the Escher chamber between distinct architectural prototypes.
-          Both prototypes remain active in parallel, preserved without losing any code or geometry.
+          Shift between distinct architectural prototypes for the ${roomTitle} chamber.
+          All prototypes remain active in parallel, preserved without losing any code or geometry.
         </p>
 
         <!-- Variant Selection Cards -->
@@ -551,7 +549,7 @@ export function openEscherVariantDialModal(): void {
           ${variants
             .map((v) => {
               const isSelected = v.id === activeVariant;
-              const accentCol = v.id === 'v2_print_gallery' ? '#f59e0b' : '#38bdf8';
+              const accentCol = isSelected ? '#f59e0b' : '#38bdf8';
 
               return `
               <div class="escher-variant-card" data-variant-id="${v.id}" style="
@@ -572,7 +570,7 @@ export function openEscherVariantDialModal(): void {
                   align-items: center;
                   justify-content: center;
                 ">
-                  ${v.icon}
+                  ${v.icon ?? '🏛️'}
                 </div>
 
                 <div>
@@ -580,6 +578,7 @@ export function openEscherVariantDialModal(): void {
                     <strong style="color: ${isSelected ? accentCol : '#f8fafc'}; font-size: 1rem;">
                       ${v.label}
                     </strong>
+                    ${v.year ? `
                     <span style="
                       background: ${isSelected ? accentCol : '#334155'};
                       color: ${isSelected ? '#0f172a' : '#94a3b8'};
@@ -589,7 +588,7 @@ export function openEscherVariantDialModal(): void {
                       font-weight: 700;
                     ">
                       ${v.year}
-                    </span>
+                    </span>` : ''}
                     ${isSelected ? `<span style="color: #22c55e; font-size: 0.75rem; font-weight: 600;">● Active</span>` : ''}
                   </div>
                   <div style="color: var(--text-muted); font-size: 0.82rem; line-height: 1.4;">
@@ -603,7 +602,7 @@ export function openEscherVariantDialModal(): void {
                     padding: 6px 14px;
                     border-color: ${isSelected ? accentCol : 'var(--border-color)'};
                   ">
-                    ${isSelected ? 'Active' : 'Turn Dial'}
+                    ${isSelected ? 'Active' : 'Switch'}
                   </button>
                 </div>
               </div>
@@ -617,7 +616,7 @@ export function openEscherVariantDialModal(): void {
         <div style="font-size: 0.8rem; color: var(--text-muted);">
           Your prototype choice is saved to local storage.
         </div>
-        <button class="btn btn-secondary btn-close-modal">Leave Dial Unchanged</button>
+        <button class="btn btn-secondary btn-close-modal">Leave Unchanged</button>
       </div>
     </div>
   `;
@@ -628,11 +627,13 @@ export function openEscherVariantDialModal(): void {
   const cards = overlay.getElement().querySelectorAll('.escher-variant-card');
   cards.forEach((card) => {
     card.addEventListener('click', () => {
-      const targetId = card.getAttribute('data-variant-id') as EscherVariantId | null;
+      const targetId = card.getAttribute('data-variant-id');
       if (targetId && targetId !== activeVariant) {
-        setActiveEscherVariantId(targetId);
+        RoomVariantManager.setActiveVariantId(roomId, targetId);
         overlay.close();
       }
     });
   });
 }
+
+export const openEscherVariantDialModal = () => openRoomVariantModal('escher');

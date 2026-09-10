@@ -353,6 +353,56 @@ describe('HUD Presentation & HudManager', () => {
       manager.disconnect();
       expect(disconnectSpy).toHaveBeenCalled();
     });
+
+    it('renders dual action pills when primaryActionLabel is present', () => {
+      const stateWithPrimaryAction: HudState = {
+        prompt: {
+          visible: true,
+          name: 'The Grand Minting Engine',
+          action: 'Inspect Mint Controls',
+          isPortal: false,
+          x: 200,
+          y: 150,
+          primaryActionLabel: 'Crank Press',
+        },
+        speech: null,
+      };
+
+      manager.update(stateWithPrimaryAction);
+      expect(promptEl.innerHTML).toContain('data-action="primary"');
+      expect(promptEl.innerHTML).toContain('<kbd>F</kbd> Crank Press');
+      expect(promptEl.innerHTML).toContain('data-action="inspect"');
+      expect(promptEl.innerHTML).toContain('<kbd>Space</kbd> Inspect Mint Controls');
+    });
+
+    it('derives primaryActionLabel cleanly from station with primaryAction', () => {
+      const stationWithPrimaryAction: WorldStation = {
+        id: 'mint_coin_press',
+        name: 'The Grand Minting Engine',
+        prompt: 'Inspect Mint Controls',
+        tileX: 7,
+        tileY: 2,
+        tileWidth: 3,
+        tileHeight: 3,
+        approachPoint: { x: 200, y: 150 },
+        draw: () => {},
+        intent: { type: 'modal', modalId: 'coin_press' },
+        primaryAction: {
+          label: 'Crank Press',
+          intent: { type: 'custom', actionId: 'mint_crank_press' },
+        },
+      };
+
+      const target: InteractiveTarget = {
+        kind: 'station',
+        station: stationWithPrimaryAction,
+      };
+
+      const derived = deriveHudState(target, null, false, false, transform);
+      expect(derived.prompt).not.toBeNull();
+      expect(derived.prompt?.primaryActionLabel).toBe('Crank Press');
+      expect(derived.prompt?.name).toBe('The Grand Minting Engine');
+    });
   });
 });
 

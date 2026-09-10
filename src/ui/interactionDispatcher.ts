@@ -15,9 +15,16 @@ import {
 } from './escherModals';
 import {
   openEscherArtworkModal,
-  openEscherVariantDialModal,
 } from './escherArtModal';
+import {
+  openCoinPressModal,
+  openPlinkoModal,
+  openWishingWellModal,
+  openVaultScaleModal,
+} from './coinModals';
 import { duckephantEntity } from '../rooms/study/stations/duckephant';
+
+import { executeMintCrankPress } from '../rooms/coins/coinMachineActions';
 
 export interface InteractionContext {
   stateManager: StateManager;
@@ -28,6 +35,10 @@ export interface InteractionContext {
 }
 
 export type ModalHandler = (intent: InteractionIntent & { type: 'modal' }, context: InteractionContext) => void;
+export type CustomActionHandler = (
+  intent: InteractionIntent & { type: 'custom' },
+  context: InteractionContext
+) => void;
 
 /**
  * Interaction Dispatcher.
@@ -168,13 +179,51 @@ export class InteractionDispatcher {
       },
     ],
     [
-      'escher_variant_dial',
+      'coin_press',
       (intent) => {
-        InteractionDispatcher.validateNoParams('escher_variant_dial', intent.params);
-        openEscherVariantDialModal();
+        InteractionDispatcher.validateNoParams('coin_press', intent.params);
+        openCoinPressModal();
+      },
+    ],
+    [
+      'plinko_game',
+      (intent) => {
+        InteractionDispatcher.validateNoParams('plinko_game', intent.params);
+        openPlinkoModal();
+      },
+    ],
+    [
+      'vault_wishing_well',
+      (intent) => {
+        InteractionDispatcher.validateNoParams('vault_wishing_well', intent.params);
+        openWishingWellModal();
+      },
+    ],
+    [
+      'vault_scale',
+      (intent) => {
+        InteractionDispatcher.validateNoParams('vault_scale', intent.params);
+        openVaultScaleModal();
       },
     ],
   ]);
+
+  private static actionRegistry: Map<string, CustomActionHandler> = new Map([
+    [
+      'mint_crank_press',
+      () => {
+        executeMintCrankPress();
+      },
+    ],
+  ]);
+
+  public static registerAction(actionId: string, handler: CustomActionHandler): void {
+    this.actionRegistry.set(actionId, handler);
+  }
+
+  public static getRegisteredActionIds(): string[] {
+    return Array.from(this.actionRegistry.keys());
+  }
 
   private static validateNoParams(
     modalId: ModalId,
@@ -210,7 +259,12 @@ export class InteractionDispatcher {
     }
 
     if (intent.type === 'custom') {
-      console.warn(`[InteractionDispatcher] Unhandled custom interaction: ${intent.actionId}`);
+      const handler = this.actionRegistry.get(intent.actionId);
+      if (!handler) {
+        console.warn(`[InteractionDispatcher] Unhandled custom interaction: ${intent.actionId}`);
+        return;
+      }
+      handler(intent, context);
       return;
     }
   }

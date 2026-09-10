@@ -13,7 +13,7 @@ import { InteractionSystem, shouldDispatchPendingInteraction } from './world/int
 import { InteractionDispatcher } from './ui/interactionDispatcher';
 import { GameLoop } from './core/gameLoop';
 import { HudManager } from './ui/hudManager';
-import { onEscherVariantChange } from './rooms/escher/variants';
+import { RoomVariantManager } from './rooms/variants/roomVariantManager';
 
 class MindPalaceApp {
   private canvas: HTMLCanvasElement;
@@ -63,11 +63,14 @@ class MindPalaceApp {
     this.overlay = ModalOverlay.getInstance();
     new DevTray(this.stateManager);
 
-    onEscherVariantChange(() => {
+    RoomVariantManager.onVariantChange((roomId) => {
       const currentRoomId = this.stateManager.getState().currentRoomId;
-      if (currentRoomId === 'escher' || currentRoomId === 'escher_v1' || currentRoomId === 'escher_v2') {
-        this.currentRoom = RoomRegistry.getRoom('escher');
+      if (currentRoomId === roomId || currentRoomId.startsWith(`${roomId}_v`)) {
+        this.currentRoom = RoomRegistry.getRoom(roomId);
         this.player.setRoom(this.currentRoom);
+        this.player.ensureWalkablePosition();
+        this.stateManager.syncPlayerPosition(this.player.x, this.player.y, this.player.facing);
+        this.renderer.invalidateBackground();
         this.activeTarget = null;
         this.pendingTarget = null;
         this.hudManager.clear();
@@ -127,6 +130,15 @@ class MindPalaceApp {
 
       if (this.overlay.isOpen()) return;
 
+      const isPrimaryActionKey =
+        e.code === 'KeyF' || ['f', 'F'].includes(e.key);
+
+      if (isPrimaryActionKey && this.activeTarget) {
+        e.preventDefault();
+        this.triggerPrimaryAction();
+        return;
+      }
+
       const isInteractKey =
         ['Space', 'Enter', 'KeyE'].includes(e.code) ||
         [' ', 'Spacebar', 'Enter', 'e', 'E'].includes(e.key);
@@ -137,10 +149,18 @@ class MindPalaceApp {
       }
     });
 
-    // Clicking the prompt pill directly triggers the interaction
-    promptEl.addEventListener('click', () => {
+    // Clicking the prompt pill triggers either primaryAction or the default interaction
+    promptEl.addEventListener('click', (e) => {
       if (this.overlay.isOpen()) return;
-      if (this.activeTarget) {
+      if (!this.activeTarget) return;
+
+      const target = e.target as HTMLElement | null;
+      const actionBtn = target?.closest('[data-action]');
+      const actionType = actionBtn?.getAttribute('data-action');
+
+      if (actionType === 'primary') {
+        this.triggerPrimaryAction();
+      } else {
         this.triggerActiveInteraction();
       }
     });
@@ -192,6 +212,28 @@ class MindPalaceApp {
       this.player.setTargetPosition(clickX, clickY);
       this.pendingTarget = null;
     });
+  }
+
+  private triggerPrimaryAction() {
+    if (!this.activeTarget) return;
+
+    if (this.activeTarget.kind === 'station') {
+      if (this.activeTarget.station.primaryAction) {
+        // Dispatch declarative primary in-world action without interrupting walking
+        InteractionDispatcher.dispatch(this.activeTarget.station.primaryAction.intent, {
+          stateManager: this.stateManager,
+          transitionToRoom: (roomId, spawn) => this.transitionToRoom(roomId, spawn),
+        });
+        return;
+      }
+      // If station does not define a custom primaryAction, fall back to inspect intent
+      this.triggerActiveInteraction();
+      return;
+    }
+
+    if (this.activeTarget.kind === 'door') {
+      this.triggerActiveInteraction();
+    }
   }
 
   private triggerActiveInteraction() {
