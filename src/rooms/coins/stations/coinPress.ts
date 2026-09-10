@@ -2,6 +2,14 @@ import { WorldStation, DeepReadonly, WorldState } from '../../../core/types';
 import { TILE_SIZE } from '../../../core/constants';
 import { getLastCrankTriggerTime } from '../coinMachineActions';
 
+// Established machine layout & chute aperture geometry
+export const COIN_PRESS_BASE_X = 7.0 * TILE_SIZE;
+export const COIN_PRESS_BASE_Y = 2.0 * TILE_SIZE;
+export const COIN_PRESS_CHUTE_OFFSET_X = 57;
+export const COIN_PRESS_CHUTE_OFFSET_Y = 78;
+export const COIN_PRESS_CHUTE_X = COIN_PRESS_BASE_X + COIN_PRESS_CHUTE_OFFSET_X;
+export const COIN_PRESS_CHUTE_Y = COIN_PRESS_BASE_Y + COIN_PRESS_CHUTE_OFFSET_Y;
+
 export const coinPressStation: WorldStation = {
   id: 'mint_coin_press',
   name: 'The Grand Minting Engine',
@@ -31,14 +39,14 @@ export const coinPressStation: WorldStation = {
       actionId: 'mint_crank_press',
       params: {
         stationId: 'mint_coin_press',
-        originX: 7.0 * TILE_SIZE + 57,
-        originY: 2.0 * TILE_SIZE + 78,
+        originX: COIN_PRESS_CHUTE_X,
+        originY: COIN_PRESS_CHUTE_Y,
       },
     },
   },
   draw: (ctx: CanvasRenderingContext2D, timeMs: number, _state: DeepReadonly<WorldState>) => {
-    const baseX = 7.0 * TILE_SIZE;
-    const baseY = 2.0 * TILE_SIZE;
+    const baseX = COIN_PRESS_BASE_X;
+    const baseY = COIN_PRESS_BASE_Y;
 
     // 1. Cast-Iron Base & Stone Plinth
     ctx.fillStyle = '#1e1b18';
@@ -182,8 +190,8 @@ export const vaultCoinPressStation: WorldStation = {
       actionId: 'mint_crank_press',
       params: {
         stationId: 'vault_coin_press',
-        originX: 7.0 * TILE_SIZE + 57,
-        originY: 2.0 * TILE_SIZE + 78,
+        originX: COIN_PRESS_CHUTE_X,
+        originY: COIN_PRESS_CHUTE_Y,
       },
     },
   },

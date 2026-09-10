@@ -53,9 +53,9 @@ export function executeMintCrankPress(
   }
 
   const stationKey = params?.stationId || 'default';
-  const lastTime = lastCrankTimes.get(stationKey) ?? 0;
+  const lastTime = lastCrankTimes.get(stationKey);
 
-  if (now - lastTime < CRANK_COOLDOWN_MS) {
+  if (lastTime !== undefined && now - lastTime < CRANK_COOLDOWN_MS) {
     return false;
   }
 

@@ -450,6 +450,15 @@ describe('InteractionSystem', () => {
       expect(success).toBe(true);
     });
 
+    it('first press succeeds even at initial timestamp now === 0 (sentinel verification)', async () => {
+      const { executeMintCrankPress, resetMintCrankCooldown } = await import(
+        '../../src/rooms/coins/coinMachineActions'
+      );
+      resetMintCrankCooldown();
+      const success = executeMintCrankPress(undefined, 0);
+      expect(success).toBe(true);
+    });
+
     it('presses within the cooldown are ignored', async () => {
       const { executeMintCrankPress, resetMintCrankCooldown } = await import(
         '../../src/rooms/coins/coinMachineActions'
@@ -568,6 +577,31 @@ describe('InteractionSystem', () => {
       }
     });
 
+    it('validates and parses parameters for mint_crank_press safely', async () => {
+      const { parseMintCrankParams } = await import('../../src/ui/appActions');
+
+      // Valid parameters
+      const valid = parseMintCrankParams({
+        stationId: 'mint_coin_press',
+        originX: 280,
+        originY: 140,
+        originZ: 28,
+      });
+      expect(valid).toEqual({
+        stationId: 'mint_coin_press',
+        originX: 280,
+        originY: 140,
+        originZ: 28,
+      });
+
+      // Rejects non-numeric coordinates
+      expect(() => parseMintCrankParams({ originX: 'invalid' as any })).toThrow();
+      // Rejects unknown keys
+      expect(() => parseMintCrankParams({ bogusKey: 123 } as any)).toThrow();
+      // Accepts undefined/empty
+      expect(parseMintCrankParams(undefined)).toBeUndefined();
+    });
+
     it('dispatches custom actions via InteractionDispatcher router', async () => {
       const { InteractionDispatcher } = await import('../../src/ui/interactionDispatcher');
       const { CoinPhysicsEngine } = await import('../../src/rooms/coins/coinPhysics');
@@ -615,6 +649,62 @@ describe('InteractionSystem', () => {
 
       expect(customTriggered).toBe(true);
       expect(InteractionDispatcher.getRegisteredActionIds()).toContain('test_pulse_action');
+    });
+
+    it('verifies real station declarations (coinPressStation and vaultCoinPressStation) wire machine-specific origins to the coin action', async () => {
+      const { InteractionDispatcher } = await import('../../src/ui/interactionDispatcher');
+      const { CoinPhysicsEngine } = await import('../../src/rooms/coins/coinPhysics');
+      const { resetMintCrankCooldown } = await import('../../src/rooms/coins/coinMachineActions');
+      const { registerApplicationActions } = await import('../../src/ui/appActions');
+      const { COIN_PRESS_CHUTE_X, COIN_PRESS_CHUTE_Y } = await import(
+        '../../src/rooms/coins/stations/coinPress'
+      );
+
+      registerApplicationActions();
+      const engine = CoinPhysicsEngine.getInstance();
+
+      // 1. Verify The Mechanical Mint station
+      const mintRoom = RoomRegistry.getRoom('coins');
+      const mintStation = mintRoom.stations.find((s) => s.id === 'mint_coin_press')!;
+      expect(mintStation).toBeDefined();
+      expect(mintStation.primaryAction).toBeDefined();
+      expect(mintStation.primaryAction?.intent.type).toBe('custom');
+      if (mintStation.primaryAction?.intent.type === 'custom') {
+        expect(mintStation.primaryAction.intent.params?.originX).toBe(COIN_PRESS_CHUTE_X);
+        expect(mintStation.primaryAction.intent.params?.originY).toBe(COIN_PRESS_CHUTE_Y);
+        expect(mintStation.primaryAction.intent.params?.stationId).toBe('mint_coin_press');
+      }
+
+      // 2. Verify The Sovereign Vault station
+      const { RoomVariantManager } = await import(
+        '../../src/rooms/variants/roomVariantManager'
+      );
+      const vaultConfig = RoomVariantManager.getVariantMeta('coins', 'v2_vault')!.config;
+      const vaultStation = vaultConfig.stations.find((s) => s.id === 'vault_coin_press')!;
+      expect(vaultStation).toBeDefined();
+      expect(vaultStation.primaryAction).toBeDefined();
+      expect(vaultStation.primaryAction?.intent.type).toBe('custom');
+      if (vaultStation.primaryAction?.intent.type === 'custom') {
+        expect(vaultStation.primaryAction.intent.params?.originX).toBe(COIN_PRESS_CHUTE_X);
+        expect(vaultStation.primaryAction.intent.params?.originY).toBe(COIN_PRESS_CHUTE_Y);
+        expect(vaultStation.primaryAction.intent.params?.stationId).toBe('vault_coin_press');
+      }
+
+      // 3. Dispatch Vault primary action and assert coins spawn from its real chute
+      resetMintCrankCooldown();
+      engine.clearCoins();
+      const dummyContext: any = { stateManager: {}, transitionToRoom: () => {} };
+
+      InteractionDispatcher.dispatch(vaultStation.primaryAction!.intent, dummyContext);
+
+      const vaultCoins = engine.getCoins();
+      expect(vaultCoins.length).toBeGreaterThanOrEqual(2);
+      for (const coin of vaultCoins) {
+        expect(coin.x).toBeGreaterThanOrEqual(COIN_PRESS_CHUTE_X - 8);
+        expect(coin.x).toBeLessThanOrEqual(COIN_PRESS_CHUTE_X + 8);
+        expect(coin.y).toBeGreaterThanOrEqual(COIN_PRESS_CHUTE_Y - 4);
+        expect(coin.y).toBeLessThanOrEqual(COIN_PRESS_CHUTE_Y + 4);
+      }
     });
   });
 });
