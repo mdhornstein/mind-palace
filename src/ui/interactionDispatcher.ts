@@ -23,6 +23,7 @@ import {
   openVaultScaleModal,
   openRingingStoneModal,
   openTallyBoardModal,
+  openConductorVitrineModal,
 } from './coinModals';
 import { duckephantEntity } from '../rooms/study/stations/duckephant';
 
@@ -218,6 +219,13 @@ export class InteractionDispatcher {
       (intent) => {
         InteractionDispatcher.validateNoParams('tally_board', intent.params);
         openTallyBoardModal();
+      },
+    ],
+    [
+      'mint_conductor_vitrine',
+      (intent) => {
+        InteractionDispatcher.validateNoParams('mint_conductor_vitrine', intent.params);
+        openConductorVitrineModal();
       },
     ],
   ]);

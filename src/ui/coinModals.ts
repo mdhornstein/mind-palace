@@ -1234,4 +1234,375 @@ export function openTallyBoardModal() {
   });
 }
 
+/**
+ * Opens The Conductor's Horological Vitrine Master Console Modal.
+ * Central Victorian Kinetic DAW workstation:
+ * - Master Tempo Governor (60..180 BPM) with steppers and presets
+ * - Master Clutch Lever button
+ * - 4-Track Channel Strip Mixer (Coin Press, Tally Board, Gilded Chute, Ringing Stone)
+ * - 1-Click Curated Orchestral Presets
+ */
+export function openConductorVitrineModal(): void {
+  const { overlay, body } = createModalContainer(
+    "THE CONDUCTOR'S HOROLOGICAL VITRINE",
+    'Victorian Kinetic DAW • Central Escapement & Mechanical Orchestra Mixer'
+  );
+
+  const container = body.parentElement;
+  if (container) {
+    container.style.maxWidth = '720px';
+  }
+
+  const conductor = MintConductor.getInstance();
+  const audio = HearthAudio.getInstance();
+
+  body.innerHTML = `
+    <div style="display: flex; flex-direction: column; gap: 14px; max-height: 80vh; overflow-y: auto; padding-right: 4px;">
+      <!-- 1. Master Transport & Tempo Governor Card -->
+      <div style="background: rgba(10, 7, 5, 0.7); border: 1.5px solid #ca8a04; border-radius: 8px; padding: 14px 16px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.6);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div id="master-status-lamp" style="width: 14px; height: 14px; border-radius: 50%; background: #7f1d1d; box-shadow: 0 0 10px rgba(127, 29, 29, 0.6); transition: all 0.2s;"></div>
+            <div>
+              <div id="master-status-title" style="font-size: 0.95rem; font-weight: 700; color: #fef08a; letter-spacing: 0.5px;">MASTER CLOCKWORK: IDLE</div>
+              <div style="font-size: 0.75rem; color: #94a3b8;">Central Web Audio lookahead engine driving in-room mechanical links</div>
+            </div>
+          </div>
+          <button id="btn-master-clutch" style="background: linear-gradient(180deg, #ca8a04 0%, #854d0e 100%); color: #000; border: 1px solid #fef08a; border-radius: 6px; padding: 8px 16px; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 3px 8px rgba(0,0,0,0.5); transition: transform 0.1s;">
+            ⚡ ENGAGE ALL ENGINES
+          </button>
+        </div>
+
+        <!-- Tempo Governor Slider & Controls -->
+        <div style="background: rgba(0,0,0,0.35); border-radius: 6px; padding: 10px 12px; border: 1px solid #451a03;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 0.8rem; font-weight: 700; color: #facc15; text-transform: uppercase; letter-spacing: 0.5px;">Tempo Governor</span>
+            <span id="bpm-display-badge" style="font-family: monospace; font-size: 0.95rem; font-weight: 700; color: #4ade80; background: #052e16; padding: 2px 8px; border-radius: 4px; border: 1px solid #22c55e;">105 BPM</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+            <button id="btn-bpm-minus" style="background: #27120a; color: #fde047; border: 1px solid #78350f; border-radius: 4px; width: 32px; height: 28px; cursor: pointer; font-weight: 700;">-5</button>
+            <input type="range" id="bpm-slider" min="60" max="180" step="1" value="${conductor.getBpm()}" style="flex: 1; accent-color: #eab308; cursor: pointer;" />
+            <button id="btn-bpm-plus" style="background: #27120a; color: #fde047; border: 1px solid #78350f; border-radius: 4px; width: 32px; height: 28px; cursor: pointer; font-weight: 700;">+5</button>
+          </div>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button class="btn-tempo-preset" data-bpm="75" style="flex: 1; min-width: 80px; background: #1a0e08; color: #cbd5e1; border: 1px solid #78350f; border-radius: 4px; padding: 4px 6px; font-size: 0.72rem; cursor: pointer;">Adagio 75</button>
+            <button class="btn-tempo-preset" data-bpm="105" style="flex: 1; min-width: 80px; background: #1a0e08; color: #cbd5e1; border: 1px solid #78350f; border-radius: 4px; padding: 4px 6px; font-size: 0.72rem; cursor: pointer;">Standard 105</button>
+            <button class="btn-tempo-preset" data-bpm="135" style="flex: 1; min-width: 80px; background: #1a0e08; color: #cbd5e1; border: 1px solid #78350f; border-radius: 4px; padding: 4px 6px; font-size: 0.72rem; cursor: pointer;">Allegro 135</button>
+            <button class="btn-tempo-preset" data-bpm="160" style="flex: 1; min-width: 80px; background: #1a0e08; color: #cbd5e1; border: 1px solid #78350f; border-radius: 4px; padding: 4px 6px; font-size: 0.72rem; cursor: pointer;">Furioso 160</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. 4-Track Instrument Mixer Console -->
+      <div>
+        <div style="font-size: 0.8rem; font-weight: 700; color: #cbd5e1; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px;">
+          Mechanical Multi-Track Mixer
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+          <!-- Track 1: Steam Coin Press -->
+          <div class="channel-card" id="card-ch-press" style="background: rgba(18, 12, 8, 0.85); border: 1px solid #78350f; border-radius: 6px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 0.82rem; font-weight: 700; color: #fef08a;">🪙 Coin Press</span>
+                <span id="lamp-ch-press" style="width: 8px; height: 8px; border-radius: 50%; background: #7f1d1d;"></span>
+              </div>
+              <div style="font-size: 0.68rem; color: #94a3b8; margin-bottom: 8px;">Sub Kick (Beats 1-4)</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <select id="sel-ch-press" style="background: #27120a; color: #fefce8; border: 1px solid #78350f; border-radius: 4px; padding: 4px; font-size: 0.75rem; cursor: pointer;">
+                <option value="off">Off (Manual)</option>
+                <option value="four_on_the_floor">4-on-the-Floor</option>
+              </select>
+              <button id="mute-ch-press" style="background: #1c1917; color: #94a3b8; border: 1px solid #44403c; border-radius: 4px; padding: 3px; font-size: 0.7rem; cursor: pointer; font-weight: 700;">MUTE</button>
+            </div>
+          </div>
+
+          <!-- Track 2: Moneyer's Tally Board -->
+          <div class="channel-card" id="card-ch-tally" style="background: rgba(18, 12, 8, 0.85); border: 1px solid #78350f; border-radius: 6px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 0.82rem; font-weight: 700; color: #fef08a;">🪵 Tally Board</span>
+                <span id="lamp-ch-tally" style="width: 8px; height: 8px; border-radius: 50%; background: #7f1d1d;"></span>
+              </div>
+              <div style="font-size: 0.68rem; color: #94a3b8; margin-bottom: 8px;">Acoustic Snare & Clack</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <select id="sel-ch-tally" style="background: #27120a; color: #fefce8; border: 1px solid #78350f; border-radius: 4px; padding: 4px; font-size: 0.75rem; cursor: pointer;">
+                <option value="off">Off (Manual)</option>
+                <option value="backbeat_snare">Backbeat Slap</option>
+                <option value="cascade_fill">Cascade Fill</option>
+                <option value="syncopated_groove">Moneyer Groove</option>
+              </select>
+              <button id="mute-ch-tally" style="background: #1c1917; color: #94a3b8; border: 1px solid #44403c; border-radius: 4px; padding: 3px; font-size: 0.7rem; cursor: pointer; font-weight: 700;">MUTE</button>
+            </div>
+          </div>
+
+          <!-- Track 3: Gilded Chute -->
+          <div class="channel-card" id="card-ch-plinko" style="background: rgba(18, 12, 8, 0.85); border: 1px solid #78350f; border-radius: 6px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 0.82rem; font-weight: 700; color: #fef08a;">📐 Gilded Chute</span>
+                <span id="lamp-ch-plinko" style="width: 8px; height: 8px; border-radius: 50%; background: #7f1d1d;"></span>
+              </div>
+              <div style="font-size: 0.68rem; color: #94a3b8; margin-bottom: 8px;">16th Shaker / Hi-Hat</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <select id="sel-ch-plinko" style="background: #27120a; color: #fefce8; border: 1px solid #78350f; border-radius: 4px; padding: 4px; font-size: 0.75rem; cursor: pointer;">
+                <option value="off">Off (Manual)</option>
+                <option value="sixteenth_shaker">16th Shaker</option>
+                <option value="offbeat_pings">Offbeat Pings</option>
+              </select>
+              <button id="mute-ch-plinko" style="background: #1c1917; color: #94a3b8; border: 1px solid #44403c; border-radius: 4px; padding: 3px; font-size: 0.7rem; cursor: pointer; font-weight: 700;">MUTE</button>
+            </div>
+          </div>
+
+          <!-- Track 4: Ringing Stone -->
+          <div class="channel-card" id="card-ch-stone" style="background: rgba(18, 12, 8, 0.85); border: 1px solid #78350f; border-radius: 6px; padding: 10px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 0.82rem; font-weight: 700; color: #fef08a;">🔔 Ringing Stone</span>
+                <span id="lamp-ch-stone" style="width: 8px; height: 8px; border-radius: 50%; background: #7f1d1d;"></span>
+              </div>
+              <div style="font-size: 0.68rem; color: #94a3b8; margin-bottom: 8px;">Lead Bells & Arpeggio</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <select id="sel-ch-stone" style="background: #27120a; color: #fefce8; border: 1px solid #78350f; border-radius: 4px; padding: 4px; font-size: 0.75rem; cursor: pointer;">
+                <option value="off">Off (Manual)</option>
+                <option value="quarter_chime">Quarter Chime</option>
+                <option value="offbeat">Offbeats</option>
+                <option value="root_drone">Root Drone</option>
+                <option value="pentatonic_arp">Pentatonic Arp</option>
+              </select>
+              <button id="mute-ch-stone" style="background: #1c1917; color: #94a3b8; border: 1px solid #44403c; border-radius: 4px; padding: 3px; font-size: 0.7rem; cursor: pointer; font-weight: 700;">MUTE</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Curated Orchestral Presets (1-Click Score Chambers) -->
+      <div style="background: rgba(0,0,0,0.4); border: 1px solid #451a03; border-radius: 6px; padding: 10px 12px;">
+        <div style="font-size: 0.78rem; font-weight: 700; color: #ca8a04; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px;">
+          Conductor's Repertoire Presets
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 6px;">
+          <button class="btn-orchestra-preset" data-preset="full_orchestrion" style="background: #1f140e; color: #fef08a; border: 1px solid #78350f; border-radius: 4px; padding: 6px 8px; font-size: 0.75rem; cursor: pointer; text-align: left;">
+            🏛️ <b>Royal Orchestrion</b><br><span style="font-size: 0.65rem; color: #94a3b8;">Full 4-piece groove</span>
+          </button>
+          <button class="btn-orchestra-preset" data-preset="rhythm_section" style="background: #1f140e; color: #fed7aa; border: 1px solid #78350f; border-radius: 4px; padding: 6px 8px; font-size: 0.75rem; cursor: pointer; text-align: left;">
+            🥁 <b>Pure Rhythm</b><br><span style="font-size: 0.65rem; color: #94a3b8;">Kick, Snare & Shaker</span>
+          </button>
+          <button class="btn-orchestra-preset" data-preset="midnight_carillon" style="background: #1f140e; color: #bae6fd; border: 1px solid #78350f; border-radius: 4px; padding: 6px 8px; font-size: 0.75rem; cursor: pointer; text-align: left;">
+            🔔 <b>Midnight Carillon</b><br><span style="font-size: 0.65rem; color: #94a3b8;">Chimes & Offbeat Pings</span>
+          </button>
+          <button class="btn-orchestra-preset" data-preset="silent_workshop" style="background: #1c1917; color: #cbd5e1; border: 1px solid #44403c; border-radius: 4px; padding: 6px 8px; font-size: 0.75rem; cursor: pointer; text-align: left;">
+            ⏹️ <b>Silent Workshop</b><br><span style="font-size: 0.65rem; color: #94a3b8;">All engines idle</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // UI Element References
+  const masterLamp = body.querySelector('#master-status-lamp') as HTMLElement;
+  const masterTitle = body.querySelector('#master-status-title') as HTMLElement;
+  const btnMasterClutch = body.querySelector('#btn-master-clutch') as HTMLButtonElement;
+  const bpmBadge = body.querySelector('#bpm-display-badge') as HTMLElement;
+  const bpmSlider = body.querySelector('#bpm-slider') as HTMLInputElement;
+
+  const selPress = body.querySelector('#sel-ch-press') as HTMLSelectElement;
+  const selTally = body.querySelector('#sel-ch-tally') as HTMLSelectElement;
+  const selPlinko = body.querySelector('#sel-ch-plinko') as HTMLSelectElement;
+  const selStone = body.querySelector('#sel-ch-stone') as HTMLSelectElement;
+
+  const mutePress = body.querySelector('#mute-ch-press') as HTMLButtonElement;
+  const muteTally = body.querySelector('#mute-ch-tally') as HTMLButtonElement;
+  const mutePlinko = body.querySelector('#mute-ch-plinko') as HTMLButtonElement;
+  const muteStone = body.querySelector('#mute-ch-stone') as HTMLButtonElement;
+
+  const lampPress = body.querySelector('#lamp-ch-press') as HTMLElement;
+  const lampTally = body.querySelector('#lamp-ch-tally') as HTMLElement;
+  const lampPlinko = body.querySelector('#lamp-ch-plinko') as HTMLElement;
+  const lampStone = body.querySelector('#lamp-ch-stone') as HTMLElement;
+
+  function updateMixerUI(): void {
+    const isRunning = conductor.isRunning();
+
+    // Master Transport Badge & Button
+    if (isRunning) {
+      masterLamp.style.background = '#22c55e';
+      masterLamp.style.boxShadow = '0 0 12px rgba(34, 197, 94, 0.8)';
+      masterTitle.innerText = 'MASTER CLOCKWORK: ENGAGED & TICKING';
+      masterTitle.style.color = '#4ade80';
+      btnMasterClutch.innerText = '⏹ DISENGAGE ALL';
+      btnMasterClutch.style.background = 'linear-gradient(180deg, #b91c1c 0%, #7f1d1d 100%)';
+      btnMasterClutch.style.color = '#fff';
+      btnMasterClutch.style.borderColor = '#f87171';
+    } else {
+      masterLamp.style.background = '#7f1d1d';
+      masterLamp.style.boxShadow = '0 0 8px rgba(127, 29, 29, 0.6)';
+      masterTitle.innerText = 'MASTER CLOCKWORK: IDLE (DISENGAGED)';
+      masterTitle.style.color = '#fef08a';
+      btnMasterClutch.innerText = '⚡ ENGAGE MASTER TRANSPORT';
+      btnMasterClutch.style.background = 'linear-gradient(180deg, #ca8a04 0%, #854d0e 100%)';
+      btnMasterClutch.style.color = '#000';
+      btnMasterClutch.style.borderColor = '#fef08a';
+    }
+
+    // BPM Readout
+    bpmBadge.innerText = `${conductor.getBpm()} BPM`;
+    if (bpmSlider.value !== String(conductor.getBpm())) {
+      bpmSlider.value = String(conductor.getBpm());
+    }
+
+    // Cadence Dropdowns
+    selPress.value = conductor.getPressCadence();
+    selTally.value = conductor.getTallyCadence();
+    selPlinko.value = conductor.getPlinkoCadence();
+    selStone.value = conductor.getStoneCadence();
+
+    // Mute Buttons & Status Lamps
+    const updateChannel = (
+      ch: 'press' | 'tally' | 'plinko' | 'stone',
+      isLoop: boolean,
+      muteBtn: HTMLButtonElement,
+      lampEl: HTMLElement
+    ) => {
+      const isMuted = conductor.isChannelMuted(ch);
+      if (isMuted) {
+        muteBtn.innerText = 'MUTED';
+        muteBtn.style.background = '#991b1b';
+        muteBtn.style.color = '#fecaca';
+        muteBtn.style.borderColor = '#ef4444';
+      } else {
+        muteBtn.innerText = 'MUTE';
+        muteBtn.style.background = '#1c1917';
+        muteBtn.style.color = '#94a3b8';
+        muteBtn.style.borderColor = '#44403c';
+      }
+
+      if (isLoop && isRunning && !isMuted) {
+        lampEl.style.background = '#22c55e';
+        lampEl.style.boxShadow = '0 0 6px rgba(34, 197, 94, 0.8)';
+      } else if (isLoop && isRunning && isMuted) {
+        lampEl.style.background = '#f59e0b';
+        lampEl.style.boxShadow = '0 0 6px rgba(245, 158, 11, 0.8)';
+      } else {
+        lampEl.style.background = '#7f1d1d';
+        lampEl.style.boxShadow = 'none';
+      }
+    };
+
+    updateChannel('press', conductor.getPressCadence() !== 'off', mutePress, lampPress);
+    updateChannel('tally', conductor.getTallyCadence() !== 'off', muteTally, lampTally);
+    updateChannel('plinko', conductor.getPlinkoCadence() !== 'off', mutePlinko, lampPlinko);
+    updateChannel('stone', conductor.getStoneCadence() !== 'off', muteStone, lampStone);
+  }
+
+  // Initial render
+  updateMixerUI();
+
+  // Listen to conductor state broadcasts to stay perfectly synchronized
+  const onStateChange = () => updateMixerUI();
+  window.addEventListener('mint-conductor-state-change', onStateChange);
+
+  // Clean up listener when modal closes
+  const originalClose = overlay.querySelector('.modal-close-btn');
+  originalClose?.addEventListener('click', () => {
+    window.removeEventListener('mint-conductor-state-change', onStateChange);
+  });
+
+  // Master Clutch Button
+  btnMasterClutch.addEventListener('click', () => {
+    const isNowRunning = conductor.toggleMasterTransport();
+    audio.playClutchLeverThrow(isNowRunning);
+    updateMixerUI();
+  });
+
+  // BPM Slider & Steppers
+  bpmSlider.addEventListener('input', (e) => {
+    const val = parseInt((e.target as HTMLInputElement).value, 10);
+    conductor.setBpm(val);
+    audio.playTempoGovernorClick();
+    updateMixerUI();
+  });
+
+  body.querySelector('#btn-bpm-minus')?.addEventListener('click', () => {
+    conductor.setBpm(conductor.getBpm() - 5);
+    audio.playTempoGovernorClick();
+    updateMixerUI();
+  });
+
+  body.querySelector('#btn-bpm-plus')?.addEventListener('click', () => {
+    conductor.setBpm(conductor.getBpm() + 5);
+    audio.playTempoGovernorClick();
+    updateMixerUI();
+  });
+
+  body.querySelectorAll('.btn-tempo-preset').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      const targetBpm = parseInt((e.currentTarget as HTMLElement).dataset.bpm || '105', 10);
+      conductor.setBpm(targetBpm);
+      audio.playTempoGovernorClick();
+      updateMixerUI();
+    });
+  });
+
+  // Channel Dropdown Selectors
+  selPress.addEventListener('change', (e) => {
+    conductor.setPressCadence((e.target as HTMLSelectElement).value as any);
+    updateMixerUI();
+  });
+
+  selTally.addEventListener('change', (e) => {
+    conductor.setTallyCadence((e.target as HTMLSelectElement).value as any);
+    updateMixerUI();
+  });
+
+  selPlinko.addEventListener('change', (e) => {
+    conductor.setPlinkoCadence((e.target as HTMLSelectElement).value as any);
+    updateMixerUI();
+  });
+
+  selStone.addEventListener('change', (e) => {
+    conductor.setStoneCadence((e.target as HTMLSelectElement).value as any);
+    updateMixerUI();
+  });
+
+  // Channel Mute Buttons
+  mutePress.addEventListener('click', () => {
+    conductor.toggleChannelMute('press');
+    audio.playTempoGovernorClick();
+    updateMixerUI();
+  });
+
+  muteTally.addEventListener('click', () => {
+    conductor.toggleChannelMute('tally');
+    audio.playTempoGovernorClick();
+    updateMixerUI();
+  });
+
+  mutePlinko.addEventListener('click', () => {
+    conductor.toggleChannelMute('plinko');
+    audio.playTempoGovernorClick();
+    updateMixerUI();
+  });
+
+  muteStone.addEventListener('click', () => {
+    conductor.toggleChannelMute('stone');
+    audio.playTempoGovernorClick();
+    updateMixerUI();
+  });
+
+  // Curated Preset Buttons
+  body.querySelectorAll('.btn-orchestra-preset').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      const preset = (e.currentTarget as HTMLElement).dataset.preset as any;
+      conductor.applyOrchestraPreset(preset);
+      audio.playClutchLeverThrow(conductor.isRunning());
+      updateMixerUI();
+    });
+  });
+}
+
+
 

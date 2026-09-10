@@ -5,6 +5,7 @@ import { executeRingingStoneStrike, getLastStoneStrikeTime, resetRingingStoneSta
 import { executeMintCrankPress, getLastCrankTriggerTime } from '../../src/rooms/coins/coinMachineActions';
 import { executeGaltonQuickDrop, getLastGaltonDropTime, resetGaltonChuteState } from '../../src/rooms/coins/galtonChuteActions';
 import { executeTallyBoardPour, getLastTallyPourTime, resetTallyBoardState } from '../../src/rooms/coins/tallyBoardActions';
+import { executeToggleMasterClutch, getLastMasterClutchTime, resetMasterClutchState } from '../../src/rooms/coins/conductorVitrineActions';
 
 describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
   beforeEach(() => {
@@ -413,5 +414,162 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     expect(clackSpy).toHaveBeenNthCalledWith(1, 30.4, 'backbeat');
     expect(clackSpy).toHaveBeenNthCalledWith(2, 31.0, 'backbeat');
     expect(clackSpy).toHaveBeenNthCalledWith(3, 31.4, 'ghost');
+  });
+
+  it('tracks Master Vitrine Console looping state tied directly to transport status', () => {
+    const conductor = MintConductor.getInstance();
+    conductor.setRoomActive(true);
+
+    expect(conductor.isStationLooping('mint_vitrine_console')).toBe(false);
+    expect(conductor.isStationLooping('vitrine_console')).toBe(false);
+    expect(conductor.isStationLooping('conductor_vitrine')).toBe(false);
+
+    conductor.start();
+    expect(conductor.isStationLooping('mint_vitrine_console')).toBe(true);
+    expect(conductor.isStationLooping('vitrine_console')).toBe(true);
+
+    conductor.stop();
+    expect(conductor.isStationLooping('mint_vitrine_console')).toBe(false);
+  });
+
+  it('channel mutes suppress audio scheduling while preserving selected cadences', () => {
+    const audio = HearthAudio.getInstance();
+    const kickSpy = vi.spyOn(audio, 'playScheduledPressKick').mockImplementation(() => {});
+    const chimeSpy = vi.spyOn(audio, 'playRingingStoneChime').mockImplementation(() => {});
+    const plinkoSpy = vi.spyOn(audio, 'playScheduledPlinkoHit').mockImplementation(() => {});
+    const tallySpy = vi.spyOn(audio, 'playScheduledTallyClack').mockImplementation(() => {});
+
+    const conductor = MintConductor.getInstance();
+    conductor.setPressCadence('four_on_the_floor');
+    conductor.setStoneCadence('quarter_chime');
+    conductor.setPlinkoCadence('sixteenth_shaker');
+    conductor.setTallyCadence('backbeat_snare');
+
+    // Mute press, chime, and tally
+    expect(conductor.isChannelMuted('press')).toBe(false);
+    conductor.setChannelMute('press', true);
+    expect(conductor.isChannelMuted('press')).toBe(true);
+    conductor.setChannelMute('stone', true);
+    conductor.setChannelMute('tally', true);
+
+    // Step 0: beat 1 downbeat (Kick & Stone would play if unmuted)
+    (conductor as any).scheduleStep(0, 50.0);
+    expect(kickSpy).not.toHaveBeenCalled();
+    expect(chimeSpy).not.toHaveBeenCalled();
+    // Plinko still plays
+    expect(plinkoSpy).toHaveBeenCalled();
+
+    // Step 4: beat 2 (Tally would play if unmuted)
+    (conductor as any).scheduleStep(4, 50.4);
+    expect(tallySpy).not.toHaveBeenCalled();
+
+    // Toggle mute back on press and tally
+    conductor.toggleChannelMute('press');
+    conductor.toggleChannelMute('tally');
+    expect(conductor.isChannelMuted('press')).toBe(false);
+    expect(conductor.isChannelMuted('tally')).toBe(false);
+
+    (conductor as any).scheduleStep(0, 51.0);
+    expect(kickSpy).toHaveBeenCalledWith(51.0);
+
+    (conductor as any).scheduleStep(4, 51.4);
+    expect(tallySpy).toHaveBeenCalledWith(51.4, 'backbeat');
+
+    // Cadences were preserved throughout
+    expect(conductor.getPressCadence()).toBe('four_on_the_floor');
+    expect(conductor.getStoneCadence()).toBe('quarter_chime');
+    expect(conductor.getTallyCadence()).toBe('backbeat_snare');
+  });
+
+  it('toggleMasterTransport cleanly starts and stops the orchestra with defaults', () => {
+    const conductor = MintConductor.getInstance();
+    conductor.setRoomActive(true);
+
+    // Initial: all cadences off
+    expect(conductor.isRunning()).toBe(false);
+    expect(conductor.getPressCadence()).toBe('off');
+
+    // Toggle on when off: engages signature full orchestrion
+    const turnedOn = conductor.toggleMasterTransport();
+    expect(turnedOn).toBe(true);
+    expect(conductor.isRunning()).toBe(true);
+    expect(conductor.getPressCadence()).toBe('four_on_the_floor');
+    expect(conductor.getTallyCadence()).toBe('backbeat_snare');
+    expect(conductor.getPlinkoCadence()).toBe('sixteenth_shaker');
+    expect(conductor.getStoneCadence()).toBe('pentatonic_arp');
+
+    // Toggle off: stops transport while keeping cadences intact
+    const turnedOff = conductor.toggleMasterTransport();
+    expect(turnedOff).toBe(false);
+    expect(conductor.isRunning()).toBe(false);
+    expect(conductor.getPressCadence()).toBe('four_on_the_floor');
+
+    // Toggle on again: resumes running with preserved cadences
+    conductor.toggleMasterTransport();
+    expect(conductor.isRunning()).toBe(true);
+  });
+
+  it('applies curated orchestral score presets accurately', () => {
+    const conductor = MintConductor.getInstance();
+    conductor.setRoomActive(true);
+
+    // 1. Pure Rhythm Section
+    conductor.applyOrchestraPreset('rhythm_section');
+    expect(conductor.getPressCadence()).toBe('four_on_the_floor');
+    expect(conductor.getTallyCadence()).toBe('backbeat_snare');
+    expect(conductor.getPlinkoCadence()).toBe('sixteenth_shaker');
+    expect(conductor.getStoneCadence()).toBe('off');
+    expect(conductor.isRunning()).toBe(true);
+
+    // 2. Midnight Carillon
+    conductor.applyOrchestraPreset('midnight_carillon');
+    expect(conductor.getPressCadence()).toBe('off');
+    expect(conductor.getTallyCadence()).toBe('off');
+    expect(conductor.getPlinkoCadence()).toBe('offbeat_pings');
+    expect(conductor.getStoneCadence()).toBe('quarter_chime');
+    expect(conductor.isRunning()).toBe(true);
+
+    // 3. Silent Workshop
+    conductor.applyOrchestraPreset('silent_workshop');
+    expect(conductor.getPressCadence()).toBe('off');
+    expect(conductor.getTallyCadence()).toBe('off');
+    expect(conductor.getPlinkoCadence()).toBe('off');
+    expect(conductor.getStoneCadence()).toBe('off');
+    expect(conductor.isRunning()).toBe(false);
+
+    // 4. Full Orchestrion
+    conductor.applyOrchestraPreset('full_orchestrion');
+    expect(conductor.getPressCadence()).toBe('four_on_the_floor');
+    expect(conductor.getTallyCadence()).toBe('backbeat_snare');
+    expect(conductor.getPlinkoCadence()).toBe('sixteenth_shaker');
+    expect(conductor.getStoneCadence()).toBe('pentatonic_arp');
+    expect(conductor.isRunning()).toBe(true);
+  });
+
+  it('executeToggleMasterClutch triggers audio, updates conductor, and respects throttle cooldown', () => {
+    const audio = HearthAudio.getInstance();
+    const leverSpy = vi.spyOn(audio, 'playClutchLeverThrow').mockImplementation(() => {});
+
+    resetMasterClutchState();
+    const conductor = MintConductor.getInstance();
+    conductor.setRoomActive(true);
+
+    // First throw at t=1000: toggles on
+    const success = executeToggleMasterClutch(1000);
+    expect(success).toBe(true);
+    expect(conductor.isRunning()).toBe(true);
+    expect(leverSpy).toHaveBeenCalledWith(true);
+    expect(getLastMasterClutchTime()).toBe(1000);
+
+    // Rapid second throw at t=1100 (< 250ms cooldown): throttled
+    const throttled = executeToggleMasterClutch(1100);
+    expect(throttled).toBe(false);
+
+    // Third throw at t=1300 (> 250ms cooldown): toggles off
+    const success2 = executeToggleMasterClutch(1300);
+    expect(success2).toBe(true);
+    expect(conductor.isRunning()).toBe(false);
+    expect(leverSpy).toHaveBeenCalledWith(false);
+    expect(getLastMasterClutchTime()).toBe(1300);
   });
 });

@@ -1480,6 +1480,107 @@ export class HearthAudio {
     whiteNoise.start(now);
     whiteNoise.stop(now + noiseDuration + 0.005);
   }
+
+  /**
+   * Master Clutch Lever Throw: Heavy Victorian mechanical latch clank, spring catch snap,
+   * and subtle pneumatic steam puff when engaging/disengaging the master transport.
+   */
+  public playClutchLeverThrow(engaged: boolean = true): void {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const bus = this.getMintBus() || this.ctx.destination;
+
+    // 1. Cast-Iron Mechanical Latch Clank (Low-mid punch)
+    const ironOsc = this.ctx.createOscillator();
+    const ironGain = this.ctx.createGain();
+    const ironFilter = this.ctx.createBiquadFilter();
+
+    ironOsc.type = 'triangle';
+    const startFreq = engaged ? 260 : 180;
+    const endFreq = engaged ? 85 : 60;
+    ironOsc.frequency.setValueAtTime(startFreq, now);
+    ironOsc.frequency.exponentialRampToValueAtTime(endFreq, now + 0.045);
+
+    ironFilter.type = 'lowpass';
+    ironFilter.frequency.setValueAtTime(650, now);
+
+    ironGain.gain.setValueAtTime(0.001, now);
+    ironGain.gain.linearRampToValueAtTime(0.28, now + 0.003);
+    ironGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+    ironOsc.connect(ironFilter);
+    ironFilter.connect(ironGain);
+    ironGain.connect(bus);
+    ironOsc.start(now);
+    ironOsc.stop(now + 0.09);
+
+    // 2. High-Tensile Steel Spring Catch Snap
+    const snapOsc = this.ctx.createOscillator();
+    const snapGain = this.ctx.createGain();
+    snapOsc.type = 'sine';
+    snapOsc.frequency.setValueAtTime(engaged ? 2100 : 1600, now);
+    snapOsc.frequency.exponentialRampToValueAtTime(450, now + 0.025);
+
+    snapGain.gain.setValueAtTime(0.001, now);
+    snapGain.gain.linearRampToValueAtTime(0.16, now + 0.002);
+    snapGain.gain.exponentialRampToValueAtTime(0.0005, now + 0.035);
+
+    snapOsc.connect(snapGain);
+    snapGain.connect(bus);
+    snapOsc.start(now);
+    snapOsc.stop(now + 0.04);
+
+    // 3. Pneumatic Steam Puff / Escaping Air Hiss
+    const hissDuration = 0.075;
+    const bufferSize = Math.floor(this.ctx.sampleRate * hissDuration);
+    const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      output[i] = Math.random() * 2 - 1;
+    }
+    const hissSource = this.ctx.createBufferSource();
+    hissSource.buffer = noiseBuffer;
+
+    const hissFilter = this.ctx.createBiquadFilter();
+    hissFilter.type = 'bandpass';
+    hissFilter.frequency.setValueAtTime(engaged ? 1400 : 950, now);
+    hissFilter.Q.setValueAtTime(1.8, now);
+
+    const hissGain = this.ctx.createGain();
+    hissGain.gain.setValueAtTime(0.001, now);
+    hissGain.gain.linearRampToValueAtTime(0.08, now + 0.004);
+    hissGain.gain.exponentialRampToValueAtTime(0.0005, now + hissDuration);
+
+    hissSource.connect(hissFilter);
+    hissFilter.connect(hissGain);
+    hissGain.connect(bus);
+    hissSource.start(now);
+    hissSource.stop(now + hissDuration + 0.005);
+  }
+
+  /**
+   * Precision Horological Ratchet Tooth Click: Ticked when adjusting BPM governor.
+   */
+  public playTempoGovernorClick(): void {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const bus = this.getMintBus() || this.ctx.destination;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(3200, now);
+    osc.frequency.exponentialRampToValueAtTime(1100, now + 0.012);
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.07, now + 0.001);
+    gain.gain.exponentialRampToValueAtTime(0.0005, now + 0.015);
+
+    osc.connect(gain);
+    gain.connect(bus);
+    osc.start(now);
+    osc.stop(now + 0.02);
+  }
 }
 
 

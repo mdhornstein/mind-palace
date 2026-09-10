@@ -3,6 +3,7 @@ import { executeMintCrankPress, MintCrankParams } from '../rooms/coins/coinMachi
 import { executeRingingStoneStrike, RingingStoneParams } from '../rooms/coins/ringingStoneActions';
 import { executeGaltonQuickDrop, GaltonQuickDropParams } from '../rooms/coins/galtonChuteActions';
 import { executeTallyBoardPour, TallyBoardParams } from '../rooms/coins/tallyBoardActions';
+import { executeToggleMasterClutch } from '../rooms/coins/conductorVitrineActions';
 
 /**
  * Validates and normalizes parameters for the "mint_crank_press" custom action.
@@ -217,6 +218,10 @@ export function registerApplicationActions(): void {
   InteractionDispatcher.registerAction('pour_tally_board', (intent) => {
     const params = parseTallyBoardParams(intent.params);
     executeTallyBoardPour(params);
+  });
+
+  InteractionDispatcher.registerAction('toggle_mint_master_clutch', () => {
+    executeToggleMasterClutch();
   });
 }
 

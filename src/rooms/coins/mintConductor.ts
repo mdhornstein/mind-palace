@@ -21,6 +21,8 @@ export type StoneCadence =
   | 'pentatonic_arp';
 export type PlinkoCadence = 'off' | 'sixteenth_shaker' | 'offbeat_pings';
 export type TallyCadence = 'off' | 'backbeat_snare' | 'cascade_fill' | 'syncopated_groove';
+export type ConductorChannel = 'press' | 'stone' | 'plinko' | 'tally';
+export type OrchestraPreset = 'full_orchestrion' | 'rhythm_section' | 'midnight_carillon' | 'silent_workshop';
 
 export class MintConductor {
   private static instance: MintConductor | null = null;
@@ -42,6 +44,12 @@ export class MintConductor {
   private stoneCadence: StoneCadence = 'off';
   private plinkoCadence: PlinkoCadence = 'off';
   private tallyCadence: TallyCadence = 'off';
+
+  // Master Mixer Channel Mutes (allows silencing individual voices without resetting cadence)
+  private pressMuted = false;
+  private stoneMuted = false;
+  private plinkoMuted = false;
+  private tallyMuted = false;
 
   // In-world visual trigger timestamps & transport-relative phase origin
   private visualOriginMs = 0;
@@ -83,6 +91,29 @@ export class MintConductor {
     }
   }
 
+  // ==================== NOTIFICATIONS & STATE SYNC ====================
+
+  private notifyStateChange(): void {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('mint-conductor-state-change', {
+          detail: {
+            running: this.running,
+            bpm: this.bpm,
+            pressCadence: this.pressCadence,
+            stoneCadence: this.stoneCadence,
+            plinkoCadence: this.plinkoCadence,
+            tallyCadence: this.tallyCadence,
+            pressMuted: this.pressMuted,
+            stoneMuted: this.stoneMuted,
+            plinkoMuted: this.plinkoMuted,
+            tallyMuted: this.tallyMuted,
+          },
+        })
+      );
+    }
+  }
+
   // ==================== CADENCE CONFIGURATION ====================
 
   public getPressCadence(): PressCadence {
@@ -92,6 +123,7 @@ export class MintConductor {
   public setPressCadence(cadence: PressCadence): void {
     this.pressCadence = cadence;
     this.checkAutoTransport();
+    this.notifyStateChange();
   }
 
   public getStoneCadence(): StoneCadence {
@@ -101,6 +133,7 @@ export class MintConductor {
   public setStoneCadence(cadence: StoneCadence): void {
     this.stoneCadence = cadence;
     this.checkAutoTransport();
+    this.notifyStateChange();
   }
 
   public getPlinkoCadence(): PlinkoCadence {
@@ -110,6 +143,7 @@ export class MintConductor {
   public setPlinkoCadence(cadence: PlinkoCadence): void {
     this.plinkoCadence = cadence;
     this.checkAutoTransport();
+    this.notifyStateChange();
   }
 
   public getTallyCadence(): TallyCadence {
@@ -119,6 +153,46 @@ export class MintConductor {
   public setTallyCadence(cadence: TallyCadence): void {
     this.tallyCadence = cadence;
     this.checkAutoTransport();
+    this.notifyStateChange();
+  }
+
+  // ==================== CHANNEL MUTES (MIXER CONSOLE) ====================
+
+  public isChannelMuted(channel: ConductorChannel): boolean {
+    switch (channel) {
+      case 'press':
+        return this.pressMuted;
+      case 'stone':
+        return this.stoneMuted;
+      case 'plinko':
+        return this.plinkoMuted;
+      case 'tally':
+        return this.tallyMuted;
+    }
+  }
+
+  public setChannelMute(channel: ConductorChannel, muted: boolean): void {
+    switch (channel) {
+      case 'press':
+        this.pressMuted = muted;
+        break;
+      case 'stone':
+        this.stoneMuted = muted;
+        break;
+      case 'plinko':
+        this.plinkoMuted = muted;
+        break;
+      case 'tally':
+        this.tallyMuted = muted;
+        break;
+    }
+    this.notifyStateChange();
+  }
+
+  public toggleChannelMute(channel: ConductorChannel): boolean {
+    const next = !this.isChannelMuted(channel);
+    this.setChannelMute(channel, next);
+    return next;
   }
 
   public isStationLooping(stationId: string): boolean {
@@ -133,6 +207,13 @@ export class MintConductor {
     }
     if (stationId === 'mint_tally_board' || stationId === 'tally_board') {
       return this.tallyCadence !== 'off';
+    }
+    if (
+      stationId === 'mint_vitrine_console' ||
+      stationId === 'vitrine_console' ||
+      stationId === 'conductor_vitrine'
+    ) {
+      return this.running;
     }
     return false;
   }
@@ -162,6 +243,84 @@ export class MintConductor {
 
   public setBpm(newBpm: number): void {
     this.bpm = Math.max(60, Math.min(180, newBpm));
+    this.notifyStateChange();
+  }
+
+  /**
+   * Toggles master transport engagement.
+   * If running -> stops transport, preserving cadence choices.
+   * If stopped -> starts transport. If all cadences are 'off', activates signature 'full_orchestrion'.
+   * @returns true if transport is now running, false if stopped.
+   */
+  public toggleMasterTransport(): boolean {
+    if (this.running) {
+      this.stop();
+      return false;
+    }
+
+    const hasActiveCadence =
+      this.pressCadence !== 'off' ||
+      this.stoneCadence !== 'off' ||
+      this.plinkoCadence !== 'off' ||
+      this.tallyCadence !== 'off';
+
+    if (!hasActiveCadence) {
+      this.pressCadence = 'four_on_the_floor';
+      this.tallyCadence = 'backbeat_snare';
+      this.plinkoCadence = 'sixteenth_shaker';
+      this.stoneCadence = 'pentatonic_arp';
+      this.pressMuted = false;
+      this.stoneMuted = false;
+      this.plinkoMuted = false;
+      this.tallyMuted = false;
+    }
+
+    this.start();
+    return true;
+  }
+
+  /**
+   * Applies a 1-click curated orchestra score preset.
+   */
+  public applyOrchestraPreset(preset: OrchestraPreset): void {
+    if (preset === 'full_orchestrion') {
+      this.pressCadence = 'four_on_the_floor';
+      this.tallyCadence = 'backbeat_snare';
+      this.plinkoCadence = 'sixteenth_shaker';
+      this.stoneCadence = 'pentatonic_arp';
+      this.pressMuted = false;
+      this.stoneMuted = false;
+      this.plinkoMuted = false;
+      this.tallyMuted = false;
+      if (this.inActiveRoom && !this.running) this.start();
+    } else if (preset === 'rhythm_section') {
+      this.pressCadence = 'four_on_the_floor';
+      this.tallyCadence = 'backbeat_snare';
+      this.plinkoCadence = 'sixteenth_shaker';
+      this.stoneCadence = 'off';
+      this.pressMuted = false;
+      this.stoneMuted = false;
+      this.plinkoMuted = false;
+      this.tallyMuted = false;
+      if (this.inActiveRoom && !this.running) this.start();
+    } else if (preset === 'midnight_carillon') {
+      this.pressCadence = 'off';
+      this.tallyCadence = 'off';
+      this.plinkoCadence = 'offbeat_pings';
+      this.stoneCadence = 'quarter_chime';
+      this.pressMuted = false;
+      this.stoneMuted = false;
+      this.plinkoMuted = false;
+      this.tallyMuted = false;
+      if (this.inActiveRoom && !this.running) this.start();
+    } else if (preset === 'silent_workshop') {
+      this.pressCadence = 'off';
+      this.tallyCadence = 'off';
+      this.plinkoCadence = 'off';
+      this.stoneCadence = 'off';
+      if (this.running) this.stop();
+    }
+    this.notifyStateChange();
   }
 
   public start(): void {
@@ -183,6 +342,7 @@ export class MintConductor {
       const nowPerf = typeof performance !== 'undefined' ? performance.now() : Date.now();
       this.visualOriginMs = nowPerf;
     }
+    this.notifyStateChange();
   }
 
   public stop(): void {
@@ -195,6 +355,7 @@ export class MintConductor {
       clearInterval((globalThis as any).__MINT_CONDUCTOR_TIMER__);
       (globalThis as any).__MINT_CONDUCTOR_TIMER__ = null;
     }
+    this.notifyStateChange();
   }
 
   private scheduleLoop(): void {
@@ -233,67 +394,73 @@ export class MintConductor {
     const audio = HearthAudio.getInstance();
 
     // 1. Steam Coin Press (Four-on-the-Floor: Beats 1, 2, 3, 4 -> Steps 0, 4, 8, 12)
-    if (this.pressCadence === 'four_on_the_floor' && step % 4 === 0) {
+    if (!this.pressMuted && this.pressCadence === 'four_on_the_floor' && step % 4 === 0) {
       audio.playScheduledPressKick(scheduledTime);
     }
 
     // 2. Ringing Stone Musical Cadences
-    if (this.stoneCadence === 'quarter_chime' && step % 4 === 0) {
-      // Quarter note relaxed bell sequence on beats 1, 2, 3, 4 (571ms intervals)
-      // Notes: C6, E6, G6, A6 (warm, harmonious pentatonic movement)
-      const melodicNotes = [0, 2, 3, 4];
-      const noteIdx = melodicNotes[this.currentArpNoteIndex % melodicNotes.length];
-      audio.playRingingStoneChime(noteIdx, scheduledTime, 'quarter');
-      this.currentArpNoteIndex++;
-    } else if (this.stoneCadence === 'offbeat' && step % 4 === 2) {
-      // Syncopated upbeats on steps 2, 6, 10, 14 (locks in groove with 4-on-floor kicks)
-      const offbeatNotes = [3, 4];
-      const noteIdx = offbeatNotes[this.currentArpNoteIndex % offbeatNotes.length];
-      audio.playRingingStoneChime(noteIdx, scheduledTime, 'offbeat');
-      this.currentArpNoteIndex++;
-    } else if (this.stoneCadence === 'root_drone' && step === 0) {
-      // Whole-note downbeat once per measure (2.28s intervals) - deep sovereign gong
-      audio.playRingingStoneChime(0, scheduledTime, 'drone');
-    } else if (this.stoneCadence === 'pentatonic_arp' && step % 2 === 0) {
-      // 8th-notes on steps 0, 2, 4, 6, 8, 10, 12, 14 - crisp music box
-      const noteIdx = this.currentArpNoteIndex;
-      audio.playRingingStoneChime(noteIdx, scheduledTime, 'arp');
-      this.currentArpNoteIndex = (this.currentArpNoteIndex + 1) % 7;
+    if (!this.stoneMuted) {
+      if (this.stoneCadence === 'quarter_chime' && step % 4 === 0) {
+        // Quarter note relaxed bell sequence on beats 1, 2, 3, 4 (571ms intervals)
+        // Notes: C6, E6, G6, A6 (warm, harmonious pentatonic movement)
+        const melodicNotes = [0, 2, 3, 4];
+        const noteIdx = melodicNotes[this.currentArpNoteIndex % melodicNotes.length];
+        audio.playRingingStoneChime(noteIdx, scheduledTime, 'quarter');
+        this.currentArpNoteIndex++;
+      } else if (this.stoneCadence === 'offbeat' && step % 4 === 2) {
+        // Syncopated upbeats on steps 2, 6, 10, 14 (locks in groove with 4-on-floor kicks)
+        const offbeatNotes = [3, 4];
+        const noteIdx = offbeatNotes[this.currentArpNoteIndex % offbeatNotes.length];
+        audio.playRingingStoneChime(noteIdx, scheduledTime, 'offbeat');
+        this.currentArpNoteIndex++;
+      } else if (this.stoneCadence === 'root_drone' && step === 0) {
+        // Whole-note downbeat once per measure (2.28s intervals) - deep sovereign gong
+        audio.playRingingStoneChime(0, scheduledTime, 'drone');
+      } else if (this.stoneCadence === 'pentatonic_arp' && step % 2 === 0) {
+        // 8th-notes on steps 0, 2, 4, 6, 8, 10, 12, 14 - crisp music box
+        const noteIdx = this.currentArpNoteIndex;
+        audio.playRingingStoneChime(noteIdx, scheduledTime, 'arp');
+        this.currentArpNoteIndex = (this.currentArpNoteIndex + 1) % 7;
+      }
     }
 
     // 3. The Gilded Chute (Galton Pegboard - 16th-Note Shaker & Hi-Hat Groove)
-    if (this.plinkoCadence === 'sixteenth_shaker') {
-      // 16th-note continuous shaker stream:
-      // Steps 2, 6, 10, 14: crisp offbeat accents (locks with kick & stone)
-      // Other steps: subtle metallic ghost taps
-      const isAccent = step % 4 === 2;
-      audio.playScheduledPlinkoHit(scheduledTime, isAccent ? 'accent' : 'shaker');
-    } else if (this.plinkoCadence === 'offbeat_pings') {
-      // Syncopated binomial pings on offbeats (steps 2, 6, 10, 14)
-      if (step % 4 === 2) {
-        audio.playScheduledPlinkoHit(scheduledTime, 'accent');
+    if (!this.plinkoMuted) {
+      if (this.plinkoCadence === 'sixteenth_shaker') {
+        // 16th-note continuous shaker stream:
+        // Steps 2, 6, 10, 14: crisp offbeat accents (locks with kick & stone)
+        // Other steps: subtle metallic ghost taps
+        const isAccent = step % 4 === 2;
+        audio.playScheduledPlinkoHit(scheduledTime, isAccent ? 'accent' : 'shaker');
+      } else if (this.plinkoCadence === 'offbeat_pings') {
+        // Syncopated binomial pings on offbeats (steps 2, 6, 10, 14)
+        if (step % 4 === 2) {
+          audio.playScheduledPlinkoHit(scheduledTime, 'accent');
+        }
       }
     }
 
     // 4. The Moneyer's Tally Board (Acoustic Snare & Granular Fill)
-    if (this.tallyCadence === 'backbeat_snare') {
-      // Classic 4/4 Snare: Beats 2 & 4 (Steps 4 & 12)
-      if (step === 4 || step === 12) {
-        audio.playScheduledTallyClack(scheduledTime, 'backbeat');
-      }
-    } else if (this.tallyCadence === 'cascade_fill') {
-      // Backbeat on Beat 2 (Step 4), granular cascade roll on steps 13, 14, 15
-      if (step === 4) {
-        audio.playScheduledTallyClack(scheduledTime, 'backbeat');
-      } else if (step === 13 || step === 14 || step === 15) {
-        audio.playScheduledTallyClack(scheduledTime, 'fill');
-      }
-    } else if (this.tallyCadence === 'syncopated_groove') {
-      // Snare on Step 4, syncopated slap on Step 10, ghost tap on Step 14
-      if (step === 4 || step === 10) {
-        audio.playScheduledTallyClack(scheduledTime, 'backbeat');
-      } else if (step === 14) {
-        audio.playScheduledTallyClack(scheduledTime, 'ghost');
+    if (!this.tallyMuted) {
+      if (this.tallyCadence === 'backbeat_snare') {
+        // Classic 4/4 Snare: Beats 2 & 4 (Steps 4 & 12)
+        if (step === 4 || step === 12) {
+          audio.playScheduledTallyClack(scheduledTime, 'backbeat');
+        }
+      } else if (this.tallyCadence === 'cascade_fill') {
+        // Backbeat on Beat 2 (Step 4), granular cascade roll on steps 13, 14, 15
+        if (step === 4) {
+          audio.playScheduledTallyClack(scheduledTime, 'backbeat');
+        } else if (step === 13 || step === 14 || step === 15) {
+          audio.playScheduledTallyClack(scheduledTime, 'fill');
+        }
+      } else if (this.tallyCadence === 'syncopated_groove') {
+        // Snare on Step 4, syncopated slap on Step 10, ghost tap on Step 14
+        if (step === 4 || step === 10) {
+          audio.playScheduledTallyClack(scheduledTime, 'backbeat');
+        } else if (step === 14) {
+          audio.playScheduledTallyClack(scheduledTime, 'ghost');
+        }
       }
     }
   }

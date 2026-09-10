@@ -175,7 +175,8 @@ export type ModalId =
   | 'vault_wishing_well'
   | 'vault_scale'
   | 'ringing_stone'
-  | 'tally_board';
+  | 'tally_board'
+  | 'mint_conductor_vitrine';
 
 export type InteractionIntent =
   | {
