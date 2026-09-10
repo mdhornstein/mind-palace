@@ -122,6 +122,72 @@ export const ringingStoneStation: WorldStation = {
     ctx.lineWidth = 1.5;
     ctx.strokeRect(baseX + 10, baseY + 36, 60, 28);
 
+    // Horological Clockwork Vitrine Window (Recessed glass display on pedestal face)
+    const clockX = baseX + 28;
+    const clockY = baseY + 40;
+    const clockW = 24;
+    const clockH = 18;
+    ctx.fillStyle = '#0a0705';
+    ctx.fillRect(clockX, clockY, clockW, clockH);
+    ctx.strokeStyle = '#d97706';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(clockX, clockY, clockW, clockH);
+
+    // Winding arbor keyhole on left
+    ctx.fillStyle = '#78350f';
+    ctx.beginPath();
+    ctx.arc(clockX - 8, clockY + 9, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#0f0a07';
+    ctx.fillRect(clockX - 9, clockY + 8, 2, 2);
+
+    // Miniature descending brass counterweight chain on right
+    ctx.strokeStyle = '#d97706';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(clockX + clockW + 6, clockY);
+    ctx.lineTo(clockX + clockW + 6, clockY + 14);
+    ctx.stroke();
+    // Teardrop brass counterweight
+    ctx.fillStyle = '#f59e0b';
+    ctx.beginPath();
+    ctx.arc(clockX + clockW + 6, clockY + 15, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Horological Escapement Pendulum (Oscillates at 105 BPM when engaged)
+    const pendPivotX = clockX + clockW / 2;
+    const pendPivotY = clockY + 2;
+    const bpmFreq = (conductor.getBpm() / 60) * Math.PI;
+    const pendAngle = isLooping ? Math.sin(timeMs * 0.001 * bpmFreq) * 0.28 : 0;
+    const pendLen = 11;
+    const bobX = pendPivotX + Math.sin(pendAngle) * pendLen;
+    const bobY = pendPivotY + Math.cos(pendAngle) * pendLen;
+
+    // Pendulum rod
+    ctx.strokeStyle = '#d97706';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(pendPivotX, pendPivotY);
+    ctx.lineTo(bobX, bobY);
+    ctx.stroke();
+
+    // Polished brass pendulum bob
+    ctx.fillStyle = isLooping ? '#fef08a' : '#f59e0b';
+    ctx.beginPath();
+    ctx.arc(bobX, bobY, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#b45309';
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+
+    // Glass reflection gleam across clock window
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(clockX + 2, clockY + clockH - 2);
+    ctx.lineTo(clockX + clockW - 2, clockY + 2);
+    ctx.stroke();
+
     // Turned wood plinth mouldings
     ctx.fillStyle = '#2a160a';
     ctx.fillRect(baseX + 6, baseY + 60, 68, 6);

@@ -1,6 +1,7 @@
 import { WorldStation, DeepReadonly, WorldState } from '../../../core/types';
 import { TILE_SIZE } from '../../../core/constants';
 import { getActiveGaltonTokens } from '../galtonChuteActions';
+import { MintConductor } from '../mintConductor';
 
 export const plinkoDropStation: WorldStation = {
   id: 'plinko_drop',
@@ -42,6 +43,69 @@ export const plinkoDropStation: WorldStation = {
     const w = 2.8 * TILE_SIZE;
     const h = 3.2 * TILE_SIZE;
 
+    const conductor = MintConductor.getInstance();
+    const isLooping = conductor.isStationLooping('plinko_drop');
+    const cadence = conductor.getPlinkoCadence();
+
+    // 0. Line-Shaft Drive Belt & Overhead Pulley (Active when looping)
+    if (isLooping) {
+      const pulleyCx = x + w - 12;
+      const pulleyCy = y - 2;
+
+      ctx.save();
+      // Ceiling bracket
+      ctx.fillStyle = '#292524';
+      ctx.fillRect(pulleyCx - 10, 0, 20, 5);
+      ctx.strokeStyle = '#d97706';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(pulleyCx - 10, 0, 20, 5);
+
+      // Taut leather drive belt running from ceiling rafters (y=0) to cabinet pulley
+      ctx.strokeStyle = '#451a03';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(pulleyCx - 5, 0);
+      ctx.lineTo(pulleyCx - 5, pulleyCy);
+      ctx.moveTo(pulleyCx + 5, 0);
+      ctx.lineTo(pulleyCx + 5, pulleyCy);
+      ctx.stroke();
+
+      // Moving stitches along the drive belt
+      ctx.strokeStyle = '#d97706';
+      ctx.lineWidth = 1;
+      const stitchOffset = (timeMs * 0.08) % 8;
+      for (let sy = stitchOffset; sy < pulleyCy; sy += 8) {
+        ctx.beginPath();
+        ctx.moveTo(pulleyCx - 6, sy);
+        ctx.lineTo(pulleyCx - 4, sy);
+        ctx.moveTo(pulleyCx + 4, sy);
+        ctx.lineTo(pulleyCx + 6, sy);
+        ctx.stroke();
+      }
+
+      // Brass drive pulley
+      ctx.fillStyle = '#78350f';
+      ctx.beginPath();
+      ctx.arc(pulleyCx, pulleyCy, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Rotating pulley spokes
+      const spokeRot = (timeMs * 0.007) % (Math.PI * 2);
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(pulleyCx - Math.cos(spokeRot) * 5, pulleyCy - Math.sin(spokeRot) * 5);
+      ctx.lineTo(pulleyCx + Math.cos(spokeRot) * 5, pulleyCy + Math.sin(spokeRot) * 5);
+      ctx.moveTo(pulleyCx - Math.cos(spokeRot + Math.PI / 2) * 5, pulleyCy - Math.sin(spokeRot + Math.PI / 2) * 5);
+      ctx.lineTo(pulleyCx + Math.cos(spokeRot + Math.PI / 2) * 5, pulleyCy + Math.sin(spokeRot + Math.PI / 2) * 5);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
     // 1. Ornate Mahogany Cabinet Frame
     ctx.fillStyle = '#27170f';
     ctx.fillRect(x, y, w, h);
@@ -57,12 +121,51 @@ export const plinkoDropStation: WorldStation = {
     ctx.strokeStyle = '#d97706';
     ctx.stroke();
 
+    // Clutch indicator lamp on pediment
+    ctx.fillStyle = isLooping ? '#22c55e' : '#292524';
+    ctx.beginPath();
+    ctx.arc(x + 10, y + 2, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    if (isLooping) {
+      ctx.strokeStyle = '#4ade80';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
     // Golden marquee emblem
     ctx.fillStyle = '#f59e0b';
     ctx.font = 'bold 9px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('• GALTON CHUTE •', x + w / 2, y - 4);
+
+    // 1.5. Rocking Brass Escapement Feeder Gate in the Hopper Mouth
+    const gateX = x + w / 2;
+    const gateY = y + 7;
+    const rockAngle = isLooping ? Math.sin((timeMs / (60000 / 105)) * Math.PI * 2) * 0.35 : 0;
+
+    ctx.save();
+    ctx.translate(gateX, gateY);
+    ctx.rotate(rockAngle);
+
+    // Escapement rocker arm
+    ctx.fillStyle = '#ca8a04';
+    ctx.fillRect(-10, -1.5, 20, 3);
+    ctx.strokeStyle = '#fef08a';
+    ctx.lineWidth = 0.8;
+    ctx.strokeRect(-10, -1.5, 20, 3);
+
+    // Left and right feeder pallets
+    ctx.fillStyle = '#eab308';
+    ctx.fillRect(-10, 1.5, 2.5, 4);
+    ctx.fillRect(7.5, -5.5, 2.5, 4);
+
+    // Central brass pivot rivet
+    ctx.fillStyle = '#fef08a';
+    ctx.beginPath();
+    ctx.arc(0, 0, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
 
     // 2. Glass Vitrine Display (Dark felt background with glass reflections)
     const glassX = x + 8;
@@ -83,6 +186,37 @@ export const plinkoDropStation: WorldStation = {
         ctx.fillStyle = '#f59e0b';
         ctx.beginPath();
         ctx.arc(pinX, pinY, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // 3.2. Automated Kinetic Sovereign Stream (when loop is engaged)
+    if (isLooping) {
+      const streamCount = cadence === 'sixteenth_shaker' ? 3 : 2;
+      const cycleDuration = cadence === 'sixteenth_shaker' ? 571 : 850;
+
+      for (let s = 0; s < streamCount; s++) {
+        const streamOffset = s / streamCount;
+        const progress = ((timeMs + streamOffset * cycleDuration) % cycleDuration) / cycleDuration;
+        const py = glassY + 4 + progress * (glassH - 14);
+
+        // Sinusoidal deflection across pins
+        const wiggle = Math.sin(progress * Math.PI * 4 + s * 2.1) * (glassW * 0.26);
+        const px = glassX + glassW / 2 + wiggle;
+
+        // Shiny mini gold sovereign
+        ctx.fillStyle = '#fde047';
+        ctx.beginPath();
+        ctx.arc(px, py, 2.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ca8a04';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+
+        // Pin flash near coin
+        ctx.fillStyle = 'rgba(254, 240, 138, 0.4)';
+        ctx.beginPath();
+        ctx.arc(px, py, 4.0, 0, Math.PI * 2);
         ctx.fill();
       }
     }
@@ -130,6 +264,17 @@ export const plinkoDropStation: WorldStation = {
       ctx.fillRect(bx + 1, by, binW - 2, 12);
       ctx.fillStyle = '#0f0a07';
       ctx.fillRect(bx + 2, by + 1, binW - 4, 10);
+
+      // Subtle pulse glow when looping
+      if (isLooping) {
+        const pulse = Math.sin(timeMs * 0.006 + b) > 0.4;
+        if (pulse) {
+          ctx.fillStyle = colors[b];
+          ctx.globalAlpha = 0.25;
+          ctx.fillRect(bx + 2, by + 1, binW - 4, 10);
+          ctx.globalAlpha = 1.0;
+        }
+      }
     }
 
     // Glass diagonal sheen/reflection

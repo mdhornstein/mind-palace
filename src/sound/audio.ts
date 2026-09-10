@@ -835,12 +835,13 @@ export class HearthAudio {
   }
 
   /**
-   * Plinko peg click for the gilded coin chute
+   * Plinko peg click for the gilded coin chute (manual drops)
    */
   public playPlinkoPegHit() {
     this.initContext();
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
+    const bus = this.getMintBus() || this.ctx.destination;
 
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
@@ -853,9 +854,76 @@ export class HearthAudio {
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(bus);
     osc.start(now);
     osc.stop(now + 0.035);
+  }
+
+  /**
+   * Crisp brass pin deflection click / shaker burst for The Gilded Chute (Galton pegboard).
+   * Forms the rhythmic 16th-note shaker / hi-hat groove of the Kinetic DAW.
+   *  - 'shaker': soft, tight metallic brush tap (~22ms) for continuous 16th-note texture.
+   *  - 'accent': brighter, punchier brass deflection with harmonic shimmer (~35ms) for offbeats & accents.
+   */
+  public playScheduledPlinkoHit(atTime?: number, variant: 'shaker' | 'accent' = 'shaker') {
+    this.initContext();
+    if (!this.ctx) return;
+    const now = atTime !== undefined ? atTime : this.ctx.currentTime;
+    const bus = this.getMintBus() || this.ctx.destination;
+
+    const isAccent = variant === 'accent';
+
+    // 1. Crisp Metallic Pin Ping (triangle osc with quick micro-pitch decay)
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+
+    const baseFreq = isAccent ? 2550 : 2250;
+    const detune = (Math.random() - 0.5) * 120;
+    const freq = baseFreq + detune;
+
+    osc.frequency.setValueAtTime(freq, now);
+    osc.frequency.exponentialRampToValueAtTime(800, now + (isAccent ? 0.03 : 0.02));
+
+    const pinVol = isAccent ? 0.14 : 0.08;
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(pinVol, now + 0.002);
+    gain.gain.exponentialRampToValueAtTime(0.0005, now + (isAccent ? 0.035 : 0.022));
+
+    osc.connect(gain);
+    gain.connect(bus);
+    osc.start(now);
+    osc.stop(now + 0.04);
+
+    // 2. High-Frequency Brass Friction Swish (filtered noise burst for the shaker / closed hi-hat texture)
+    const noiseDuration = isAccent ? 0.035 : 0.022;
+    const bufferSize = Math.floor(this.ctx.sampleRate * noiseDuration);
+    const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      output[i] = Math.random() * 2 - 1;
+    }
+
+    const whiteNoise = this.ctx.createBufferSource();
+    whiteNoise.buffer = noiseBuffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(isAccent ? 5200 : 4400, now);
+    filter.Q.setValueAtTime(isAccent ? 3.8 : 3.0, now);
+
+    const noiseGain = this.ctx.createGain();
+    const noiseVol = isAccent ? 0.09 : 0.05;
+    noiseGain.gain.setValueAtTime(0.001, now);
+    noiseGain.gain.linearRampToValueAtTime(noiseVol, now + 0.002);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0005, now + noiseDuration);
+
+    whiteNoise.connect(filter);
+    filter.connect(noiseGain);
+    noiseGain.connect(bus);
+
+    whiteNoise.start(now);
+    whiteNoise.stop(now + noiseDuration + 0.005);
   }
 
   /**

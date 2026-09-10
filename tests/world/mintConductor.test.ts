@@ -3,6 +3,7 @@ import { MintConductor } from '../../src/rooms/coins/mintConductor';
 import { HearthAudio } from '../../src/sound/audio';
 import { executeRingingStoneStrike, getLastStoneStrikeTime, resetRingingStoneState } from '../../src/rooms/coins/ringingStoneActions';
 import { executeMintCrankPress, getLastCrankTriggerTime } from '../../src/rooms/coins/coinMachineActions';
+import { executeGaltonQuickDrop, getLastGaltonDropTime, resetGaltonChuteState } from '../../src/rooms/coins/galtonChuteActions';
 
 describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
   beforeEach(() => {
@@ -29,8 +30,10 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     expect(conductor.getBpm()).toBe(105);
     expect(conductor.getPressCadence()).toBe('off');
     expect(conductor.getStoneCadence()).toBe('off');
+    expect(conductor.getPlinkoCadence()).toBe('off');
     expect(conductor.isStationLooping('mint_coin_press')).toBe(false);
     expect(conductor.isStationLooping('mint_ringing_stone')).toBe(false);
+    expect(conductor.isStationLooping('plinko_drop')).toBe(false);
   });
 
   it('clamps tempo adjustments within safe musical limits (60..180 BPM)', () => {
@@ -67,11 +70,24 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
       expect(conductor.isStationLooping('mint_ringing_stone')).toBe(true);
     }
 
+    // Test plinko cadences
+    conductor.setPlinkoCadence('sixteenth_shaker');
+    expect(conductor.getPlinkoCadence()).toBe('sixteenth_shaker');
+    expect(conductor.isStationLooping('plinko_drop')).toBe(true);
+    expect(conductor.isStationLooping('mint_plinko')).toBe(true);
+
+    conductor.setPlinkoCadence('offbeat_pings');
+    expect(conductor.getPlinkoCadence()).toBe('offbeat_pings');
+    expect(conductor.isStationLooping('plinko_drop')).toBe(true);
+
     conductor.setPressCadence('off');
     expect(conductor.isStationLooping('mint_coin_press')).toBe(false);
 
     conductor.setStoneCadence('off');
     expect(conductor.isStationLooping('mint_ringing_stone')).toBe(false);
+
+    conductor.setPlinkoCadence('off');
+    expect(conductor.isStationLooping('plinko_drop')).toBe(false);
   });
 
   it('auto-transports: starts when loop configured in active room, stops when disengaged', () => {
@@ -85,7 +101,7 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     conductor.setPressCadence('four_on_the_floor');
     expect(conductor.isRunning()).toBe(true);
 
-    // Disengaging press while stone is off stops transport
+    // Disengaging press while others are off stops transport
     conductor.setPressCadence('off');
     expect(conductor.isRunning()).toBe(false);
 
@@ -112,6 +128,18 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     expect(conductor.isRunning()).toBe(true);
     conductor.setStoneCadence('off');
     expect(conductor.isRunning()).toBe(false);
+
+    // Engaging plinko 16th shaker starts transport
+    conductor.setPlinkoCadence('sixteenth_shaker');
+    expect(conductor.isRunning()).toBe(true);
+    conductor.setPlinkoCadence('off');
+    expect(conductor.isRunning()).toBe(false);
+
+    // Engaging plinko offbeat pings starts transport
+    conductor.setPlinkoCadence('offbeat_pings');
+    expect(conductor.isRunning()).toBe(true);
+    conductor.setPlinkoCadence('off');
+    expect(conductor.isRunning()).toBe(false);
   });
 
   it('room lifecycle: suspends audio scheduling on room departure and resumes on return', () => {
@@ -119,6 +147,7 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     conductor.setRoomActive(true);
     conductor.setPressCadence('four_on_the_floor');
     conductor.setStoneCadence('pentatonic_arp');
+    conductor.setPlinkoCadence('sixteenth_shaker');
     expect(conductor.isRunning()).toBe(true);
 
     // Player walks through door to The Study
@@ -127,6 +156,7 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     // Cadence configurations persist while room is inactive
     expect(conductor.getPressCadence()).toBe('four_on_the_floor');
     expect(conductor.getStoneCadence()).toBe('pentatonic_arp');
+    expect(conductor.getPlinkoCadence()).toBe('sixteenth_shaker');
 
     // Player returns to The Royal Mint
     conductor.handleRoomChange('coins');
@@ -144,22 +174,27 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     expect(conductor.getBeatPhase(beatDurationMs)).toBeCloseTo(0, 4);
   });
 
-  it('decoupled visual updates advance triggers and pentatonic note indices', () => {
+  it('decoupled visual updates advance triggers, note indices, and plinko steps', () => {
     const conductor = MintConductor.getInstance();
     conductor.setRoomActive(true);
     conductor.setPressCadence('four_on_the_floor');
     conductor.setStoneCadence('pentatonic_arp');
+    conductor.setPlinkoCadence('sixteenth_shaker');
 
     expect(conductor.getLastPressVisualTrigger()).toBe(0);
     expect(conductor.getLastStoneVisualTrigger()).toBe(0);
+    expect(conductor.getLastPlinkoVisualTrigger()).toBe(0);
     expect(conductor.getVisualNoteIndex()).toBe(0);
+    expect(conductor.getVisualPlinkoStep()).toBe(0);
 
     // Advance frame
     conductor.update(0.016);
 
     expect(conductor.getLastPressVisualTrigger()).toBeGreaterThan(0);
     expect(conductor.getLastStoneVisualTrigger()).toBeGreaterThan(0);
+    expect(conductor.getLastPlinkoVisualTrigger()).toBeGreaterThan(0);
     expect(conductor.getVisualNoteIndex()).toBe(1); // Stepped from 0 to 1
+    expect(conductor.getVisualPlinkoStep()).toBe(1); // Stepped from 0 to 1
   });
 
   it('preserves live manual [F] interactions while conductor loops are active', () => {
@@ -167,8 +202,10 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     conductor.setRoomActive(true);
     conductor.setPressCadence('four_on_the_floor');
     conductor.setStoneCadence('pentatonic_arp');
+    conductor.setPlinkoCadence('sixteenth_shaker');
 
     resetRingingStoneState('mint_ringing_stone');
+    resetGaltonChuteState('plinko_drop');
 
     // Live strike on stone while automated arpeggio is active
     const struck = executeRingingStoneStrike({ stationId: 'mint_ringing_stone' }, 5000);
@@ -178,6 +215,11 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     // Live crank on press while automated kick is active
     executeMintCrankPress(6000);
     expect(getLastCrankTriggerTime()).toBe(6000);
+
+    // Live quick-drop on gilded chute while automated shaker is active
+    const dropped = executeGaltonQuickDrop({ stationId: 'plinko_drop' }, 7000);
+    expect(dropped).toBe(true);
+    expect(getLastGaltonDropTime('plinko_drop')).toBe(7000);
   });
 
   it('schedules Web Audio events with sample-accurate lookahead and gates mint bus', () => {
@@ -188,22 +230,25 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     conductor.setRoomActive(true);
     conductor.setPressCadence('four_on_the_floor');
     conductor.setStoneCadence('quarter_chime');
+    conductor.setPlinkoCadence('sixteenth_shaker');
 
     expect(conductor.isRunning()).toBe(true);
     expect(setMintBusActiveSpy).toHaveBeenCalledWith(true);
 
-    // Turning off both stops transport while keeping bus active for manual player interactions
+    // Turning off all stops transport while keeping bus active for manual player interactions
     conductor.setPressCadence('off');
     conductor.setStoneCadence('off');
+    conductor.setPlinkoCadence('off');
     expect(conductor.isRunning()).toBe(false);
 
     // Leaving the room silences the mint bus
     conductor.setRoomActive(false);
     expect(setMintBusActiveSpy).toHaveBeenCalledWith(false);
 
-    // Both methods are registered on the audio instance
+    // All scheduled methods are registered on the audio instance
     expect(typeof audio.playScheduledPressKick).toBe('function');
     expect(typeof audio.playRingingStoneChime).toBe('function');
+    expect(typeof audio.playScheduledPlinkoHit).toBe('function');
   });
 
   it('silences mint bus immediately when transitioning away from coins room', () => {

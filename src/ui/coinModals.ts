@@ -241,10 +241,11 @@ export function openCoinPressModal() {
 export function openPlinkoModal() {
   const engine = CoinPhysicsEngine.getInstance();
   const audio = HearthAudio.getInstance();
+  const conductor = MintConductor.getInstance();
   let isPlinkoRunning = true;
   const { body } = createModalContainer(
     '🎰 The Gilded Chute',
-    'Galton Pegboard & Sovereign Multiplier Drop',
+    'Galton Pegboard & Continuous Hopper Groove',
     () => {
       isPlinkoRunning = false;
     }
@@ -254,9 +255,33 @@ export function openPlinkoModal() {
   const canvasHeight = 240;
 
   body.innerHTML = `
-    <div style="font-size: 0.84rem; color: #cbd5e1; margin-bottom: 12px; line-height: 1.4;">
-      Insert a coin into the gilded glass chute. As it deflects through the staggered brass pins, 
-      binomial probability determines its destination. Landing in high-value slots triggers celebratory payouts!
+    <div style="font-size: 0.84rem; color: #cbd5e1; margin-bottom: 10px; line-height: 1.4;">
+      Insert sovereigns into the gilded glass chute. As they deflect through staggered brass pins,
+      binomial probability governs their path. Synchronize the continuous hopper escapement to lay down a driving 16th-note shaker groove.
+    </div>
+
+    <!-- Kinetic DAW Hopper Cadence Controller -->
+    <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid #451a03; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; color: #f59e0b; text-transform: uppercase;">
+          ⚙️ Kinetic DAW • Continuous Hopper Feed
+        </span>
+        <span id="plinko-cadence-badge" style="font-family: monospace; font-size: 0.66rem; font-weight: bold; padding: 2px 8px; border-radius: 4px; border: 1px solid #44403c; background: #292524; color: #a8a29e;">
+          HOPPER: DISENGAGED (MANUAL ONLY)
+        </span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+        <button id="btn-plinko-cadence-off" style="padding: 6px 8px; border-radius: 5px; font-size: 0.72rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease; text-align: center;">
+          ⏹ Disengaged<br/><span style="font-size: 0.65rem; opacity: 0.8; font-weight: normal;">Manual Only</span>
+        </button>
+        <button id="btn-plinko-cadence-shaker" style="padding: 6px 8px; border-radius: 5px; font-size: 0.72rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease; text-align: center;">
+          ✨ 16th Shaker<br/><span style="font-size: 0.65rem; opacity: 0.8; font-weight: normal;">Hi-Hat Cascade</span>
+        </button>
+        <button id="btn-plinko-cadence-offbeat" style="padding: 6px 8px; border-radius: 5px; font-size: 0.72rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease; text-align: center;">
+          🎲 Offbeat Pings<br/><span style="font-size: 0.65rem; opacity: 0.8; font-weight: normal;">Syncopated Ticks</span>
+        </button>
+      </div>
     </div>
 
     <div style="display: flex; justify-content: center; margin-bottom: 12px;">
@@ -272,6 +297,79 @@ export function openPlinkoModal() {
       </button>
     </div>
   `;
+
+  // Cadence buttons and badge wiring
+  const plinkoBadgeEl = body.querySelector('#plinko-cadence-badge') as HTMLElement;
+  const btnPlinkoOff = body.querySelector('#btn-plinko-cadence-off') as HTMLButtonElement;
+  const btnPlinkoShaker = body.querySelector('#btn-plinko-cadence-shaker') as HTMLButtonElement;
+  const btnPlinkoOffbeat = body.querySelector('#btn-plinko-cadence-offbeat') as HTMLButtonElement;
+
+  const cadenceButtons: Record<string, HTMLButtonElement | null> = {
+    off: btnPlinkoOff,
+    sixteenth_shaker: btnPlinkoShaker,
+    offbeat_pings: btnPlinkoOffbeat,
+  };
+
+  function updatePlinkoCadenceUI() {
+    const cadence = conductor.getPlinkoCadence();
+    const badgeConfigs: Record<string, { text: string; bg: string; color: string; border: string }> = {
+      off: { text: 'HOPPER: DISENGAGED (MANUAL ONLY)', bg: '#292524', color: '#a8a29e', border: '#44403c' },
+      sixteenth_shaker: { text: 'HOPPER: 105 BPM 16TH SHAKER (HI-HAT)', bg: 'rgba(217, 119, 6, 0.4)', color: '#fef08a', border: '#d97706' },
+      offbeat_pings: { text: 'HOPPER: 105 BPM OFFBEAT BINOMIAL PINGS', bg: 'rgba(16, 185, 129, 0.35)', color: '#6ee7b7', border: '#10b981' },
+    };
+
+    const cfg = badgeConfigs[cadence] || badgeConfigs.off;
+    if (plinkoBadgeEl) {
+      plinkoBadgeEl.innerText = cfg.text;
+      plinkoBadgeEl.style.background = cfg.bg;
+      plinkoBadgeEl.style.color = cfg.color;
+      plinkoBadgeEl.style.border = `1px solid ${cfg.border}`;
+    }
+
+    Object.entries(cadenceButtons).forEach(([key, btn]) => {
+      if (!btn) return;
+      if (key === cadence) {
+        if (key === 'off') {
+          btn.style.background = '#44403c';
+          btn.style.border = '1.5px solid #a8a29e';
+          btn.style.color = '#f8fafc';
+          btn.style.boxShadow = 'none';
+        } else if (key === 'sixteenth_shaker') {
+          btn.style.background = 'linear-gradient(180deg, #b45309 0%, #78350f 100%)';
+          btn.style.border = '1.5px solid #f59e0b';
+          btn.style.color = '#ffffff';
+          btn.style.boxShadow = '0 0 10px rgba(245, 158, 11, 0.35)';
+        } else {
+          btn.style.background = 'linear-gradient(180deg, #059669 0%, #065f46 100%)';
+          btn.style.border = '1.5px solid #34d399';
+          btn.style.color = '#ffffff';
+          btn.style.boxShadow = '0 0 10px rgba(52, 211, 153, 0.35)';
+        }
+      } else {
+        btn.style.background = 'rgba(0, 0, 0, 0.3)';
+        btn.style.border = '1px solid #44403c';
+        btn.style.color = '#94a3b8';
+        btn.style.boxShadow = 'none';
+      }
+    });
+  }
+
+  updatePlinkoCadenceUI();
+
+  btnPlinkoOff?.addEventListener('click', () => {
+    conductor.setPlinkoCadence('off');
+    updatePlinkoCadenceUI();
+  });
+
+  btnPlinkoShaker?.addEventListener('click', () => {
+    conductor.setPlinkoCadence('sixteenth_shaker');
+    updatePlinkoCadenceUI();
+  });
+
+  btnPlinkoOffbeat?.addEventListener('click', () => {
+    conductor.setPlinkoCadence('offbeat_pings');
+    updatePlinkoCadenceUI();
+  });
 
   const canvas = body.querySelector('#plinkoCanvas') as HTMLCanvasElement;
   if (!canvas) return;
@@ -313,13 +411,35 @@ export function openPlinkoModal() {
     vy: number;
     radius: number;
     active: boolean;
+    isAutomated?: boolean;
   }
 
   const balls: Ball[] = [];
+  let lastAutoDropTime = 0;
 
   function drawPlinko() {
     if (!ctx) return;
     ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+    const now = Date.now();
+
+    // Spawn rhythmic visualization balls if automated cadence is active
+    const cadence = conductor.getPlinkoCadence();
+    if (cadence !== 'off') {
+      const intervalMs = cadence === 'sixteenth_shaker' ? (60000 / 105 / 2) : (60000 / 105);
+      if (now - lastAutoDropTime >= intervalMs && balls.length < 8) {
+        lastAutoDropTime = now;
+        balls.push({
+          x: canvasWidth / 2 + (Math.random() - 0.5) * 16,
+          y: 6,
+          vx: (Math.random() - 0.5) * 1.2,
+          vy: 1.1,
+          radius: 4.2,
+          active: true,
+          isAutomated: true,
+        });
+      }
+    }
 
     // 1. Draw Multiplier Buckets
     bins.forEach((b) => {
@@ -372,7 +492,10 @@ export function openPlinkoModal() {
         const dy = b.y - p.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < b.radius + 3.0) {
-          audio.playPlinkoPegHit();
+          // Only manual drops sound the individual peg hit here to prevent doubling automated lookahead audio
+          if (!b.isAutomated) {
+            audio.playPlinkoPegHit();
+          }
           // Bounce off peg
           const nx = dx / (dist || 1);
           const ny = dy / (dist || 1);
@@ -398,12 +521,14 @@ export function openPlinkoModal() {
         b.active = false;
         // Check which bin it landed in
         const landedBin = bins.find((bin) => b.x >= bin.x && b.x <= bin.x + bin.w) || bins[1];
-        // Celebrate! Spawn physical coins onto the real room floor!
-        engine.spawnBurst(CANVAS_WIDTH / 2, 240, landedBin.mult * 2);
+        // Celebrate for manual drops! Spawn physical coins onto the real room floor!
+        if (!b.isAutomated) {
+          engine.spawnBurst(CANVAS_WIDTH / 2, 240, landedBin.mult * 2);
+        }
       }
 
       // Draw shiny gold ball
-      ctx.fillStyle = '#eab308';
+      ctx.fillStyle = b.isAutomated ? '#fde047' : '#eab308';
       ctx.beginPath();
       ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
       ctx.fill();
@@ -427,6 +552,7 @@ export function openPlinkoModal() {
       vy: 1.2,
       radius: 5.5,
       active: true,
+      isAutomated: false,
     });
   });
 }
@@ -526,7 +652,7 @@ export function openRingingStoneModal() {
 
   const { body } = createModalContainer(
     '🔔 The Assayer\'s Ringing Stone',
-    'Acoustic Resonance Anvil & Counterfeit Diagnostic Bench',
+    'Horological Acoustic Anvil — Carillon Escapement Calibrated to the Master Clock',
     () => {
       if (animFrameId !== null) {
         cancelAnimationFrame(animFrameId);

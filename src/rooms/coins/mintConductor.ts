@@ -19,6 +19,7 @@ export type StoneCadence =
   | 'offbeat'
   | 'root_drone'
   | 'pentatonic_arp';
+export type PlinkoCadence = 'off' | 'sixteenth_shaker' | 'offbeat_pings';
 
 export class MintConductor {
   private static instance: MintConductor | null = null;
@@ -38,12 +39,15 @@ export class MintConductor {
   // Station automation cadences (persisted across room departures)
   private pressCadence: PressCadence = 'off';
   private stoneCadence: StoneCadence = 'off';
+  private plinkoCadence: PlinkoCadence = 'off';
 
   // In-world visual trigger timestamps (queried by station canvas renderers)
   private lastPressVisualTrigger = 0;
   private lastStoneVisualTrigger = 0;
+  private lastPlinkoVisualTrigger = 0;
   private currentArpNoteIndex = 0;
   private visualNoteIndex = 0;
+  private visualPlinkoStep = 0;
 
   private constructor() {
     const audio = HearthAudio.getInstance();
@@ -94,6 +98,15 @@ export class MintConductor {
     this.checkAutoTransport();
   }
 
+  public getPlinkoCadence(): PlinkoCadence {
+    return this.plinkoCadence;
+  }
+
+  public setPlinkoCadence(cadence: PlinkoCadence): void {
+    this.plinkoCadence = cadence;
+    this.checkAutoTransport();
+  }
+
   public isStationLooping(stationId: string): boolean {
     if (stationId === 'mint_coin_press' || stationId === 'vault_coin_press') {
       return this.pressCadence !== 'off';
@@ -101,11 +114,17 @@ export class MintConductor {
     if (stationId === 'mint_ringing_stone') {
       return this.stoneCadence !== 'off';
     }
+    if (stationId === 'plinko_drop' || stationId === 'mint_plinko' || stationId === 'gilded_chute') {
+      return this.plinkoCadence !== 'off';
+    }
     return false;
   }
 
   private checkAutoTransport(): void {
-    const hasActiveLoops = this.pressCadence !== 'off' || this.stoneCadence !== 'off';
+    const hasActiveLoops =
+      this.pressCadence !== 'off' ||
+      this.stoneCadence !== 'off' ||
+      this.plinkoCadence !== 'off';
     if (hasActiveLoops && !this.running && this.inActiveRoom) {
       this.start();
     } else if (!hasActiveLoops && this.running) {
@@ -218,6 +237,20 @@ export class MintConductor {
       audio.playRingingStoneChime(noteIdx, scheduledTime, 'arp');
       this.currentArpNoteIndex = (this.currentArpNoteIndex + 1) % 7;
     }
+
+    // 3. The Gilded Chute (Galton Pegboard - 16th-Note Shaker & Hi-Hat Groove)
+    if (this.plinkoCadence === 'sixteenth_shaker') {
+      // 16th-note continuous shaker stream:
+      // Steps 2, 6, 10, 14: crisp offbeat accents (locks with kick & stone)
+      // Other steps: subtle metallic ghost taps
+      const isAccent = step % 4 === 2;
+      audio.playScheduledPlinkoHit(scheduledTime, isAccent ? 'accent' : 'shaker');
+    } else if (this.plinkoCadence === 'offbeat_pings') {
+      // Syncopated binomial pings on offbeats (steps 2, 6, 10, 14)
+      if (step % 4 === 2) {
+        audio.playScheduledPlinkoHit(scheduledTime, 'accent');
+      }
+    }
   }
 
   // ==================== VISUAL / GAME LOOP TIMING ====================
@@ -263,6 +296,20 @@ export class MintConductor {
         this.visualNoteIndex = (this.visualNoteIndex + 1) % 7;
       }
     }
+
+    // Trigger visual plinko steps
+    const sixteenthSeconds = quarterSeconds / 4.0;
+    if (this.plinkoCadence === 'sixteenth_shaker') {
+      if (now - this.lastPlinkoVisualTrigger >= sixteenthSeconds * 1000 * 0.95) {
+        this.lastPlinkoVisualTrigger = now;
+        this.visualPlinkoStep = (this.visualPlinkoStep + 1) % 16;
+      }
+    } else if (this.plinkoCadence === 'offbeat_pings') {
+      if (now - this.lastPlinkoVisualTrigger >= quarterSeconds * 1000 * 0.95) {
+        this.lastPlinkoVisualTrigger = now;
+        this.visualPlinkoStep = (this.visualPlinkoStep + 1) % 4;
+      }
+    }
   }
 
   public getLastPressVisualTrigger(): number {
@@ -273,8 +320,16 @@ export class MintConductor {
     return this.lastStoneVisualTrigger;
   }
 
+  public getLastPlinkoVisualTrigger(): number {
+    return this.lastPlinkoVisualTrigger;
+  }
+
   public getVisualNoteIndex(): number {
     return this.visualNoteIndex;
+  }
+
+  public getVisualPlinkoStep(): number {
+    return this.visualPlinkoStep;
   }
 
   /**
@@ -303,7 +358,10 @@ export class MintConductor {
       }
     } else {
       HearthAudio.getInstance().setMintBusActive(true);
-      const hasActiveLoops = this.pressCadence !== 'off' || this.stoneCadence !== 'off';
+      const hasActiveLoops =
+        this.pressCadence !== 'off' ||
+        this.stoneCadence !== 'off' ||
+        this.plinkoCadence !== 'off';
       if (hasActiveLoops && !this.running) {
         this.start();
       }
