@@ -22,6 +22,7 @@ import {
   openWishingWellModal,
   openVaultScaleModal,
   openRingingStoneModal,
+  openTallyBoardModal,
 } from './coinModals';
 import { duckephantEntity } from '../rooms/study/stations/duckephant';
 
@@ -210,6 +211,13 @@ export class InteractionDispatcher {
       (intent) => {
         InteractionDispatcher.validateNoParams('ringing_stone', intent.params);
         openRingingStoneModal();
+      },
+    ],
+    [
+      'tally_board',
+      (intent) => {
+        InteractionDispatcher.validateNoParams('tally_board', intent.params);
+        openTallyBoardModal();
       },
     ],
   ]);

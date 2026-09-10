@@ -2,6 +2,7 @@ import { InteractionDispatcher } from './interactionDispatcher';
 import { executeMintCrankPress, MintCrankParams } from '../rooms/coins/coinMachineActions';
 import { executeRingingStoneStrike, RingingStoneParams } from '../rooms/coins/ringingStoneActions';
 import { executeGaltonQuickDrop, GaltonQuickDropParams } from '../rooms/coins/galtonChuteActions';
+import { executeTallyBoardPour, TallyBoardParams } from '../rooms/coins/tallyBoardActions';
 
 /**
  * Validates and normalizes parameters for the "mint_crank_press" custom action.
@@ -144,6 +145,55 @@ export function parsePlinkoQuickDropParams(
 }
 
 /**
+ * Validates and normalizes parameters for the "pour_tally_board" custom action.
+ */
+export function parseTallyBoardParams(
+  raw?: Record<string, string | number | boolean>
+): TallyBoardParams | undefined {
+  if (!raw) return undefined;
+
+  const allowedKeys = ['stationId', 'chestX', 'chestY'];
+  for (const key of Object.keys(raw)) {
+    if (!allowedKeys.includes(key)) {
+      throw new Error(
+        `[appActions] Unknown parameter "${key}" for action "pour_tally_board"`
+      );
+    }
+  }
+
+  const params: TallyBoardParams = {};
+
+  if (raw.stationId !== undefined) {
+    if (typeof raw.stationId !== 'string' || raw.stationId.trim().length === 0) {
+      throw new Error(
+        `[appActions] Invalid stationId parameter for "pour_tally_board": expected non-empty string`
+      );
+    }
+    params.stationId = raw.stationId;
+  }
+
+  if (raw.chestX !== undefined) {
+    if (typeof raw.chestX !== 'number' || !Number.isFinite(raw.chestX)) {
+      throw new Error(
+        `[appActions] Invalid chestX parameter for "pour_tally_board": expected finite number, got ${typeof raw.chestX}`
+      );
+    }
+    params.chestX = raw.chestX;
+  }
+
+  if (raw.chestY !== undefined) {
+    if (typeof raw.chestY !== 'number' || !Number.isFinite(raw.chestY)) {
+      throw new Error(
+        `[appActions] Invalid chestY parameter for "pour_tally_board": expected finite number, got ${typeof raw.chestY}`
+      );
+    }
+    params.chestY = raw.chestY;
+  }
+
+  return params;
+}
+
+/**
  * Registers application gameplay action handlers with the generic InteractionDispatcher.
  * Maintained in the application/composition layer so that room modules remain purely
  * declarative and free of UI imports.
@@ -163,6 +213,12 @@ export function registerApplicationActions(): void {
     const params = parsePlinkoQuickDropParams(intent.params);
     executeGaltonQuickDrop(params);
   });
+
+  InteractionDispatcher.registerAction('pour_tally_board', (intent) => {
+    const params = parseTallyBoardParams(intent.params);
+    executeTallyBoardPour(params);
+  });
 }
+
 
 

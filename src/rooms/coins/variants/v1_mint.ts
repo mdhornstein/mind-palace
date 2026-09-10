@@ -10,6 +10,7 @@ import { coinPressStation } from '../stations/coinPress';
 import { plinkoDropStation } from '../stations/plinkoDrop';
 import { mintScaleStation } from '../stations/vaultScale';
 import { ringingStoneStation } from '../stations/ringingStone';
+import { tallyBoardStation } from '../stations/tallyBoard';
 import { CoinPhysicsEngine } from '../coinPhysics';
 
 export const v1MintConfig: RoomConfig = {
@@ -17,7 +18,7 @@ export const v1MintConfig: RoomConfig = {
   name: 'The Royal Mint',
   widthTiles: ROOM_WIDTH_TILES,
   heightTiles: ROOM_HEIGHT_TILES,
-  stations: [coinPressStation, plinkoDropStation, mintScaleStation, ringingStoneStation],
+  stations: [coinPressStation, plinkoDropStation, mintScaleStation, ringingStoneStation, tallyBoardStation],
   doors: [
     // Return Doorway to The Study on the West Wall
     {

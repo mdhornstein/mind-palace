@@ -174,7 +174,8 @@ export type ModalId =
   | 'plinko_game'
   | 'vault_wishing_well'
   | 'vault_scale'
-  | 'ringing_stone';
+  | 'ringing_stone'
+  | 'tally_board';
 
 export type InteractionIntent =
   | {

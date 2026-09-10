@@ -922,8 +922,116 @@ describe('InteractionSystem', () => {
 
       expect(getLastGaltonDropTime('plinko_drop')).toBeGreaterThan(0);
     });
+
+    it("verifies The Moneyer's Tally Board station declaration and dual F/Space intent resolution", async () => {
+      const { v1MintConfig } = await import('../../src/rooms/coins/variants/v1_mint');
+      const tallyStation = v1MintConfig.stations.find((s) => s.id === 'mint_tally_board')!;
+      expect(tallyStation).toBeDefined();
+      expect(tallyStation.intent).toEqual({
+        type: 'modal',
+        modalId: 'tally_board',
+      });
+      expect(tallyStation.primaryAction).toBeDefined();
+      expect(tallyStation.primaryAction?.label).toBe('Pour & Sweep');
+      expect(tallyStation.primaryAction?.intent.type).toBe('custom');
+      if (tallyStation.primaryAction?.intent.type === 'custom') {
+        expect(tallyStation.primaryAction.intent.actionId).toBe('pour_tally_board');
+        expect(tallyStation.primaryAction.intent.params?.stationId).toBe('mint_tally_board');
+        expect(typeof tallyStation.primaryAction.intent.params?.chestX).toBe('number');
+        expect(typeof tallyStation.primaryAction.intent.params?.chestY).toBe('number');
+      }
+
+      // Dual intent grammar resolution
+      const target: InteractiveTarget = { kind: 'station', station: tallyStation };
+      const fIntent = resolveInteractionIntent(target, 'primary');
+      expect(fIntent).toEqual(tallyStation.primaryAction?.intent);
+
+      const spaceIntent = resolveInteractionIntent(target, 'inspect');
+      expect(spaceIntent).toEqual(tallyStation.intent);
+    });
+
+    it('validates and parses parameters for pour_tally_board safely', async () => {
+      const { parseTallyBoardParams } = await import('../../src/ui/appActions');
+
+      // Valid parameters
+      const valid = parseTallyBoardParams({
+        stationId: 'mint_tally_board',
+        chestX: 120,
+        chestY: 280,
+      });
+      expect(valid).toEqual({
+        stationId: 'mint_tally_board',
+        chestX: 120,
+        chestY: 280,
+      });
+
+      // Accepts undefined
+      expect(parseTallyBoardParams(undefined)).toBeUndefined();
+
+      // Rejects non-string stationId
+      expect(() => parseTallyBoardParams({ stationId: 123 as any })).toThrow();
+      expect(() => parseTallyBoardParams({ stationId: '' })).toThrow();
+
+      // Rejects non-numeric coordinates
+      expect(() => parseTallyBoardParams({ chestX: 'abc' as any })).toThrow();
+      expect(() => parseTallyBoardParams({ chestY: 'def' as any })).toThrow();
+
+      // Rejects unexpected keys
+      expect(() => parseTallyBoardParams({ unknownProp: 'xyz' } as any)).toThrow();
+    });
+
+    it('manages pour cooldown and state tracking in tallyBoardActions', async () => {
+      const {
+        executeTallyBoardPour,
+        getLastTallyPourTime,
+        resetTallyBoardState,
+      } = await import('../../src/rooms/coins/tallyBoardActions');
+
+      resetTallyBoardState('mint_tally_board');
+
+      // First pour at t=1000
+      const p1 = executeTallyBoardPour({ stationId: 'mint_tally_board' }, 1000);
+      expect(p1).toBe(true);
+      expect(getLastTallyPourTime('mint_tally_board')).toBe(1000);
+
+      // Throttled pour within 180ms (t=1100)
+      const p2 = executeTallyBoardPour({ stationId: 'mint_tally_board' }, 1100);
+      expect(p2).toBe(false);
+
+      // Subsequent pour after cooldown (t=1250)
+      const p3 = executeTallyBoardPour({ stationId: 'mint_tally_board' }, 1250);
+      expect(p3).toBe(true);
+      expect(getLastTallyPourTime('mint_tally_board')).toBe(1250);
+
+      resetTallyBoardState('mint_tally_board');
+    });
+
+    it('dispatches pour_tally_board via InteractionDispatcher', async () => {
+      const { InteractionDispatcher } = await import('../../src/ui/interactionDispatcher');
+      const { registerApplicationActions } = await import('../../src/ui/appActions');
+      const { resetTallyBoardState, getLastTallyPourTime } = await import(
+        '../../src/rooms/coins/tallyBoardActions'
+      );
+
+      registerApplicationActions();
+      resetTallyBoardState('mint_tally_board');
+
+      const dummyContext: any = { stateManager: {}, transitionToRoom: () => {} };
+
+      InteractionDispatcher.dispatch(
+        {
+          type: 'custom',
+          actionId: 'pour_tally_board',
+          params: { stationId: 'mint_tally_board', chestX: 120, chestY: 280 },
+        },
+        dummyContext
+      );
+
+      expect(getLastTallyPourTime('mint_tally_board')).toBeGreaterThan(0);
+    });
   });
 });
+
 
 
 

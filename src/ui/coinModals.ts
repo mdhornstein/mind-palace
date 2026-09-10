@@ -3,6 +3,7 @@ import { HearthAudio } from '../sound/audio';
 import { CANVAS_WIDTH } from '../core/constants';
 import { ModalOverlay } from './overlay';
 import { executeRingingStoneStrike, getStoneNoteIndex } from '../rooms/coins/ringingStoneActions';
+import { executeTallyBoardPour } from '../rooms/coins/tallyBoardActions';
 
 function closeActiveModal() {
   ModalOverlay.getInstance().close();
@@ -625,4 +626,143 @@ export function openRingingStoneModal() {
     }
   });
 }
+
+/**
+ * The Moneyer's Tally Board Modal
+ */
+export function openTallyBoardModal() {
+  const audio = HearthAudio.getInstance();
+  const engine = CoinPhysicsEngine.getInstance();
+
+  const { body } = createModalContainer(
+    "📋 The Moneyer's Tally Board",
+    'Mechanical Sovereign Telling Tray & Treasury Batch Counter'
+  );
+
+  let filledCoins = 50;
+
+  body.innerHTML = `
+    <div style="font-size: 0.86rem; line-height: 1.5; color: #cbd5e1; margin-bottom: 14px;">
+      In the Royal Mint, tellers and moneyers verified coin quantities with 100-groove brass tally trays.
+      A canvas bag was poured over the flutes, a mahogany strike-bar swept away excess,
+      and a mechanical lever dumped the verified £100 batch directly into the Treasury vault.
+    </div>
+
+    <!-- Telling Tray 10x10 Visualizer -->
+    <div style="background: #140d08; border: 1.5px solid #78350f; border-radius: 6px; padding: 12px; margin-bottom: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <span style="font-size: 0.76rem; font-family: monospace; color: #f59e0b; text-transform: uppercase;">
+          FLUTED BRASS TELLING TRAY (100 GROOVES)
+        </span>
+        <span id="tally-count-badge" style="font-size: 0.82rem; font-family: monospace; font-weight: bold; color: #facc15;">
+          ${filledCoins} / 100 Sovereigns (£${filledCoins})
+        </span>
+      </div>
+
+      <!-- 10x10 Grooves Grid -->
+      <div id="tally-grooves-grid" style="display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; padding: 6px; background: #080503; border-radius: 4px; border: 1px solid #451a03;">
+      </div>
+    </div>
+
+    <!-- Interactive Batch Controls -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px;">
+      <button id="btn-tally-pour" style="background: linear-gradient(180deg, #b45309 0%, #78350f 100%); border: 1px solid #f59e0b; color: #fef08a; padding: 9px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+        <span>🪙</span> Pour Canvas Bag (+25)
+      </button>
+      <button id="btn-tally-sweep" style="background: linear-gradient(180deg, #451a03 0%, #260f04 100%); border: 1px solid #92400e; color: #fed7aa; padding: 9px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+        <span>🪵</span> Sweep Strike-Bar
+      </button>
+      <button id="btn-tally-dump" style="background: linear-gradient(180deg, #15803d 0%, #14532d 100%); border: 1px solid #4ade80; color: #ffffff; padding: 9px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+        <span>📦</span> Dump to Vault Chest
+      </button>
+      <button id="btn-tally-strike" style="background: linear-gradient(180deg, #ca8a04 0%, #713f12 100%); border: 1px solid #facc15; color: #ffffff; padding: 9px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+        <span>🔨</span> Full Batch Cycle (In-Room)
+      </button>
+    </div>
+
+    <div style="font-size: 0.76rem; color: #94a3b8; line-height: 1.45; border-top: 1px solid #332014; padding-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+      <span>💡 Tip: Tap <b>F</b> near the counting table in-room for an instant pour, sweep, and chest dump!</span>
+      <span id="tally-status-label" style="font-family: monospace; color: #4ade80;">STATUS: READY</span>
+    </div>
+  `;
+
+  const gridEl = body.querySelector('#tally-grooves-grid') as HTMLElement;
+  const countBadge = body.querySelector('#tally-count-badge') as HTMLElement;
+  const statusLabel = body.querySelector('#tally-status-label') as HTMLElement;
+
+  function renderGrooves() {
+    if (!gridEl) return;
+    gridEl.innerHTML = '';
+    for (let i = 0; i < 100; i++) {
+      const slot = document.createElement('div');
+      slot.style.height = '14px';
+      slot.style.borderRadius = '3px';
+      slot.style.border = '1px solid #331e11';
+      slot.style.display = 'flex';
+      slot.style.alignItems = 'center';
+      slot.style.justifyContent = 'center';
+      slot.style.transition = 'all 0.15s ease';
+
+      if (i < filledCoins) {
+        slot.style.background = 'radial-gradient(circle at 35% 35%, #fef08a 0%, #eab308 60%, #ca8a04 100%)';
+        slot.style.borderColor = '#facc15';
+        slot.style.boxShadow = '0 0 3px rgba(250, 204, 21, 0.4)';
+      } else {
+        slot.style.background = '#1a100a';
+      }
+      gridEl.appendChild(slot);
+    }
+    if (countBadge) {
+      countBadge.innerText = `${filledCoins} / 100 Sovereigns (£${filledCoins})`;
+    }
+  }
+
+  renderGrooves();
+
+  body.querySelector('#btn-tally-pour')?.addEventListener('click', () => {
+    audio.playCoinCascade(25);
+    filledCoins = Math.min(100, filledCoins + 25);
+    renderGrooves();
+    if (statusLabel) {
+      statusLabel.innerText = 'STATUS: CASCADE POURED';
+      statusLabel.style.color = '#facc15';
+    }
+  });
+
+  body.querySelector('#btn-tally-sweep')?.addEventListener('click', () => {
+    audio.playWoodenStrikeSweep();
+    if (statusLabel) {
+      statusLabel.innerText = 'STATUS: GROOVES LEVELLED';
+      statusLabel.style.color = '#fed7aa';
+    }
+  });
+
+  body.querySelector('#btn-tally-dump')?.addEventListener('click', () => {
+    if (filledCoins === 0) return;
+    audio.playChestDump();
+    const payout = Math.max(2, Math.min(6, Math.ceil(filledCoins / 20)));
+    engine.spawnBurst(CANVAS_WIDTH / 2, 280, payout);
+    filledCoins = 0;
+    renderGrooves();
+    if (statusLabel) {
+      statusLabel.innerText = 'STATUS: BATCH DEPOSITED IN VAULT';
+      statusLabel.style.color = '#4ade80';
+    }
+  });
+
+  body.querySelector('#btn-tally-strike')?.addEventListener('click', () => {
+    executeTallyBoardPour({ stationId: 'mint_tally_board' });
+    filledCoins = 100;
+    renderGrooves();
+    setTimeout(() => {
+      filledCoins = 0;
+      renderGrooves();
+    }, 450);
+    if (statusLabel) {
+      statusLabel.innerText = 'STATUS: FULL AUDIT EXECUTED';
+      statusLabel.style.color = '#38bdf8';
+    }
+  });
+}
+
 

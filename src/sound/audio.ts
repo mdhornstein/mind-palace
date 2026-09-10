@@ -966,6 +966,154 @@ export class HearthAudio {
     osc.start(now);
     osc.stop(now + 0.1);
   }
+
+  /**
+   * Granular acoustic cascade of dozens of sovereigns tumbling down the fluted brass grooves.
+   * Produces a rich, spatial metallic clattering swarm.
+   */
+  public playCoinCascade(count = 25) {
+    this.initContext();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const safeCount = Math.max(10, Math.min(40, count));
+
+    for (let i = 0; i < safeCount; i++) {
+      // Staggered micro-impacts over 0.65 seconds
+      const offset = (i / safeCount) * 0.55 + Math.random() * 0.1;
+      const hitTime = now + offset;
+
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = Math.random() > 0.4 ? 'triangle' : 'sine';
+      // High metallic clink frequencies
+      const freq = 2600 + Math.random() * 1800;
+      osc.frequency.setValueAtTime(freq, hitTime);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.75, hitTime + 0.025);
+
+      const amp = 0.02 + Math.random() * 0.035;
+      gain.gain.setValueAtTime(amp, hitTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, hitTime + 0.03);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(hitTime);
+      osc.stop(hitTime + 0.035);
+    }
+  }
+
+  /**
+   * Sound of a mahogany strike-bar scraping across the grooved telling tray.
+   * Warm wooden friction sweep with subtle resonant clicks.
+   */
+  public playWoodenStrikeSweep() {
+    this.initContext();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    // 1. Friction sweep using filtered noise
+    const bufferSize = Math.floor(this.ctx.sampleRate * 0.2);
+    const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      output[i] = Math.random() * 2 - 1;
+    }
+
+    const whiteNoise = this.ctx.createBufferSource();
+    whiteNoise.buffer = noiseBuffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(480, now);
+    filter.frequency.linearRampToValueAtTime(620, now + 0.18);
+    filter.Q.setValueAtTime(3.2, now);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.09, now + 0.04);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+
+    whiteNoise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    whiteNoise.start(now);
+    whiteNoise.stop(now + 0.22);
+
+    // 2. Subtle wooden body click at the start of the sweep
+    const woodOsc = this.ctx.createOscillator();
+    const woodGain = this.ctx.createGain();
+    woodOsc.type = 'sine';
+    woodOsc.frequency.setValueAtTime(280, now);
+    woodOsc.frequency.exponentialRampToValueAtTime(90, now + 0.05);
+
+    woodGain.gain.setValueAtTime(0.12, now);
+    woodGain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+
+    woodOsc.connect(woodGain);
+    woodGain.connect(this.ctx.destination);
+    woodOsc.start(now);
+    woodOsc.stop(now + 0.07);
+  }
+
+  /**
+   * Sound of releasing the tally trapdoor and dumping batch coins into the iron-bound oak chest.
+   */
+  public playChestDump() {
+    this.initContext();
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    // 1. Mechanical trapdoor latch release click
+    const latchOsc = this.ctx.createOscillator();
+    const latchGain = this.ctx.createGain();
+    latchOsc.type = 'square';
+    latchOsc.frequency.setValueAtTime(320, now);
+    latchOsc.frequency.exponentialRampToValueAtTime(80, now + 0.03);
+
+    latchGain.gain.setValueAtTime(0.08, now);
+    latchGain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+
+    latchOsc.connect(latchGain);
+    latchGain.connect(this.ctx.destination);
+    latchOsc.start(now);
+    latchOsc.stop(now + 0.05);
+
+    // 2. Deep oak chest cavity thud
+    const chestOsc = this.ctx.createOscillator();
+    const chestGain = this.ctx.createGain();
+    chestOsc.type = 'sine';
+    chestOsc.frequency.setValueAtTime(110, now + 0.04);
+    chestOsc.frequency.exponentialRampToValueAtTime(42, now + 0.28);
+
+    chestGain.gain.setValueAtTime(0.28, now + 0.04);
+    chestGain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+
+    chestOsc.connect(chestGain);
+    chestGain.connect(this.ctx.destination);
+    chestOsc.start(now + 0.04);
+    chestOsc.stop(now + 0.35);
+
+    // 3. Compact burst of coins splashing onto the wooden chest bottom
+    for (let c = 0; c < 10; c++) {
+      const splashTime = now + 0.06 + Math.random() * 0.12;
+      const coinOsc = this.ctx.createOscillator();
+      const coinGain = this.ctx.createGain();
+
+      coinOsc.type = 'triangle';
+      coinOsc.frequency.setValueAtTime(1800 + Math.random() * 1200, splashTime);
+      coinGain.gain.setValueAtTime(0.035, splashTime);
+      coinGain.gain.exponentialRampToValueAtTime(0.0001, splashTime + 0.03);
+
+      coinOsc.connect(coinGain);
+      coinGain.connect(this.ctx.destination);
+
+      coinOsc.start(splashTime);
+      coinOsc.stop(splashTime + 0.035);
+    }
+  }
 }
+
 
 
