@@ -192,10 +192,13 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     expect(conductor.isRunning()).toBe(true);
     expect(setMintBusActiveSpy).toHaveBeenCalledWith(true);
 
-    // Turning off both stops transport and silences mint bus
+    // Turning off both stops transport while keeping bus active for manual player interactions
     conductor.setPressCadence('off');
     conductor.setStoneCadence('off');
     expect(conductor.isRunning()).toBe(false);
+
+    // Leaving the room silences the mint bus
+    conductor.setRoomActive(false);
     expect(setMintBusActiveSpy).toHaveBeenCalledWith(false);
 
     // Both methods are registered on the audio instance

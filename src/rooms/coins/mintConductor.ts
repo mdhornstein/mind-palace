@@ -153,8 +153,6 @@ export class MintConductor {
       clearInterval((globalThis as any).__MINT_CONDUCTOR_TIMER__);
       (globalThis as any).__MINT_CONDUCTOR_TIMER__ = null;
     }
-    // Mute bus when stopped so lookahead audio tail doesn't linger
-    HearthAudio.getInstance().setMintBusActive(false);
   }
 
   private scheduleLoop(): void {

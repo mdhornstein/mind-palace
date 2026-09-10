@@ -226,21 +226,30 @@ export class HearthAudio {
     if (!this.ctx) return null;
     if (!this.mintBusGain) {
       this.mintBusGain = this.ctx.createGain();
-      this.mintBusGain.gain.setValueAtTime(1.0, this.ctx.currentTime);
+      const initialVol = (this.currentRoom === 'coins') ? 1.0 : 0.0;
+      this.mintBusGain.gain.setValueAtTime(initialVol, this.ctx.currentTime);
       this.mintBusGain.connect(this.ctx.destination);
+    }
+    // Safety check: if currently inside coins room, ensure mint bus is active (1.0)
+    if (this.currentRoom === 'coins' && this.mintBusGain.gain.value < 0.5) {
+      const now = this.ctx.currentTime;
+      this.mintBusGain.gain.cancelScheduledValues(now);
+      this.mintBusGain.gain.setValueAtTime(1.0, now);
     }
     return this.mintBusGain;
   }
 
   public setMintBusActive(active: boolean) {
-    if (!this.ctx || !this.mintBusGain) return;
+    if (!this.ctx) return;
+    const bus = this.getMintBus();
+    if (!bus) return;
     const now = this.ctx.currentTime;
-    this.mintBusGain.gain.cancelScheduledValues(now);
-    this.mintBusGain.gain.setValueAtTime(this.mintBusGain.gain.value, now);
+    bus.gain.cancelScheduledValues(now);
+    bus.gain.setValueAtTime(bus.gain.value, now);
     if (active) {
-      this.mintBusGain.gain.linearRampToValueAtTime(1.0, now + 0.03);
+      bus.gain.linearRampToValueAtTime(1.0, now + 0.03);
     } else {
-      this.mintBusGain.gain.linearRampToValueAtTime(0.0, now + 0.015);
+      bus.gain.linearRampToValueAtTime(0.0, now + 0.015);
     }
   }
 
@@ -910,7 +919,7 @@ export class HearthAudio {
   public playRingingStoneChime(
     noteIndex: number = 0,
     atTime?: number,
-    durationType: 'quarter' | 'offbeat' | 'drone' | 'arp' = 'quarter'
+    durationType: 'resonant' | 'quarter' | 'offbeat' | 'drone' | 'arp' = 'resonant'
   ) {
     this.initContext();
     if (!this.ctx) return;
@@ -928,31 +937,47 @@ export class HearthAudio {
     const overtone1Freq = rootFreq * 2.76; // Circular plate modal resonance
     const overtone2Freq = rootFreq * 5.40; // High crystalline shimmer
 
-    // Envelope shaping per cadence style
-    let decay1 = 0.95;
-    let decay2 = 0.60;
-    let decay3 = 0.28;
-    let totalStop = 1.0;
-    let peakVol = 0.24;
+    // Full singing bell resonance (original authentic 1.6s sustain for manual strikes)
+    let decay1 = 1.6;
+    let decay2 = 0.95;
+    let decay3 = 0.35;
+    let totalStop = 1.65;
+    let peakVol = 0.26;
+    let overtone1Vol = 0.14;
+    let overtone2Vol = 0.05;
 
-    if (durationType === 'arp') {
-      decay1 = 0.28;
-      decay2 = 0.18;
-      decay3 = 0.10;
-      totalStop = 0.32;
-      peakVol = 0.18;
-    } else if (durationType === 'offbeat') {
-      decay1 = 0.20;
-      decay2 = 0.14;
-      decay3 = 0.08;
-      totalStop = 0.24;
+    if (durationType === 'quarter') {
+      decay1 = 1.1;
+      decay2 = 0.75;
+      decay3 = 0.30;
+      totalStop = 1.15;
+      peakVol = 0.25;
+      overtone1Vol = 0.12;
+      overtone2Vol = 0.04;
+    } else if (durationType === 'arp') {
+      decay1 = 0.40;
+      decay2 = 0.25;
+      decay3 = 0.12;
+      totalStop = 0.45;
       peakVol = 0.20;
+      overtone1Vol = 0.10;
+      overtone2Vol = 0.03;
+    } else if (durationType === 'offbeat') {
+      decay1 = 0.32;
+      decay2 = 0.20;
+      decay3 = 0.10;
+      totalStop = 0.35;
+      peakVol = 0.22;
+      overtone1Vol = 0.10;
+      overtone2Vol = 0.03;
     } else if (durationType === 'drone') {
-      decay1 = 2.2;
-      decay2 = 1.5;
+      decay1 = 2.4;
+      decay2 = 1.6;
       decay3 = 0.8;
-      totalStop = 2.3;
-      peakVol = 0.32;
+      totalStop = 2.5;
+      peakVol = 0.34;
+      overtone1Vol = 0.16;
+      overtone2Vol = 0.06;
     }
 
     // 1. Strike Mechanical Impulse (crisp initial hammer click)
@@ -990,7 +1015,7 @@ export class HearthAudio {
     osc2.frequency.setValueAtTime(overtone1Freq, now);
 
     gain2.gain.setValueAtTime(0.001, now);
-    gain2.gain.linearRampToValueAtTime(peakVol * 0.5, now + 0.003);
+    gain2.gain.linearRampToValueAtTime(overtone1Vol, now + 0.003);
     gain2.gain.exponentialRampToValueAtTime(0.0001, now + decay2);
 
     osc2.connect(gain2);
@@ -1005,7 +1030,7 @@ export class HearthAudio {
     osc3.frequency.setValueAtTime(overtone2Freq, now);
 
     gain3.gain.setValueAtTime(0.001, now);
-    gain3.gain.linearRampToValueAtTime(peakVol * 0.22, now + 0.002);
+    gain3.gain.linearRampToValueAtTime(overtone2Vol, now + 0.002);
     gain3.gain.exponentialRampToValueAtTime(0.0001, now + decay3);
 
     osc3.connect(gain3);
