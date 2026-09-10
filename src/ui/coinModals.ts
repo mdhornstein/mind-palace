@@ -1375,7 +1375,7 @@ export function openConductorVitrineModal(): void {
             <div style="display: flex; flex-direction: column; gap: 4px;">
               <select id="sel-ch-press" style="background: #27120a; color: #fefce8; border: 1px solid #78350f; border-radius: 4px; padding: 4px; font-size: 0.75rem; cursor: pointer;">
                 <option value="off">Off (Manual)</option>
-                <option value="four_on_the_floor">4-on-the-Floor</option>
+                <option value="four_on_the_floor">Four-on-the-Floor</option>
               </select>
               <button id="mute-ch-press" style="background: #1c1917; color: #94a3b8; border: 1px solid #44403c; border-radius: 4px; padding: 3px; font-size: 0.7rem; cursor: pointer; font-weight: 700;">MUTE</button>
             </div>
@@ -1432,10 +1432,10 @@ export function openConductorVitrineModal(): void {
             <div style="display: flex; flex-direction: column; gap: 4px;">
               <select id="sel-ch-stone" style="background: #27120a; color: #fefce8; border: 1px solid #78350f; border-radius: 4px; padding: 4px; font-size: 0.75rem; cursor: pointer;">
                 <option value="off">Off (Manual)</option>
-                <option value="quarter_chime">Quarter Chime</option>
-                <option value="offbeat">Offbeats</option>
-                <option value="root_drone">Root Drone</option>
-                <option value="pentatonic_arp">Pentatonic Arp</option>
+                <option value="quarter_chime">Quarter Bell</option>
+                <option value="offbeat">Syncopated Ping</option>
+                <option value="root_drone">Sovereign Drone</option>
+                <option value="pentatonic_arp">Music Box Arp</option>
               </select>
               <button id="mute-ch-stone" style="background: #1c1917; color: #94a3b8; border: 1px solid #44403c; border-radius: 4px; padding: 3px; font-size: 0.7rem; cursor: pointer; font-weight: 700;">MUTE</button>
             </div>

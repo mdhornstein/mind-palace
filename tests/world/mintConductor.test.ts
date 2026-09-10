@@ -581,4 +581,21 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     expect(leverSpy).toHaveBeenCalledWith(false);
     expect(getLastMasterClutchTime()).toBe(1300);
   });
+
+  it('engaging syncopated ping cadence starts vitrine and preserves stone cadence', () => {
+    const conductor = MintConductor.getInstance();
+    conductor.setRoomActive(true);
+
+    expect(conductor.isRunning()).toBe(false);
+    expect(conductor.getStoneCadence()).toBe('off');
+
+    // User engages Syncopated Ping (offbeat) on Ringing Stone
+    conductor.setStoneCadence('offbeat');
+
+    // Auto-transport engages master transport for the in-world vitrine
+    expect(conductor.isRunning()).toBe(true);
+    expect(conductor.getStoneCadence()).toBe('offbeat');
+    expect(conductor.isStationLooping('mint_ringing_stone')).toBe(true);
+    expect(conductor.isStationLooping('conductor_vitrine')).toBe(true);
+  });
 });
