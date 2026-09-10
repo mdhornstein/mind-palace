@@ -21,6 +21,7 @@ import {
   openPlinkoModal,
   openWishingWellModal,
   openVaultScaleModal,
+  openRingingStoneModal,
 } from './coinModals';
 import { duckephantEntity } from '../rooms/study/stations/duckephant';
 
@@ -202,6 +203,13 @@ export class InteractionDispatcher {
       (intent) => {
         InteractionDispatcher.validateNoParams('vault_scale', intent.params);
         openVaultScaleModal();
+      },
+    ],
+    [
+      'ringing_stone',
+      (intent) => {
+        InteractionDispatcher.validateNoParams('ringing_stone', intent.params);
+        openRingingStoneModal();
       },
     ],
   ]);

@@ -173,7 +173,8 @@ export type ModalId =
   | 'coin_press'
   | 'plinko_game'
   | 'vault_wishing_well'
-  | 'vault_scale';
+  | 'vault_scale'
+  | 'ringing_stone';
 
 export type InteractionIntent =
   | {

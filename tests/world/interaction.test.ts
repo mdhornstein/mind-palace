@@ -706,6 +706,114 @@ describe('InteractionSystem', () => {
         expect(coin.y).toBeLessThanOrEqual(COIN_PRESS_CHUTE_Y + 4);
       }
     });
+
+    it('verifies The Ringing Stone station declaration, dual F/Space intent resolution, and action wiring', async () => {
+      const { v1MintConfig } = await import('../../src/rooms/coins/variants/v1_mint');
+      const stoneStation = v1MintConfig.stations.find((s) => s.id === 'mint_ringing_stone')!;
+      expect(stoneStation).toBeDefined();
+      expect(stoneStation.intent).toEqual({
+        type: 'modal',
+        modalId: 'ringing_stone',
+      });
+      expect(stoneStation.primaryAction).toBeDefined();
+      expect(stoneStation.primaryAction?.label).toBe('Sound the Stone');
+      expect(stoneStation.primaryAction?.intent).toEqual({
+        type: 'custom',
+        actionId: 'strike_ringing_stone',
+        params: {
+          stationId: 'mint_ringing_stone',
+        },
+      });
+
+      // Dual intent grammar resolution
+      const target: InteractiveTarget = { kind: 'station', station: stoneStation };
+      const fIntent = resolveInteractionIntent(target, 'primary');
+      expect(fIntent).toEqual(stoneStation.primaryAction?.intent);
+
+      const spaceIntent = resolveInteractionIntent(target, 'inspect');
+      expect(spaceIntent).toEqual(stoneStation.intent);
+    });
+
+    it('validates and parses parameters for strike_ringing_stone safely', async () => {
+      const { parseRingingStoneParams } = await import('../../src/ui/appActions');
+
+      // Valid parameters
+      const valid = parseRingingStoneParams({
+        stationId: 'mint_ringing_stone',
+      });
+      expect(valid).toEqual({
+        stationId: 'mint_ringing_stone',
+      });
+
+      // Accepts undefined
+      expect(parseRingingStoneParams(undefined)).toBeUndefined();
+
+      // Rejects non-string stationId
+      expect(() => parseRingingStoneParams({ stationId: 123 as any })).toThrow();
+      expect(() => parseRingingStoneParams({ stationId: '' })).toThrow();
+
+      // Rejects unexpected keys
+      expect(() => parseRingingStoneParams({ unknownProp: 'xyz' } as any)).toThrow();
+    });
+
+    it('manages strike cooldown, musical scale progression, and resets in ringingStoneActions', async () => {
+      const {
+        executeRingingStoneStrike,
+        getStoneNoteIndex,
+        getLastStoneStrikeTime,
+        resetRingingStoneState,
+      } = await import('../../src/rooms/coins/ringingStoneActions');
+
+      resetRingingStoneState('mint_ringing_stone');
+
+      // First strike at t=1000
+      const s1 = executeRingingStoneStrike({ stationId: 'mint_ringing_stone' }, 1000);
+      expect(s1).toBe(true);
+      expect(getStoneNoteIndex('mint_ringing_stone')).toBe(0);
+      expect(getLastStoneStrikeTime('mint_ringing_stone')).toBe(1000);
+
+      // Throttled strike within 90ms (t=1050)
+      const s2 = executeRingingStoneStrike({ stationId: 'mint_ringing_stone' }, 1050);
+      expect(s2).toBe(false);
+      expect(getStoneNoteIndex('mint_ringing_stone')).toBe(0);
+
+      // Consecutive strike at t=1150 (advances scale note)
+      const s3 = executeRingingStoneStrike({ stationId: 'mint_ringing_stone' }, 1150);
+      expect(s3).toBe(true);
+      expect(getStoneNoteIndex('mint_ringing_stone')).toBe(1);
+
+      // Strike after 2500ms reset interval (t=4000) resets scale back to root
+      const s4 = executeRingingStoneStrike({ stationId: 'mint_ringing_stone' }, 4000);
+      expect(s4).toBe(true);
+      expect(getStoneNoteIndex('mint_ringing_stone')).toBe(0);
+
+      resetRingingStoneState('mint_ringing_stone');
+    });
+
+    it('dispatches strike_ringing_stone via InteractionDispatcher', async () => {
+      const { InteractionDispatcher } = await import('../../src/ui/interactionDispatcher');
+      const { registerApplicationActions } = await import('../../src/ui/appActions');
+      const { resetRingingStoneState, getLastStoneStrikeTime } = await import(
+        '../../src/rooms/coins/ringingStoneActions'
+      );
+
+      registerApplicationActions();
+      resetRingingStoneState('mint_ringing_stone');
+
+      const dummyContext: any = { stateManager: {}, transitionToRoom: () => {} };
+
+      InteractionDispatcher.dispatch(
+        {
+          type: 'custom',
+          actionId: 'strike_ringing_stone',
+          params: { stationId: 'mint_ringing_stone' },
+        },
+        dummyContext
+      );
+
+      expect(getLastStoneStrikeTime('mint_ringing_stone')).toBeGreaterThan(0);
+    });
   });
 });
+
 

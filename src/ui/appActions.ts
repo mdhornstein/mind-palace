@@ -1,5 +1,6 @@
 import { InteractionDispatcher } from './interactionDispatcher';
 import { executeMintCrankPress, MintCrankParams } from '../rooms/coins/coinMachineActions';
+import { executeRingingStoneStrike, RingingStoneParams } from '../rooms/coins/ringingStoneActions';
 
 /**
  * Validates and normalizes parameters for the "mint_crank_press" custom action.
@@ -62,6 +63,37 @@ export function parseMintCrankParams(
 }
 
 /**
+ * Validates and normalizes parameters for the "strike_ringing_stone" custom action.
+ */
+export function parseRingingStoneParams(
+  raw?: Record<string, string | number | boolean>
+): RingingStoneParams | undefined {
+  if (!raw) return undefined;
+
+  const allowedKeys = ['stationId'];
+  for (const key of Object.keys(raw)) {
+    if (!allowedKeys.includes(key)) {
+      throw new Error(
+        `[appActions] Unknown parameter "${key}" for action "strike_ringing_stone"`
+      );
+    }
+  }
+
+  const params: RingingStoneParams = {};
+
+  if (raw.stationId !== undefined) {
+    if (typeof raw.stationId !== 'string' || raw.stationId.trim().length === 0) {
+      throw new Error(
+        `[appActions] Invalid stationId parameter for "strike_ringing_stone": expected non-empty string`
+      );
+    }
+    params.stationId = raw.stationId;
+  }
+
+  return params;
+}
+
+/**
  * Registers application gameplay action handlers with the generic InteractionDispatcher.
  * Maintained in the application/composition layer so that room modules remain purely
  * declarative and free of UI imports.
@@ -71,4 +103,10 @@ export function registerApplicationActions(): void {
     const params = parseMintCrankParams(intent.params);
     executeMintCrankPress(params);
   });
+
+  InteractionDispatcher.registerAction('strike_ringing_stone', (intent) => {
+    const params = parseRingingStoneParams(intent.params);
+    executeRingingStoneStrike(params);
+  });
 }
+

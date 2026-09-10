@@ -2,6 +2,7 @@ import { CoinPhysicsEngine } from '../rooms/coins/coinPhysics';
 import { HearthAudio } from '../sound/audio';
 import { CANVAS_WIDTH } from '../core/constants';
 import { ModalOverlay } from './overlay';
+import { executeRingingStoneStrike, getStoneNoteIndex } from '../rooms/coins/ringingStoneActions';
 
 function closeActiveModal() {
   ModalOverlay.getInstance().close();
@@ -431,3 +432,197 @@ export function openVaultScaleModal() {
     </div>
   `;
 }
+
+/**
+ * The Assayer's Ringing Stone Modal
+ */
+export function openRingingStoneModal() {
+  const audio = HearthAudio.getInstance();
+
+  let animFrameId: number | null = null;
+
+  const { body } = createModalContainer(
+    '🔔 The Assayer\'s Ringing Stone',
+    'Acoustic Resonance Anvil & Counterfeit Diagnostic Bench',
+    () => {
+      if (animFrameId !== null) {
+        cancelAnimationFrame(animFrameId);
+        animFrameId = null;
+      }
+    }
+  );
+
+  body.innerHTML = `
+    <div style="font-size: 0.86rem; line-height: 1.5; color: #cbd5e1; margin-bottom: 14px;">
+      In the Royal Mint, assayers tested struck coins by sounding them against a polished basalt anvil.
+      Genuine 22-karat crown gold and sterling silver ring with a sustained, piercing harmonic bell tone,
+      while debased pewter or lead counterfeits produce a dull, deadened thud.
+    </div>
+
+    <!-- Acoustic Waveform Visualizer -->
+    <div style="margin-bottom: 14px; position: relative;">
+      <canvas id="acoustic-oscilloscope" width="460" height="84" style="width: 100%; height: 84px; background: #080604; border: 1px solid #451a03; border-radius: 6px; display: block;"></canvas>
+      <div id="oscilloscope-label" style="position: absolute; top: 6px; right: 10px; font-size: 0.68rem; font-family: monospace; color: #94a3b8; letter-spacing: 0.05em;">RESONANCE: IDLE</div>
+    </div>
+
+    <!-- Sounding Buttons Grid -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px;">
+      <button id="btn-sound-gold" style="background: linear-gradient(180deg, #854d0e 0%, #451a03 100%); border: 1px solid #d97706; color: #fef08a; padding: 9px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+        <span>👑</span> Crown Sovereign (Gold)
+      </button>
+      <button id="btn-sound-silver" style="background: linear-gradient(180deg, #334155 0%, #1e293b 100%); border: 1px solid #94a3b8; color: #f1f5f9; padding: 9px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+        <span>🪙</span> Sterling Shilling (Silver)
+      </button>
+      <button id="btn-sound-counterfeit" style="background: linear-gradient(180deg, #292524 0%, #1c1917 100%); border: 1px solid #78716c; color: #a8a29e; padding: 9px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+        <span>☠️</span> Debased Pewter (Fake)
+      </button>
+      <button id="btn-sound-strike" style="background: linear-gradient(180deg, #ca8a04 0%, #713f12 100%); border: 1px solid #facc15; color: #ffffff; padding: 9px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+        <span>🔨</span> Sound Stone (Scale)
+      </button>
+    </div>
+
+    <div style="font-size: 0.76rem; color: #94a3b8; line-height: 1.45; border-top: 1px solid #332014; padding-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+      <span>💡 Tip: Tap <b>F</b> near the stone in-room to strike the ascending pentatonic scale!</span>
+      <span id="stone-note-indicator" style="font-family: monospace; color: #facc15; font-weight: bold;">Note: C6</span>
+    </div>
+  `;
+
+  const canvas = body.querySelector('#acoustic-oscilloscope') as HTMLCanvasElement;
+  const ctx = canvas?.getContext('2d');
+  const labelEl = body.querySelector('#oscilloscope-label') as HTMLElement;
+  const noteEl = body.querySelector('#stone-note-indicator') as HTMLElement;
+
+  let waveType: 'idle' | 'gold' | 'silver' | 'counterfeit' | 'strike' = 'idle';
+  let waveStartTime = 0;
+  let waveDuration = 1400;
+  let waveNoteIndex = 0;
+
+  function triggerWave(type: 'gold' | 'silver' | 'counterfeit' | 'strike', noteIdx = 0) {
+    waveType = type;
+    waveStartTime = performance.now();
+    waveNoteIndex = noteIdx;
+    waveDuration = type === 'counterfeit' ? 240 : 1500;
+
+    if (labelEl) {
+      if (type === 'counterfeit') {
+        labelEl.innerText = 'RESONANCE: DAMPED / COUNTERFEIT (110 Hz)';
+        labelEl.style.color = '#ef4444';
+      } else if (type === 'gold') {
+        labelEl.innerText = 'RESONANCE: PURE GOLD (1046 Hz C6)';
+        labelEl.style.color = '#facc15';
+      } else if (type === 'silver') {
+        labelEl.innerText = 'RESONANCE: STERLING SILVER (1318 Hz E6)';
+        labelEl.style.color = '#38bdf8';
+      } else {
+        const noteNames = ['C6', 'D6', 'E6', 'G6', 'A6', 'C7', 'D7'];
+        const name = noteNames[noteIdx % noteNames.length];
+        labelEl.innerText = `RESONANCE: CHIME HARMONIC (${name})`;
+        labelEl.style.color = '#4ade80';
+      }
+    }
+
+    if (noteEl) {
+      const noteNames = ['C6', 'D6', 'E6', 'G6', 'A6', 'C7', 'D7'];
+      noteEl.innerText = `Note: ${noteNames[noteIdx % noteNames.length]}`;
+    }
+  }
+
+  // Animation render loop
+  function renderOscilloscope(now: number) {
+    if (!canvas || !ctx) return;
+    const w = canvas.width;
+    const h = canvas.height;
+    const midY = h / 2;
+
+    ctx.fillStyle = '#080604';
+    ctx.fillRect(0, 0, w, h);
+
+    // Subtle grid lines
+    ctx.strokeStyle = 'rgba(120, 53, 15, 0.2)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, midY);
+    ctx.lineTo(w, midY);
+    for (let gx = 0; gx < w; gx += 46) {
+      ctx.moveTo(gx, 0);
+      ctx.lineTo(gx, h);
+    }
+    ctx.stroke();
+
+    const elapsed = now - waveStartTime;
+    const active = waveType !== 'idle' && elapsed < waveDuration;
+    const progress = active ? elapsed / waveDuration : 1;
+    const decay = active ? Math.exp(-progress * (waveType === 'counterfeit' ? 9 : 3.5)) : 0;
+
+    ctx.beginPath();
+    ctx.lineWidth = 2;
+
+    if (waveType === 'counterfeit') {
+      ctx.strokeStyle = `rgba(239, 68, 68, ${Math.max(0.2, decay)})`;
+      ctx.shadowColor = '#ef4444';
+      ctx.shadowBlur = 6;
+      for (let x = 0; x < w; x++) {
+        const t = (x / w) * 12 + elapsed * 0.02;
+        const noise = (Math.sin(t * 3.7) + Math.cos(t * 7.1)) * 0.5;
+        const y = midY + Math.sin(t * 1.5) * 18 * decay + noise * 8 * decay;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+    } else if (active) {
+      const color = waveType === 'silver' ? '#38bdf8' : waveType === 'gold' ? '#facc15' : '#4ade80';
+      ctx.strokeStyle = color;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 8;
+      const freq = 18 + waveNoteIndex * 4;
+      for (let x = 0; x < w; x++) {
+        const phase = (x / w) * freq + elapsed * 0.015;
+        // Fundamental + plate inharmonic 2.76x
+        const wave = Math.sin(phase) + 0.35 * Math.sin(phase * 2.76);
+        const y = midY + wave * 22 * decay;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+    } else {
+      // Idle resting line
+      ctx.strokeStyle = 'rgba(217, 119, 6, 0.35)';
+      ctx.shadowBlur = 0;
+      for (let x = 0; x < w; x++) {
+        const idleNoise = Math.sin((x / w) * 8 + now * 0.003) * 2;
+        const y = midY + idleNoise;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    animFrameId = requestAnimationFrame(renderOscilloscope);
+  }
+
+  animFrameId = requestAnimationFrame(renderOscilloscope);
+
+  // Hook up button events
+  body.querySelector('#btn-sound-gold')?.addEventListener('click', () => {
+    audio.playRingingStoneChime(0);
+    triggerWave('gold', 0);
+  });
+
+  body.querySelector('#btn-sound-silver')?.addEventListener('click', () => {
+    audio.playRingingStoneChime(2);
+    triggerWave('silver', 2);
+  });
+
+  body.querySelector('#btn-sound-counterfeit')?.addEventListener('click', () => {
+    audio.playCounterfeitThud();
+    triggerWave('counterfeit', 0);
+  });
+
+  body.querySelector('#btn-sound-strike')?.addEventListener('click', () => {
+    const ok = executeRingingStoneStrike({ stationId: 'mint_ringing_stone' });
+    if (ok) {
+      const noteIdx = getStoneNoteIndex('mint_ringing_stone');
+      triggerWave('strike', noteIdx);
+    }
+  });
+}
+
