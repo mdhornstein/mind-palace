@@ -116,7 +116,7 @@ export class CoinPhysicsEngine {
 
   private constructor() {
     // Load persisted wallet from localStorage if present
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && window.localStorage) {
       const saved = window.localStorage.getItem('mind_palace_coins_wallet');
       if (saved) {
         try {
@@ -160,7 +160,7 @@ export class CoinPhysicsEngine {
   }
 
   private saveWallet() {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.setItem(
         'mind_palace_coins_wallet',
         JSON.stringify({

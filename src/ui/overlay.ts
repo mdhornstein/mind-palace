@@ -4,6 +4,21 @@ export class ModalOverlay {
   private currentOnClose: (() => void) | null = null;
 
   private constructor() {
+    if (typeof document === 'undefined') {
+      this.overlayEl = {
+        classList: {
+          contains: () => false,
+          add: () => {},
+          remove: () => {},
+        },
+        querySelector: () => null,
+        appendChild: () => {},
+        innerHTML: '',
+        addEventListener: () => {},
+      } as any;
+      return;
+    }
+
     let el = document.getElementById('modal-overlay');
     if (!el) {
       el = document.createElement('div');
@@ -20,11 +35,13 @@ export class ModalOverlay {
     });
 
     // Close on Escape key
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && this.isOpen()) {
-        this.close();
-      }
-    });
+    if (typeof window !== 'undefined') {
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && this.isOpen()) {
+          this.close();
+        }
+      });
+    }
   }
 
   public static getInstance(): ModalOverlay {
@@ -37,6 +54,24 @@ export class ModalOverlay {
   public open(contentHtml: string, onClose?: () => void) {
     this.currentOnClose = onClose || null;
     this.overlayEl.innerHTML = contentHtml;
+    this.overlayEl.classList.add('active');
+
+    // Attach close button listener if present
+    const closeBtn = this.overlayEl.querySelector('.modal-close-btn');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', () => this.close());
+    }
+
+    const footerClose = this.overlayEl.querySelector('.btn-close-modal');
+    if (footerClose) {
+      footerClose.addEventListener('click', () => this.close());
+    }
+  }
+
+  public openElement(container: HTMLElement, onClose?: () => void) {
+    this.currentOnClose = onClose || null;
+    this.overlayEl.innerHTML = '';
+    this.overlayEl.appendChild(container);
     this.overlayEl.classList.add('active');
 
     // Attach close button listener if present

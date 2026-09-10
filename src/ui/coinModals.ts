@@ -1,29 +1,19 @@
 import { CoinPhysicsEngine } from '../rooms/coins/coinPhysics';
 import { HearthAudio } from '../sound/audio';
 import { CANVAS_WIDTH } from '../core/constants';
-
-let activeOverlay: HTMLElement | null = null;
+import { ModalOverlay } from './overlay';
 
 function closeActiveModal() {
-  if (activeOverlay) {
-    activeOverlay.remove();
-    activeOverlay = null;
-  }
+  ModalOverlay.getInstance().close();
 }
 
-function createModalContainer(title: string, subtitle?: string): { overlay: HTMLElement; body: HTMLElement } {
-  closeActiveModal();
-
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-backdrop visible';
-  overlay.style.position = 'fixed';
-  overlay.style.inset = '0';
-  overlay.style.backgroundColor = 'rgba(10, 8, 6, 0.82)';
-  overlay.style.backdropFilter = 'blur(4px)';
-  overlay.style.display = 'flex';
-  overlay.style.alignItems = 'center';
-  overlay.style.justifyContent = 'center';
-  overlay.style.zIndex = '100';
+function createModalContainer(
+  title: string,
+  subtitle?: string,
+  onClose?: () => void
+): { overlay: HTMLElement; body: HTMLElement } {
+  const overlayInstance = ModalOverlay.getInstance();
+  overlayInstance.close();
 
   const container = document.createElement('div');
   container.className = 'modal-dialog';
@@ -64,6 +54,7 @@ function createModalContainer(title: string, subtitle?: string): { overlay: HTML
   }
 
   const closeBtn = document.createElement('button');
+  closeBtn.className = 'modal-close-btn';
   closeBtn.innerHTML = '&times;';
   closeBtn.style.background = 'none';
   closeBtn.style.border = 'none';
@@ -71,7 +62,7 @@ function createModalContainer(title: string, subtitle?: string): { overlay: HTML
   closeBtn.style.fontSize = '1.6rem';
   closeBtn.style.cursor = 'pointer';
   closeBtn.style.lineHeight = '1';
-  closeBtn.onclick = () => closeActiveModal();
+  closeBtn.onclick = () => overlayInstance.close();
 
   header.appendChild(titleWrap);
   header.appendChild(closeBtn);
@@ -84,15 +75,9 @@ function createModalContainer(title: string, subtitle?: string): { overlay: HTML
   body.style.webkitUserSelect = 'text';
   container.appendChild(body);
 
-  overlay.appendChild(container);
-  document.body.appendChild(overlay);
-  activeOverlay = overlay;
+  overlayInstance.openElement(container, onClose);
 
-  overlay.addEventListener('click', (e) => {
-    if (e.target === overlay) closeActiveModal();
-  });
-
-  return { overlay, body };
+  return { overlay: overlayInstance.getElement(), body };
 }
 
 /**
@@ -172,9 +157,13 @@ export function openCoinPressModal() {
 export function openPlinkoModal() {
   const engine = CoinPhysicsEngine.getInstance();
   const audio = HearthAudio.getInstance();
+  let isPlinkoRunning = true;
   const { body } = createModalContainer(
     '🎰 The Gilded Chute',
-    'Galton Pegboard & Sovereign Multiplier Drop'
+    'Galton Pegboard & Sovereign Multiplier Drop',
+    () => {
+      isPlinkoRunning = false;
+    }
   );
 
   const canvasWidth = 360;
@@ -339,7 +328,9 @@ export function openPlinkoModal() {
       ctx.stroke();
     }
 
-    requestAnimationFrame(drawPlinko);
+    if (isPlinkoRunning) {
+      requestAnimationFrame(drawPlinko);
+    }
   }
 
   requestAnimationFrame(drawPlinko);
