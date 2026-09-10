@@ -261,4 +261,57 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     audio.setRoom('coins');
     expect(setMintBusActiveSpy).toHaveBeenCalledWith(true);
   });
+
+  it('calculates transport-relative beat phase synchronized to visualOriginMs', () => {
+    const conductor = MintConductor.getInstance();
+    const beatDurationMs = (60 / 105) * 1000; // ~571.43 ms
+    const arbitraryOrigin = 12500;
+
+    conductor.setVisualOriginMs(arbitraryOrigin);
+    expect(conductor.getVisualOriginMs()).toBe(arbitraryOrigin);
+
+    expect(conductor.getBeatPhase(arbitraryOrigin)).toBeCloseTo(0, 4);
+    expect(conductor.getBeatPhase(arbitraryOrigin + beatDurationMs * 0.25)).toBeCloseTo(0.25, 4);
+    expect(conductor.getBeatPhase(arbitraryOrigin + beatDurationMs * 0.5)).toBeCloseTo(0.5, 4);
+    expect(conductor.getBeatPhase(arbitraryOrigin + beatDurationMs * 0.75)).toBeCloseTo(0.75, 4);
+    expect(conductor.getBeatPhase(arbitraryOrigin + beatDurationMs)).toBeCloseTo(0, 4);
+    // Negative offset (prior to origin) wraps seamlessly
+    expect(conductor.getBeatPhase(arbitraryOrigin - beatDurationMs * 0.25)).toBeCloseTo(0.75, 4);
+  });
+
+  it('safely handles start() if audio context is initially unavailable without getting stuck on subsequent start()', () => {
+    const audio = HearthAudio.getInstance();
+    const getContextSpy = vi.spyOn(audio, 'getContext').mockReturnValue(null as any);
+
+    const conductor = MintConductor.getInstance();
+    conductor.start();
+
+    // Conductor is running visually, but audio timer could not start yet
+    expect(conductor.isRunning()).toBe(true);
+
+    // Now audio context becomes available (e.g. after user gesture unlocks audio)
+    const mockCtx = {
+      currentTime: 10.0,
+    } as any;
+    getContextSpy.mockReturnValue(mockCtx);
+
+    // Calling start() again is NOT blocked by running flag; it successfully initializes audio scheduler!
+    conductor.start();
+    expect(conductor.isRunning()).toBe(true);
+  });
+
+  it('unconditionally silences mint bus when setRoomActive(false) is called while running', () => {
+    const audio = HearthAudio.getInstance();
+    const setMintBusActiveSpy = vi.spyOn(audio, 'setMintBusActive');
+
+    const conductor = MintConductor.getInstance();
+    conductor.setRoomActive(true);
+    conductor.setPressCadence('four_on_the_floor');
+    expect(conductor.isRunning()).toBe(true);
+
+    // Leaving the room while running must call setMintBusActive(false)
+    conductor.setRoomActive(false);
+    expect(conductor.isRunning()).toBe(false);
+    expect(setMintBusActiveSpy).toHaveBeenCalledWith(false);
+  });
 });

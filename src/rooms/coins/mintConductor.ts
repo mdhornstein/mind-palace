@@ -41,7 +41,8 @@ export class MintConductor {
   private stoneCadence: StoneCadence = 'off';
   private plinkoCadence: PlinkoCadence = 'off';
 
-  // In-world visual trigger timestamps (queried by station canvas renderers)
+  // In-world visual trigger timestamps & transport-relative phase origin
+  private visualOriginMs = 0;
   private lastPressVisualTrigger = 0;
   private lastStoneVisualTrigger = 0;
   private lastPlinkoVisualTrigger = 0;
@@ -147,7 +148,7 @@ export class MintConductor {
   }
 
   public start(): void {
-    if (this.running) return;
+    if (this.running && this.lookaheadTimer !== null) return;
 
     this.running = true;
     this.currentStep = 0;
@@ -158,7 +159,12 @@ export class MintConductor {
     const ctx = audio.getContext();
     if (ctx) {
       this.nextStepTime = ctx.currentTime + 0.05;
+      const nowPerf = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      this.visualOriginMs = nowPerf + 50;
       this.scheduleLoop();
+    } else {
+      const nowPerf = typeof performance !== 'undefined' ? performance.now() : Date.now();
+      this.visualOriginMs = nowPerf;
     }
   }
 
@@ -262,6 +268,19 @@ export class MintConductor {
   public update(_dt: number): void {
     if (!this.running || !this.inActiveRoom) return;
 
+    // Resilient audio init: if audio context was delayed upon start(),
+    // pick up audio scheduling loop as soon as context is ready
+    if (this.lookaheadTimer === null) {
+      const audio = HearthAudio.getInstance();
+      const ctx = audio.getContext();
+      if (ctx) {
+        this.nextStepTime = ctx.currentTime + 0.05;
+        const nowPerf = typeof performance !== 'undefined' ? performance.now() : Date.now();
+        this.visualOriginMs = nowPerf + 50;
+        this.scheduleLoop();
+      }
+    }
+
     const now = Date.now();
     const quarterSeconds = 60.0 / this.bpm;
     const eighthSeconds = quarterSeconds / 2.0;
@@ -333,11 +352,23 @@ export class MintConductor {
   }
 
   /**
-   * Returns current 0..1 beat phase for smooth visual interpolation.
+   * Returns current 0..1 beat phase for smooth visual interpolation,
+   * synchronized precisely to the audio transport origin.
    */
   public getBeatPhase(timeMs: number): number {
     const beatDurationMs = (60.0 / this.bpm) * 1000;
-    return (timeMs % beatDurationMs) / beatDurationMs;
+    const elapsedMs = timeMs - this.visualOriginMs;
+    const phaseMs = ((elapsedMs % beatDurationMs) + beatDurationMs) % beatDurationMs;
+    const phase = phaseMs / beatDurationMs;
+    return phase >= 0.9999 ? 0 : phase;
+  }
+
+  public getVisualOriginMs(): number {
+    return this.visualOriginMs;
+  }
+
+  public setVisualOriginMs(originMs: number): void {
+    this.visualOriginMs = originMs;
   }
 
   // ==================== ROOM LIFECYCLE ====================
@@ -353,9 +384,8 @@ export class MintConductor {
     if (!active) {
       if (this.running) {
         this.stop();
-      } else {
-        HearthAudio.getInstance().setMintBusActive(false);
       }
+      HearthAudio.getInstance().setMintBusActive(false);
     } else {
       HearthAudio.getInstance().setMintBusActive(true);
       const hasActiveLoops =
