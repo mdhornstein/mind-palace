@@ -1,4 +1,11 @@
-import { RoomConfig, InteractiveTarget, BoundingBox, Doorway, NavigationStatus } from '../core/types';
+import {
+  RoomConfig,
+  InteractiveTarget,
+  BoundingBox,
+  Doorway,
+  NavigationStatus,
+  InteractionIntent,
+} from '../core/types';
 import { TILE_SIZE } from '../core/constants';
 
 /**
@@ -265,7 +272,40 @@ export class InteractionSystem {
 
     return inStationProximity;
   }
+
+  /**
+   * Resolves the declarative InteractionIntent for a given interactive target and trigger type.
+   *
+   * Emerging Interaction Grammar:
+   * 1. Station with primaryAction:
+   *    - 'primary' (Key 'F' or [F] button): dispatches primary action (station.primaryAction.intent)
+   *    - 'inspect' (Key 'Space' or Inspect button): dispatches normal/inspect intent (station.intent)
+   * 2. Station without primaryAction:
+   *    - 'primary' (Key 'F'): falls back to normal/inspect intent (station.intent)
+   *    - 'inspect' (Key 'Space'): dispatches normal/inspect intent (station.intent)
+   * 3. Doorway:
+   *    - both 'primary' and 'inspect' resolve door transition intent
+   */
+  public static resolveInteractionIntent(
+    target: InteractiveTarget,
+    trigger: InteractionTrigger
+  ): InteractionIntent {
+    if (target.kind === 'station') {
+      if (trigger === 'primary' && target.station.primaryAction) {
+        return target.station.primaryAction.intent;
+      }
+      return target.station.intent;
+    }
+
+    return {
+      type: 'door',
+      targetRoomId: target.door.targetRoomId,
+      targetSpawnPoint: target.door.targetSpawnPoint,
+    };
+  }
 }
 
+export type InteractionTrigger = 'primary' | 'inspect';
 export const shouldDispatchPendingInteraction = InteractionSystem.shouldDispatchPendingInteraction;
+export const resolveInteractionIntent = InteractionSystem.resolveInteractionIntent;
 

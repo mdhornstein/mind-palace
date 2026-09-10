@@ -29,6 +29,11 @@ export const coinPressStation: WorldStation = {
     intent: {
       type: 'custom',
       actionId: 'mint_crank_press',
+      params: {
+        stationId: 'mint_coin_press',
+        originX: 7.0 * TILE_SIZE + 57,
+        originY: 2.0 * TILE_SIZE + 78,
+      },
     },
   },
   draw: (ctx: CanvasRenderingContext2D, timeMs: number, _state: DeepReadonly<WorldState>) => {
@@ -170,5 +175,17 @@ export const coinPressStation: WorldStation = {
 export const vaultCoinPressStation: WorldStation = {
   ...coinPressStation,
   id: 'vault_coin_press',
+  primaryAction: {
+    label: 'Crank Press',
+    intent: {
+      type: 'custom',
+      actionId: 'mint_crank_press',
+      params: {
+        stationId: 'vault_coin_press',
+        originX: 7.0 * TILE_SIZE + 57,
+        originY: 2.0 * TILE_SIZE + 78,
+      },
+    },
+  },
 };
 

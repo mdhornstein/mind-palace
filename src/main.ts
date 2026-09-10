@@ -11,6 +11,7 @@ import { RoomRegistry } from './rooms/registry';
 import { HearthAudio } from './sound/audio';
 import { InteractionSystem, shouldDispatchPendingInteraction } from './world/interactionSystem';
 import { InteractionDispatcher } from './ui/interactionDispatcher';
+import { registerApplicationActions } from './ui/appActions';
 import { GameLoop } from './core/gameLoop';
 import { HudManager } from './ui/hudManager';
 import { RoomVariantManager } from './rooms/variants/roomVariantManager';
@@ -111,6 +112,9 @@ class MindPalaceApp {
   }
 
   private setupInteractions(promptEl: HTMLElement) {
+    // Register application actions (composition layer)
+    registerApplicationActions();
+
     // Keyboard inspection trigger (Space, Enter, E) and movement key handling
     window.addEventListener('keydown', (e) => {
       if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {

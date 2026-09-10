@@ -24,8 +24,6 @@ import {
 } from './coinModals';
 import { duckephantEntity } from '../rooms/study/stations/duckephant';
 
-import { executeMintCrankPress } from '../rooms/coins/coinMachineActions';
-
 export interface InteractionContext {
   stateManager: StateManager;
   transitionToRoom: (
@@ -208,17 +206,14 @@ export class InteractionDispatcher {
     ],
   ]);
 
-  private static actionRegistry: Map<string, CustomActionHandler> = new Map([
-    [
-      'mint_crank_press',
-      () => {
-        executeMintCrankPress();
-      },
-    ],
-  ]);
+  private static actionRegistry: Map<string, CustomActionHandler> = new Map();
 
   public static registerAction(actionId: string, handler: CustomActionHandler): void {
     this.actionRegistry.set(actionId, handler);
+  }
+
+  public static unregisterAction(actionId: string): void {
+    this.actionRegistry.delete(actionId);
   }
 
   public static getRegisteredActionIds(): string[] {

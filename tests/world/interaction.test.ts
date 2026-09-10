@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { InteractionSystem } from '../../src/world/interactionSystem';
+import { InteractionSystem, resolveInteractionIntent } from '../../src/world/interactionSystem';
 import { RoomRegistry } from '../../src/rooms/registry';
 import { TILE_SIZE } from '../../src/core/constants';
-import { BoundingBox } from '../../src/core/types';
+import { BoundingBox, InteractiveTarget, WorldStation } from '../../src/core/types';
 
 function boxesIntersect(a: BoundingBox, b: BoundingBox): boolean {
   return (
@@ -327,7 +327,235 @@ describe('InteractionSystem', () => {
     });
   });
 
-  describe('Declarative Primary Actions & Custom Action Dispatcher', () => {
+  describe('Emerging Interaction Grammar', () => {
+    const stationWithPrimary: WorldStation = {
+      id: 'test_engine_press',
+      name: 'Engine Press',
+      prompt: 'Inspect Press',
+      tileX: 7,
+      tileY: 2,
+      tileWidth: 3,
+      tileHeight: 3,
+      approachPoint: { x: 280, y: 160 },
+      draw: () => {},
+      intent: {
+        type: 'modal',
+        modalId: 'coin_press',
+      },
+      primaryAction: {
+        label: 'Crank Press',
+        intent: {
+          type: 'custom',
+          actionId: 'mint_crank_press',
+          params: { stationId: 'test_engine_press', originX: 281, originY: 142 },
+        },
+      },
+    };
+
+    const stationWithoutPrimary: WorldStation = {
+      id: 'test_reading_desk',
+      name: 'Reading Desk',
+      prompt: 'Browse Manuscripts',
+      tileX: 3,
+      tileY: 3,
+      tileWidth: 2,
+      tileHeight: 2,
+      approachPoint: { x: 100, y: 100 },
+      draw: () => {},
+      intent: {
+        type: 'modal',
+        modalId: 'library',
+      },
+    };
+
+    it('station with primaryAction: F dispatches the primary action', async () => {
+      const { InteractionDispatcher } = await import('../../src/ui/interactionDispatcher');
+      const target: InteractiveTarget = { kind: 'station', station: stationWithPrimary };
+
+      // F key triggers 'primary' action resolution
+      const resolvedIntent = resolveInteractionIntent(target, 'primary');
+      expect(resolvedIntent).toEqual(stationWithPrimary.primaryAction!.intent);
+
+      // Verify routing via InteractionDispatcher
+      let dispatchedCustomAction: string | null = null;
+      InteractionDispatcher.registerAction('mint_crank_press', (intent) => {
+        dispatchedCustomAction = intent.actionId;
+      });
+
+      const dummyContext: any = { stateManager: {}, transitionToRoom: () => {} };
+      InteractionDispatcher.dispatch(resolvedIntent, dummyContext);
+
+      expect(dispatchedCustomAction).toBe('mint_crank_press');
+    });
+
+    it('station with primaryAction: Space dispatches the normal/inspect intent', async () => {
+      const target: InteractiveTarget = { kind: 'station', station: stationWithPrimary };
+
+      // Space key triggers 'inspect' action resolution
+      const resolvedIntent = resolveInteractionIntent(target, 'inspect');
+      expect(resolvedIntent).toEqual(stationWithPrimary.intent);
+      expect(resolvedIntent.type).toBe('modal');
+      if (resolvedIntent.type === 'modal') {
+        expect(resolvedIntent.modalId).toBe('coin_press');
+      }
+    });
+
+    it('station without primaryAction: F falls back to its normal intent', () => {
+      const target: InteractiveTarget = { kind: 'station', station: stationWithoutPrimary };
+
+      // F key triggers 'primary' resolution, falling back to station.intent when no primaryAction exists
+      const resolvedIntent = resolveInteractionIntent(target, 'primary');
+      expect(resolvedIntent).toEqual(stationWithoutPrimary.intent);
+      expect(resolvedIntent.type).toBe('modal');
+      if (resolvedIntent.type === 'modal') {
+        expect(resolvedIntent.modalId).toBe('library');
+      }
+    });
+
+    it('clicking the [F] prompt button follows the same primary-action path as pressing F', () => {
+      const target: InteractiveTarget = { kind: 'station', station: stationWithPrimary };
+
+      // Simulated DOM click event on prompt button [data-action="primary"]
+      const mockPrimaryButton = {
+        getAttribute: (attr: string) => (attr === 'data-action' ? 'primary' : null),
+      };
+      const mockInspectButton = {
+        getAttribute: (attr: string) => (attr === 'data-action' ? 'inspect' : null),
+      };
+
+      const primaryTriggerType = mockPrimaryButton.getAttribute('data-action') as 'primary';
+      const inspectTriggerType = mockInspectButton.getAttribute('data-action') as 'inspect';
+
+      // Both pressing 'F' and clicking the [F] primary prompt button resolve identical intent
+      const fromFKeyPress = resolveInteractionIntent(target, 'primary');
+      const fromButtonPill = resolveInteractionIntent(target, primaryTriggerType);
+
+      expect(fromButtonPill).toEqual(fromFKeyPress);
+      expect(fromButtonPill).toEqual(stationWithPrimary.primaryAction!.intent);
+
+      // Contrast with inspect button, which maps to normal/inspect intent
+      const fromInspectPill = resolveInteractionIntent(target, inspectTriggerType);
+      expect(fromInspectPill).toEqual(stationWithPrimary.intent);
+    });
+  });
+
+  describe('executeMintCrankPress() Gameplay & Physics', () => {
+    it('first press succeeds', async () => {
+      const { executeMintCrankPress, resetMintCrankCooldown } = await import(
+        '../../src/rooms/coins/coinMachineActions'
+      );
+      resetMintCrankCooldown();
+
+      const success = executeMintCrankPress(undefined, 1000);
+      expect(success).toBe(true);
+    });
+
+    it('presses within the cooldown are ignored', async () => {
+      const { executeMintCrankPress, resetMintCrankCooldown } = await import(
+        '../../src/rooms/coins/coinMachineActions'
+      );
+      resetMintCrankCooldown();
+
+      // First press at t=1000 succeeds
+      expect(executeMintCrankPress(undefined, 1000)).toBe(true);
+
+      // Press at t=1050 (50ms elapsed < 140ms cooldown) is ignored
+      expect(executeMintCrankPress(undefined, 1050)).toBe(false);
+
+      // Press at t=1139 (139ms elapsed < 140ms cooldown) is ignored
+      expect(executeMintCrankPress(undefined, 1139)).toBe(false);
+    });
+
+    it('a press after the cooldown succeeds', async () => {
+      const { executeMintCrankPress, resetMintCrankCooldown } = await import(
+        '../../src/rooms/coins/coinMachineActions'
+      );
+      resetMintCrankCooldown();
+
+      expect(executeMintCrankPress(undefined, 1000)).toBe(true);
+      expect(executeMintCrankPress(undefined, 1050)).toBe(false);
+
+      // Press at t=1140 (140ms elapsed >= 140ms cooldown) succeeds
+      expect(executeMintCrankPress(undefined, 1140)).toBe(true);
+
+      // Subsequent press after another 140ms interval succeeds
+      expect(executeMintCrankPress(undefined, 1280)).toBe(true);
+    });
+
+    it('each successful press produces the expected small randomized coin burst', async () => {
+      const { executeMintCrankPress, resetMintCrankCooldown } = await import(
+        '../../src/rooms/coins/coinMachineActions'
+      );
+      const { CoinPhysicsEngine } = await import('../../src/rooms/coins/coinPhysics');
+
+      const engine = CoinPhysicsEngine.getInstance();
+
+      // Test invariants across 20 iterations (testing ranges/invariants, not exact random numbers)
+      for (let i = 0; i < 20; i++) {
+        resetMintCrankCooldown();
+        engine.clearCoins();
+        expect(engine.getCoins().length).toBe(0);
+
+        const time = 1000 + i * 200;
+        const success = executeMintCrankPress(undefined, time);
+        expect(success).toBe(true);
+
+        const coins = engine.getCoins();
+        // Invariant 1: small burst always contains between 2 and 4 coins inclusive
+        expect(coins.length).toBeGreaterThanOrEqual(2);
+        expect(coins.length).toBeLessThanOrEqual(4);
+
+        // Invariant 2: every coin has physical velocity and non-zero mass/coordinates
+        for (const coin of coins) {
+          expect(Number.isFinite(coin.x)).toBe(true);
+          expect(Number.isFinite(coin.y)).toBe(true);
+          expect(Number.isFinite(coin.z)).toBe(true);
+          expect(Number.isFinite(coin.vx)).toBe(true);
+          expect(Number.isFinite(coin.vy)).toBe(true);
+          expect(Number.isFinite(coin.vz)).toBe(true);
+          expect(coin.z).toBeGreaterThanOrEqual(0);
+        }
+      }
+    });
+
+    it('ejects coins from machine-specific origin coordinates without hardcoded global positions', async () => {
+      const { executeMintCrankPress, resetMintCrankCooldown } = await import(
+        '../../src/rooms/coins/coinMachineActions'
+      );
+      const { CoinPhysicsEngine } = await import('../../src/rooms/coins/coinPhysics');
+
+      const engine = CoinPhysicsEngine.getInstance();
+
+      // Test Machine 1: mint_coin_press with chute at (281, 142)
+      resetMintCrankCooldown();
+      engine.clearCoins();
+      executeMintCrankPress({ stationId: 'mint_coin_press', originX: 281, originY: 142 }, 1000);
+      const mintCoins = engine.getCoins();
+      expect(mintCoins.length).toBeGreaterThanOrEqual(2);
+      for (const coin of mintCoins) {
+        // Lateral scatter within ±8px of originX and ±4px of originY
+        expect(coin.x).toBeGreaterThanOrEqual(281 - 8);
+        expect(coin.x).toBeLessThanOrEqual(281 + 8);
+        expect(coin.y).toBeGreaterThanOrEqual(142 - 4);
+        expect(coin.y).toBeLessThanOrEqual(142 + 4);
+      }
+
+      // Test Machine 2: vault_coin_press with distinct custom coordinates (450, 210)
+      resetMintCrankCooldown();
+      engine.clearCoins();
+      executeMintCrankPress({ stationId: 'vault_coin_press', originX: 450, originY: 210 }, 1000);
+      const vaultCoins = engine.getCoins();
+      expect(vaultCoins.length).toBeGreaterThanOrEqual(2);
+      for (const coin of vaultCoins) {
+        expect(coin.x).toBeGreaterThanOrEqual(450 - 8);
+        expect(coin.x).toBeLessThanOrEqual(450 + 8);
+        expect(coin.y).toBeGreaterThanOrEqual(210 - 4);
+        expect(coin.y).toBeLessThanOrEqual(210 + 4);
+      }
+    });
+  });
+
+  describe('Declarative Primary Actions & Custom Action Dispatcher Router', () => {
     it('verifies that coinPressStation declares primaryAction without imperative callbacks', () => {
       const coinRoom = RoomRegistry.getRoom('coins');
       const pressStation = coinRoom.stations.find((s) => s.id === 'mint_coin_press')!;
@@ -344,7 +572,9 @@ describe('InteractionSystem', () => {
       const { InteractionDispatcher } = await import('../../src/ui/interactionDispatcher');
       const { CoinPhysicsEngine } = await import('../../src/rooms/coins/coinPhysics');
       const { resetMintCrankCooldown } = await import('../../src/rooms/coins/coinMachineActions');
+      const { registerApplicationActions } = await import('../../src/ui/appActions');
 
+      registerApplicationActions();
       resetMintCrankCooldown();
       const engine = CoinPhysicsEngine.getInstance();
       engine.clearCoins();
@@ -385,24 +615,6 @@ describe('InteractionSystem', () => {
 
       expect(customTriggered).toBe(true);
       expect(InteractionDispatcher.getRegisteredActionIds()).toContain('test_pulse_action');
-    });
-
-    it('throttles rapid mashing via coinMachineActions cooldown', async () => {
-      const { executeMintCrankPress, resetMintCrankCooldown } = await import(
-        '../../src/rooms/coins/coinMachineActions'
-      );
-
-      resetMintCrankCooldown();
-      const first = executeMintCrankPress(1000);
-      expect(first).toBe(true);
-
-      // Immediate second call at t=1050ms (< 140ms cooldown) should be throttled
-      const second = executeMintCrankPress(1050);
-      expect(second).toBe(false);
-
-      // Call at t=1200ms (> 140ms cooldown) should succeed
-      const third = executeMintCrankPress(1200);
-      expect(third).toBe(true);
     });
   });
 });
