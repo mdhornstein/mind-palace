@@ -1265,9 +1265,11 @@ export class HearthAudio {
     gain.gain.linearRampToValueAtTime(0.09, now + 0.04);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
 
+    const bus = this.getMintBus() || this.ctx.destination;
+
     whiteNoise.connect(filter);
     filter.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(bus);
 
     whiteNoise.start(now);
     whiteNoise.stop(now + 0.22);
@@ -1283,7 +1285,7 @@ export class HearthAudio {
     woodGain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
 
     woodOsc.connect(woodGain);
-    woodGain.connect(this.ctx.destination);
+    woodGain.connect(bus);
     woodOsc.start(now);
     woodOsc.stop(now + 0.07);
   }
@@ -1295,6 +1297,7 @@ export class HearthAudio {
     this.initContext();
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
+    const bus = this.getMintBus() || this.ctx.destination;
 
     // 1. Mechanical trapdoor latch release click
     const latchOsc = this.ctx.createOscillator();
@@ -1307,7 +1310,7 @@ export class HearthAudio {
     latchGain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
 
     latchOsc.connect(latchGain);
-    latchGain.connect(this.ctx.destination);
+    latchGain.connect(bus);
     latchOsc.start(now);
     latchOsc.stop(now + 0.05);
 
@@ -1322,7 +1325,7 @@ export class HearthAudio {
     chestGain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
 
     chestOsc.connect(chestGain);
-    chestGain.connect(this.ctx.destination);
+    chestGain.connect(bus);
     chestOsc.start(now + 0.04);
     chestOsc.stop(now + 0.35);
 
@@ -1338,11 +1341,144 @@ export class HearthAudio {
       coinGain.gain.exponentialRampToValueAtTime(0.0001, splashTime + 0.03);
 
       coinOsc.connect(coinGain);
-      coinGain.connect(this.ctx.destination);
+      coinGain.connect(bus);
 
       coinOsc.start(splashTime);
       coinOsc.stop(splashTime + 0.035);
     }
+  }
+
+  /**
+   * Crisp mahogany strike-bar slap & coin rimshot for The Moneyer's Tally Board.
+   * Delivers the acoustic backbeat / snare punch of the Kinetic DAW orchestra.
+   *  - 'backbeat': punchy wooden slap + metallic coin rimshot + brush crunch (beats 2 & 4).
+   *  - 'fill': rapid twin micro-cascade taps simulating coins sliding down the grooves.
+   *  - 'ghost': muted wooden tick for syncopations.
+   */
+  public playScheduledTallyClack(atTime?: number, variant: 'backbeat' | 'fill' | 'ghost' = 'backbeat') {
+    this.initContext();
+    if (!this.ctx) return;
+    const now = atTime !== undefined ? atTime : this.ctx.currentTime;
+    const bus = this.getMintBus() || this.ctx.destination;
+
+    if (variant === 'ghost') {
+      // Muted wooden friction tick (~15ms)
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(320, now);
+      osc.frequency.exponentialRampToValueAtTime(120, now + 0.015);
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.06, now + 0.002);
+      gain.gain.exponentialRampToValueAtTime(0.0005, now + 0.018);
+      osc.connect(gain);
+      gain.connect(bus);
+      osc.start(now);
+      osc.stop(now + 0.02);
+      return;
+    }
+
+    if (variant === 'fill') {
+      // Rapid twin micro-cascade taps (sovereigns sliding into the chest slot)
+      for (let i = 0; i < 2; i++) {
+        const t = now + i * 0.024;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        const f = 1900 + (i === 0 ? 0 : 350) + (Math.random() - 0.5) * 80;
+        osc.frequency.setValueAtTime(f, t);
+        osc.frequency.exponentialRampToValueAtTime(850, t + 0.02);
+        gain.gain.setValueAtTime(0.001, t);
+        gain.gain.linearRampToValueAtTime(0.09, t + 0.002);
+        gain.gain.exponentialRampToValueAtTime(0.0005, t + 0.025);
+        osc.connect(gain);
+        gain.connect(bus);
+        osc.start(t);
+        osc.stop(t + 0.03);
+      }
+      return;
+    }
+
+    // Default: 'backbeat' (The Punchy Victorian Snare)
+    // 1. Resonant Mahogany Strike-Bar Slap (Low-mid wooden punch: 380 Hz -> 140 Hz in 18ms)
+    const woodOsc = this.ctx.createOscillator();
+    const woodGain = this.ctx.createGain();
+    const woodFilter = this.ctx.createBiquadFilter();
+
+    woodOsc.type = 'triangle';
+    woodOsc.frequency.setValueAtTime(380, now);
+    woodOsc.frequency.exponentialRampToValueAtTime(140, now + 0.018);
+
+    woodFilter.type = 'lowpass';
+    woodFilter.frequency.setValueAtTime(550, now);
+
+    woodGain.gain.setValueAtTime(0.001, now);
+    woodGain.gain.linearRampToValueAtTime(0.24, now + 0.003);
+    woodGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+    woodOsc.connect(woodFilter);
+    woodFilter.connect(woodGain);
+    woodGain.connect(bus);
+    woodOsc.start(now);
+    woodOsc.stop(now + 0.06);
+
+    // 2. Brass Coin Rimshot Ping (Twin inharmonic partials: 1480 Hz & 2200 Hz)
+    const coinOsc = this.ctx.createOscillator();
+    const coinGain = this.ctx.createGain();
+    coinOsc.type = 'sine';
+    coinOsc.frequency.setValueAtTime(1480, now);
+
+    coinGain.gain.setValueAtTime(0.001, now);
+    coinGain.gain.linearRampToValueAtTime(0.12, now + 0.002);
+    coinGain.gain.exponentialRampToValueAtTime(0.0005, now + 0.032);
+
+    coinOsc.connect(coinGain);
+    coinGain.connect(bus);
+    coinOsc.start(now);
+    coinOsc.stop(now + 0.035);
+
+    const highOsc = this.ctx.createOscillator();
+    const highGain = this.ctx.createGain();
+    highOsc.type = 'sine';
+    highOsc.frequency.setValueAtTime(2200, now);
+
+    highGain.gain.setValueAtTime(0.001, now);
+    highGain.gain.linearRampToValueAtTime(0.07, now + 0.002);
+    highGain.gain.exponentialRampToValueAtTime(0.0005, now + 0.028);
+
+    highOsc.connect(highGain);
+    highGain.connect(bus);
+    highOsc.start(now);
+    highOsc.stop(now + 0.03);
+
+    // 3. Tactile Brush Noise Crunch (Filtered bandpass noise burst: 1800 Hz, Q 2.8, 38ms decay)
+    const noiseDuration = 0.038;
+    const bufferSize = Math.floor(this.ctx.sampleRate * noiseDuration);
+    const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      output[i] = Math.random() * 2 - 1;
+    }
+
+    const whiteNoise = this.ctx.createBufferSource();
+    whiteNoise.buffer = noiseBuffer;
+
+    const noiseFilter = this.ctx.createBiquadFilter();
+    noiseFilter.type = 'bandpass';
+    noiseFilter.frequency.setValueAtTime(1800, now);
+    noiseFilter.Q.setValueAtTime(2.8, now);
+
+    const noiseGain = this.ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.001, now);
+    noiseGain.gain.linearRampToValueAtTime(0.11, now + 0.003);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0005, now + noiseDuration);
+
+    whiteNoise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(bus);
+
+    whiteNoise.start(now);
+    whiteNoise.stop(now + noiseDuration + 0.005);
   }
 }
 

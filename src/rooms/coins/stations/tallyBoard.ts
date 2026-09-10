@@ -1,6 +1,7 @@
 import { WorldStation, DeepReadonly, WorldState } from '../../../core/types';
 import { TILE_SIZE } from '../../../core/constants';
 import { getLastTallyPourTime } from '../tallyBoardActions';
+import { MintConductor } from '../mintConductor';
 
 export const TALLY_BOARD_TILE_X = 2.2;
 export const TALLY_BOARD_TILE_Y = 8.2;
@@ -46,6 +47,10 @@ export const tallyBoardStation: WorldStation = {
     const h = 2.6 * TILE_SIZE;
     const cx = baseX + w / 2;
 
+    const conductor = MintConductor.getInstance();
+    const isLooping = conductor.isStationLooping('mint_tally_board');
+    const beatPhase = conductor.getBeatPhase(timeMs);
+
     const now = Date.now();
     const lastPour = getLastTallyPourTime('mint_tally_board');
     const elapsed = now - lastPour;
@@ -83,8 +88,9 @@ export const tallyBoardStation: WorldStation = {
     ctx.fillStyle = '#0a0604';
     ctx.fillRect(chestX + 6, chestY + 2, chestW - 12, 8);
 
-    // Gold bullion glow from inside chest
-    ctx.fillStyle = 'rgba(250, 204, 21, 0.35)';
+    // Gold bullion glow from inside chest (pulses with backbeat when looping)
+    const glowAlpha = isLooping ? 0.25 + Math.sin(beatPhase * Math.PI * 2) * 0.20 : 0.35;
+    ctx.fillStyle = `rgba(250, 204, 21, ${glowAlpha})`;
     ctx.fillRect(chestX + 8, chestY + 4, chestW - 16, 5);
 
     // 2. Heavy Carved Oak Table Legs & Frame
@@ -98,6 +104,32 @@ export const tallyBoardStation: WorldStation = {
     ctx.strokeRect(baseX + w - 14, baseY + 24, 8, h - 24);
     // Oak cross-rail
     ctx.fillRect(baseX + 10, baseY + 36, w - 20, 6);
+
+    // Clutch indicator lamp on table frame
+    ctx.fillStyle = isLooping ? '#22c55e' : '#292524';
+    ctx.beginPath();
+    ctx.arc(baseX + 10, baseY + 18, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+    if (isLooping) {
+      ctx.strokeStyle = '#4ade80';
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+    }
+
+    // Side brass mechanical escapement rocker (when looping)
+    if (isLooping) {
+      const rockerAngle = Math.sin(beatPhase * Math.PI * 2) * 0.32;
+      ctx.save();
+      ctx.translate(baseX + w - 6, baseY + 34);
+      ctx.rotate(rockerAngle);
+      ctx.fillStyle = '#ca8a04';
+      ctx.fillRect(-1.5, 0, 3, 15);
+      ctx.fillStyle = '#fef08a';
+      ctx.beginPath();
+      ctx.arc(0, 15, 3.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
 
     // 3. Slanted Tabletop Surface & Brass Telling Tray (Tally Board)
     const boardX = baseX + 8;
@@ -156,8 +188,12 @@ export const tallyBoardStation: WorldStation = {
         ctx.lineWidth = 0.5;
         ctx.stroke();
 
-        // Idle glint
-        if (!isPouring && (Math.sin(timeMs * 0.004 + c * 0.8 + g) > 0.8)) {
+        // Gleam animation (harmonic wave sweep when looping, random sparkle when idle)
+        const gleamCondition = isLooping
+          ? Math.sin(beatPhase * Math.PI * 2 - (c / coinsInRow) * Math.PI) > 0.65
+          : (!isPouring && (Math.sin(timeMs * 0.004 + c * 0.8 + g) > 0.8));
+
+        if (gleamCondition) {
           ctx.fillStyle = '#ffffff';
           ctx.beginPath();
           ctx.ellipse(coinX - 0.8, gy - 1, 1.2, 0.6, 0, 0, Math.PI * 2);
@@ -217,8 +253,12 @@ export const tallyBoardStation: WorldStation = {
     // 7. Reciprocating Mahogany Strike-Bar (Wooden Scraper Bat)
     let strikeBarOffset = 0;
     if (isPouring && pourProgress >= 0.15 && pourProgress <= 0.7) {
+      // Manual pour sweep
       const sweepPhase = (pourProgress - 0.15) / 0.55;
       strikeBarOffset = Math.sin(sweepPhase * Math.PI * 2) * 20;
+    } else if (isLooping) {
+      // Automated rhythmic sweep on backbeats
+      strikeBarOffset = Math.sin(beatPhase * Math.PI * 2) * 18;
     }
 
     const barX = cx - 18 + strikeBarOffset;

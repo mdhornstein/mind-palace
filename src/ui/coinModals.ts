@@ -989,19 +989,46 @@ export function openRingingStoneModal() {
 export function openTallyBoardModal() {
   const audio = HearthAudio.getInstance();
   const engine = CoinPhysicsEngine.getInstance();
+  const conductor = MintConductor.getInstance();
 
   const { body } = createModalContainer(
     "📋 The Moneyer's Tally Board",
-    'Mechanical Sovereign Telling Tray & Treasury Batch Counter'
+    'Mechanical Sovereign Telling Tray & Automated Strike-Bar Backbeat'
   );
 
   let filledCoins = 50;
 
   body.innerHTML = `
-    <div style="font-size: 0.86rem; line-height: 1.5; color: #cbd5e1; margin-bottom: 14px;">
-      In the Royal Mint, tellers and moneyers verified coin quantities with 100-groove brass tally trays.
-      A canvas bag was poured over the flutes, a mahogany strike-bar swept away excess,
-      and a mechanical lever dumped the verified £100 batch directly into the Treasury vault.
+    <div style="font-size: 0.84rem; line-height: 1.45; color: #cbd5e1; margin-bottom: 10px;">
+      In the Royal Mint, tellers verified sovereign quantities with 100-groove brass tally trays.
+      Synchronize the reciprocating mahogany strike-bar to deliver the punchy acoustic backbeat / snare of the Kinetic DAW.
+    </div>
+
+    <!-- Kinetic DAW Strike-Bar Cadence Controller -->
+    <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid #451a03; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; color: #f59e0b; text-transform: uppercase;">
+          ⚙️ Kinetic DAW • Continuous Strike-Bar Feed
+        </span>
+        <span id="tally-cadence-badge" style="font-family: monospace; font-size: 0.66rem; font-weight: bold; padding: 2px 8px; border-radius: 4px; border: 1px solid #44403c; background: #292524; color: #a8a29e;">
+          TALLY: DISENGAGED (MANUAL ONLY)
+        </span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px;">
+        <button id="btn-tally-cadence-off" style="padding: 6px 6px; border-radius: 5px; font-size: 0.72rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease; text-align: center;">
+          ⏹ Disengaged<br/><span style="font-size: 0.65rem; opacity: 0.8; font-weight: normal;">Manual Only</span>
+        </button>
+        <button id="btn-tally-cadence-snare" style="padding: 6px 6px; border-radius: 5px; font-size: 0.72rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease; text-align: center;">
+          🥁 Backbeat Slap<br/><span style="font-size: 0.65rem; opacity: 0.8; font-weight: normal;">Beats 2 & 4 Snare</span>
+        </button>
+        <button id="btn-tally-cadence-fill" style="padding: 6px 6px; border-radius: 5px; font-size: 0.72rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease; text-align: center;">
+          🌊 Cascade Fill<br/><span style="font-size: 0.65rem; opacity: 0.8; font-weight: normal;">Bar Turnaround</span>
+        </button>
+        <button id="btn-tally-cadence-sync" style="padding: 6px 6px; border-radius: 5px; font-size: 0.72rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease; text-align: center;">
+          🎩 Moneyer Groove<br/><span style="font-size: 0.65rem; opacity: 0.8; font-weight: normal;">Syncopated Clack</span>
+        </button>
+      </div>
     </div>
 
     <!-- Telling Tray 10x10 Visualizer -->
@@ -1041,6 +1068,92 @@ export function openTallyBoardModal() {
       <span id="tally-status-label" style="font-family: monospace; color: #4ade80;">STATUS: READY</span>
     </div>
   `;
+
+  // Cadence buttons and badge wiring
+  const tallyBadgeEl = body.querySelector('#tally-cadence-badge') as HTMLElement;
+  const btnTallyOff = body.querySelector('#btn-tally-cadence-off') as HTMLButtonElement;
+  const btnTallySnare = body.querySelector('#btn-tally-cadence-snare') as HTMLButtonElement;
+  const btnTallyFill = body.querySelector('#btn-tally-cadence-fill') as HTMLButtonElement;
+  const btnTallySync = body.querySelector('#btn-tally-cadence-sync') as HTMLButtonElement;
+
+  const cadenceButtons: Record<string, HTMLButtonElement | null> = {
+    off: btnTallyOff,
+    backbeat_snare: btnTallySnare,
+    cascade_fill: btnTallyFill,
+    syncopated_groove: btnTallySync,
+  };
+
+  function updateTallyCadenceUI() {
+    const cadence = conductor.getTallyCadence();
+    const badgeConfigs: Record<string, { text: string; bg: string; color: string; border: string }> = {
+      off: { text: 'TALLY: DISENGAGED (MANUAL ONLY)', bg: '#292524', color: '#a8a29e', border: '#44403c' },
+      backbeat_snare: { text: 'TALLY: 105 BPM 🥁 BACKBEAT SLAP (BEATS 2 & 4)', bg: 'rgba(217, 119, 6, 0.4)', color: '#fef08a', border: '#d97706' },
+      cascade_fill: { text: 'TALLY: 105 BPM 🌊 CASCADE TURNAROUND (BAR FILL)', bg: 'rgba(2, 132, 199, 0.45)', color: '#38bdf8', border: '#0284c7' },
+      syncopated_groove: { text: 'TALLY: 105 BPM 🎩 SYNCOPATED MONEYER GROOVE', bg: 'rgba(16, 185, 129, 0.35)', color: '#6ee7b7', border: '#10b981' },
+    };
+
+    const cfg = badgeConfigs[cadence] || badgeConfigs.off;
+    if (tallyBadgeEl) {
+      tallyBadgeEl.innerText = cfg.text;
+      tallyBadgeEl.style.background = cfg.bg;
+      tallyBadgeEl.style.color = cfg.color;
+      tallyBadgeEl.style.border = `1px solid ${cfg.border}`;
+    }
+
+    Object.entries(cadenceButtons).forEach(([key, btn]) => {
+      if (!btn) return;
+      if (key === cadence) {
+        if (key === 'off') {
+          btn.style.background = '#44403c';
+          btn.style.border = '1.5px solid #a8a29e';
+          btn.style.color = '#f8fafc';
+          btn.style.boxShadow = 'none';
+        } else if (key === 'backbeat_snare') {
+          btn.style.background = 'linear-gradient(180deg, #b45309 0%, #78350f 100%)';
+          btn.style.border = '1.5px solid #f59e0b';
+          btn.style.color = '#ffffff';
+          btn.style.boxShadow = '0 0 10px rgba(245, 158, 11, 0.35)';
+        } else if (key === 'cascade_fill') {
+          btn.style.background = 'linear-gradient(180deg, #0284c7 0%, #0369a1 100%)';
+          btn.style.border = '1.5px solid #38bdf8';
+          btn.style.color = '#ffffff';
+          btn.style.boxShadow = '0 0 10px rgba(56, 189, 248, 0.35)';
+        } else {
+          btn.style.background = 'linear-gradient(180deg, #059669 0%, #065f46 100%)';
+          btn.style.border = '1.5px solid #34d399';
+          btn.style.color = '#ffffff';
+          btn.style.boxShadow = '0 0 10px rgba(52, 211, 153, 0.35)';
+        }
+      } else {
+        btn.style.background = 'rgba(0, 0, 0, 0.3)';
+        btn.style.border = '1px solid #44403c';
+        btn.style.color = '#94a3b8';
+        btn.style.boxShadow = 'none';
+      }
+    });
+  }
+
+  updateTallyCadenceUI();
+
+  btnTallyOff?.addEventListener('click', () => {
+    conductor.setTallyCadence('off');
+    updateTallyCadenceUI();
+  });
+
+  btnTallySnare?.addEventListener('click', () => {
+    conductor.setTallyCadence('backbeat_snare');
+    updateTallyCadenceUI();
+  });
+
+  btnTallyFill?.addEventListener('click', () => {
+    conductor.setTallyCadence('cascade_fill');
+    updateTallyCadenceUI();
+  });
+
+  btnTallySync?.addEventListener('click', () => {
+    conductor.setTallyCadence('syncopated_groove');
+    updateTallyCadenceUI();
+  });
 
   const gridEl = body.querySelector('#tally-grooves-grid') as HTMLElement;
   const countBadge = body.querySelector('#tally-count-badge') as HTMLElement;

@@ -20,6 +20,7 @@ export type StoneCadence =
   | 'root_drone'
   | 'pentatonic_arp';
 export type PlinkoCadence = 'off' | 'sixteenth_shaker' | 'offbeat_pings';
+export type TallyCadence = 'off' | 'backbeat_snare' | 'cascade_fill' | 'syncopated_groove';
 
 export class MintConductor {
   private static instance: MintConductor | null = null;
@@ -40,15 +41,18 @@ export class MintConductor {
   private pressCadence: PressCadence = 'off';
   private stoneCadence: StoneCadence = 'off';
   private plinkoCadence: PlinkoCadence = 'off';
+  private tallyCadence: TallyCadence = 'off';
 
   // In-world visual trigger timestamps & transport-relative phase origin
   private visualOriginMs = 0;
   private lastPressVisualTrigger = 0;
   private lastStoneVisualTrigger = 0;
   private lastPlinkoVisualTrigger = 0;
+  private lastTallyVisualTrigger = 0;
   private currentArpNoteIndex = 0;
   private visualNoteIndex = 0;
   private visualPlinkoStep = 0;
+  private visualTallyStep = 0;
 
   private constructor() {
     const audio = HearthAudio.getInstance();
@@ -108,6 +112,15 @@ export class MintConductor {
     this.checkAutoTransport();
   }
 
+  public getTallyCadence(): TallyCadence {
+    return this.tallyCadence;
+  }
+
+  public setTallyCadence(cadence: TallyCadence): void {
+    this.tallyCadence = cadence;
+    this.checkAutoTransport();
+  }
+
   public isStationLooping(stationId: string): boolean {
     if (stationId === 'mint_coin_press' || stationId === 'vault_coin_press') {
       return this.pressCadence !== 'off';
@@ -118,6 +131,9 @@ export class MintConductor {
     if (stationId === 'plinko_drop' || stationId === 'mint_plinko' || stationId === 'gilded_chute') {
       return this.plinkoCadence !== 'off';
     }
+    if (stationId === 'mint_tally_board' || stationId === 'tally_board') {
+      return this.tallyCadence !== 'off';
+    }
     return false;
   }
 
@@ -125,7 +141,8 @@ export class MintConductor {
     const hasActiveLoops =
       this.pressCadence !== 'off' ||
       this.stoneCadence !== 'off' ||
-      this.plinkoCadence !== 'off';
+      this.plinkoCadence !== 'off' ||
+      this.tallyCadence !== 'off';
     if (hasActiveLoops && !this.running && this.inActiveRoom) {
       this.start();
     } else if (!hasActiveLoops && this.running) {
@@ -257,6 +274,28 @@ export class MintConductor {
         audio.playScheduledPlinkoHit(scheduledTime, 'accent');
       }
     }
+
+    // 4. The Moneyer's Tally Board (Acoustic Snare & Granular Fill)
+    if (this.tallyCadence === 'backbeat_snare') {
+      // Classic 4/4 Snare: Beats 2 & 4 (Steps 4 & 12)
+      if (step === 4 || step === 12) {
+        audio.playScheduledTallyClack(scheduledTime, 'backbeat');
+      }
+    } else if (this.tallyCadence === 'cascade_fill') {
+      // Backbeat on Beat 2 (Step 4), granular cascade roll on steps 13, 14, 15
+      if (step === 4) {
+        audio.playScheduledTallyClack(scheduledTime, 'backbeat');
+      } else if (step === 13 || step === 14 || step === 15) {
+        audio.playScheduledTallyClack(scheduledTime, 'fill');
+      }
+    } else if (this.tallyCadence === 'syncopated_groove') {
+      // Snare on Step 4, syncopated slap on Step 10, ghost tap on Step 14
+      if (step === 4 || step === 10) {
+        audio.playScheduledTallyClack(scheduledTime, 'backbeat');
+      } else if (step === 14) {
+        audio.playScheduledTallyClack(scheduledTime, 'ghost');
+      }
+    }
   }
 
   // ==================== VISUAL / GAME LOOP TIMING ====================
@@ -329,6 +368,19 @@ export class MintConductor {
         this.visualPlinkoStep = (this.visualPlinkoStep + 1) % 4;
       }
     }
+
+    // Trigger visual tally strike-bar snaps
+    if (this.tallyCadence === 'backbeat_snare') {
+      if (now - this.lastTallyVisualTrigger >= (quarterSeconds * 2.0) * 1000 * 0.95) {
+        this.lastTallyVisualTrigger = now;
+        this.visualTallyStep = (this.visualTallyStep + 1) % 2;
+      }
+    } else if (this.tallyCadence === 'cascade_fill' || this.tallyCadence === 'syncopated_groove') {
+      if (now - this.lastTallyVisualTrigger >= quarterSeconds * 1000 * 0.95) {
+        this.lastTallyVisualTrigger = now;
+        this.visualTallyStep = (this.visualTallyStep + 1) % 4;
+      }
+    }
   }
 
   public getLastPressVisualTrigger(): number {
@@ -343,12 +395,20 @@ export class MintConductor {
     return this.lastPlinkoVisualTrigger;
   }
 
+  public getLastTallyVisualTrigger(): number {
+    return this.lastTallyVisualTrigger;
+  }
+
   public getVisualNoteIndex(): number {
     return this.visualNoteIndex;
   }
 
   public getVisualPlinkoStep(): number {
     return this.visualPlinkoStep;
+  }
+
+  public getVisualTallyStep(): number {
+    return this.visualTallyStep;
   }
 
   /**
@@ -391,7 +451,8 @@ export class MintConductor {
       const hasActiveLoops =
         this.pressCadence !== 'off' ||
         this.stoneCadence !== 'off' ||
-        this.plinkoCadence !== 'off';
+        this.plinkoCadence !== 'off' ||
+        this.tallyCadence !== 'off';
       if (hasActiveLoops && !this.running) {
         this.start();
       }

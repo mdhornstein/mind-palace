@@ -4,6 +4,7 @@ import { HearthAudio } from '../../src/sound/audio';
 import { executeRingingStoneStrike, getLastStoneStrikeTime, resetRingingStoneState } from '../../src/rooms/coins/ringingStoneActions';
 import { executeMintCrankPress, getLastCrankTriggerTime } from '../../src/rooms/coins/coinMachineActions';
 import { executeGaltonQuickDrop, getLastGaltonDropTime, resetGaltonChuteState } from '../../src/rooms/coins/galtonChuteActions';
+import { executeTallyBoardPour, getLastTallyPourTime, resetTallyBoardState } from '../../src/rooms/coins/tallyBoardActions';
 
 describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
   beforeEach(() => {
@@ -31,9 +32,12 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     expect(conductor.getPressCadence()).toBe('off');
     expect(conductor.getStoneCadence()).toBe('off');
     expect(conductor.getPlinkoCadence()).toBe('off');
+    expect(conductor.getTallyCadence()).toBe('off');
     expect(conductor.isStationLooping('mint_coin_press')).toBe(false);
     expect(conductor.isStationLooping('mint_ringing_stone')).toBe(false);
     expect(conductor.isStationLooping('plinko_drop')).toBe(false);
+    expect(conductor.isStationLooping('mint_tally_board')).toBe(false);
+    expect(conductor.isStationLooping('tally_board')).toBe(false);
   });
 
   it('clamps tempo adjustments within safe musical limits (60..180 BPM)', () => {
@@ -80,6 +84,20 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     expect(conductor.getPlinkoCadence()).toBe('offbeat_pings');
     expect(conductor.isStationLooping('plinko_drop')).toBe(true);
 
+    // Test tally board cadences
+    const tallyCadences: Array<'backbeat_snare' | 'cascade_fill' | 'syncopated_groove'> = [
+      'backbeat_snare',
+      'cascade_fill',
+      'syncopated_groove',
+    ];
+
+    for (const cad of tallyCadences) {
+      conductor.setTallyCadence(cad);
+      expect(conductor.getTallyCadence()).toBe(cad);
+      expect(conductor.isStationLooping('mint_tally_board')).toBe(true);
+      expect(conductor.isStationLooping('tally_board')).toBe(true);
+    }
+
     conductor.setPressCadence('off');
     expect(conductor.isStationLooping('mint_coin_press')).toBe(false);
 
@@ -88,6 +106,10 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
 
     conductor.setPlinkoCadence('off');
     expect(conductor.isStationLooping('plinko_drop')).toBe(false);
+
+    conductor.setTallyCadence('off');
+    expect(conductor.isStationLooping('mint_tally_board')).toBe(false);
+    expect(conductor.isStationLooping('tally_board')).toBe(false);
   });
 
   it('auto-transports: starts when loop configured in active room, stops when disengaged', () => {
@@ -140,6 +162,24 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     expect(conductor.isRunning()).toBe(true);
     conductor.setPlinkoCadence('off');
     expect(conductor.isRunning()).toBe(false);
+
+    // Engaging tally backbeat snare starts transport
+    conductor.setTallyCadence('backbeat_snare');
+    expect(conductor.isRunning()).toBe(true);
+    conductor.setTallyCadence('off');
+    expect(conductor.isRunning()).toBe(false);
+
+    // Engaging tally cascade fill starts transport
+    conductor.setTallyCadence('cascade_fill');
+    expect(conductor.isRunning()).toBe(true);
+    conductor.setTallyCadence('off');
+    expect(conductor.isRunning()).toBe(false);
+
+    // Engaging tally syncopated groove starts transport
+    conductor.setTallyCadence('syncopated_groove');
+    expect(conductor.isRunning()).toBe(true);
+    conductor.setTallyCadence('off');
+    expect(conductor.isRunning()).toBe(false);
   });
 
   it('room lifecycle: suspends audio scheduling on room departure and resumes on return', () => {
@@ -148,6 +188,7 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     conductor.setPressCadence('four_on_the_floor');
     conductor.setStoneCadence('pentatonic_arp');
     conductor.setPlinkoCadence('sixteenth_shaker');
+    conductor.setTallyCadence('backbeat_snare');
     expect(conductor.isRunning()).toBe(true);
 
     // Player walks through door to The Study
@@ -157,6 +198,7 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     expect(conductor.getPressCadence()).toBe('four_on_the_floor');
     expect(conductor.getStoneCadence()).toBe('pentatonic_arp');
     expect(conductor.getPlinkoCadence()).toBe('sixteenth_shaker');
+    expect(conductor.getTallyCadence()).toBe('backbeat_snare');
 
     // Player returns to The Royal Mint
     conductor.handleRoomChange('coins');
@@ -180,12 +222,15 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     conductor.setPressCadence('four_on_the_floor');
     conductor.setStoneCadence('pentatonic_arp');
     conductor.setPlinkoCadence('sixteenth_shaker');
+    conductor.setTallyCadence('backbeat_snare');
 
     expect(conductor.getLastPressVisualTrigger()).toBe(0);
     expect(conductor.getLastStoneVisualTrigger()).toBe(0);
     expect(conductor.getLastPlinkoVisualTrigger()).toBe(0);
+    expect(conductor.getLastTallyVisualTrigger()).toBe(0);
     expect(conductor.getVisualNoteIndex()).toBe(0);
     expect(conductor.getVisualPlinkoStep()).toBe(0);
+    expect(conductor.getVisualTallyStep()).toBe(0);
 
     // Advance frame
     conductor.update(0.016);
@@ -193,8 +238,10 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     expect(conductor.getLastPressVisualTrigger()).toBeGreaterThan(0);
     expect(conductor.getLastStoneVisualTrigger()).toBeGreaterThan(0);
     expect(conductor.getLastPlinkoVisualTrigger()).toBeGreaterThan(0);
+    expect(conductor.getLastTallyVisualTrigger()).toBeGreaterThan(0);
     expect(conductor.getVisualNoteIndex()).toBe(1); // Stepped from 0 to 1
     expect(conductor.getVisualPlinkoStep()).toBe(1); // Stepped from 0 to 1
+    expect(conductor.getVisualTallyStep()).toBe(1); // Stepped from 0 to 1
   });
 
   it('preserves live manual [F] interactions while conductor loops are active', () => {
@@ -203,9 +250,11 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     conductor.setPressCadence('four_on_the_floor');
     conductor.setStoneCadence('pentatonic_arp');
     conductor.setPlinkoCadence('sixteenth_shaker');
+    conductor.setTallyCadence('backbeat_snare');
 
     resetRingingStoneState('mint_ringing_stone');
     resetGaltonChuteState('plinko_drop');
+    resetTallyBoardState('mint_tally_board');
 
     // Live strike on stone while automated arpeggio is active
     const struck = executeRingingStoneStrike({ stationId: 'mint_ringing_stone' }, 5000);
@@ -220,6 +269,11 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     const dropped = executeGaltonQuickDrop({ stationId: 'plinko_drop' }, 7000);
     expect(dropped).toBe(true);
     expect(getLastGaltonDropTime('plinko_drop')).toBe(7000);
+
+    // Live pour on tally board while automated backbeat snare is active
+    const poured = executeTallyBoardPour({ stationId: 'mint_tally_board' }, 8000);
+    expect(poured).toBe(true);
+    expect(getLastTallyPourTime('mint_tally_board')).toBe(8000);
   });
 
   it('schedules Web Audio events with sample-accurate lookahead and gates mint bus', () => {
@@ -231,6 +285,7 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     conductor.setPressCadence('four_on_the_floor');
     conductor.setStoneCadence('quarter_chime');
     conductor.setPlinkoCadence('sixteenth_shaker');
+    conductor.setTallyCadence('backbeat_snare');
 
     expect(conductor.isRunning()).toBe(true);
     expect(setMintBusActiveSpy).toHaveBeenCalledWith(true);
@@ -239,6 +294,7 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     conductor.setPressCadence('off');
     conductor.setStoneCadence('off');
     conductor.setPlinkoCadence('off');
+    conductor.setTallyCadence('off');
     expect(conductor.isRunning()).toBe(false);
 
     // Leaving the room silences the mint bus
@@ -249,6 +305,7 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     expect(typeof audio.playScheduledPressKick).toBe('function');
     expect(typeof audio.playRingingStoneChime).toBe('function');
     expect(typeof audio.playScheduledPlinkoHit).toBe('function');
+    expect(typeof audio.playScheduledTallyClack).toBe('function');
   });
 
   it('silences mint bus immediately when transitioning away from coins room', () => {
@@ -313,5 +370,48 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     conductor.setRoomActive(false);
     expect(conductor.isRunning()).toBe(false);
     expect(setMintBusActiveSpy).toHaveBeenCalledWith(false);
+  });
+
+  it('schedules backbeat snare, cascade fills, and syncopated grooves on exact 16th-note steps', () => {
+    const audio = HearthAudio.getInstance();
+    const clackSpy = vi.spyOn(audio, 'playScheduledTallyClack').mockImplementation(() => {});
+
+    const conductor = MintConductor.getInstance();
+
+    // 1. backbeat_snare: triggers 'backbeat' on steps 4 and 12
+    conductor.setTallyCadence('backbeat_snare');
+    clackSpy.mockClear();
+
+    for (let s = 0; s < 16; s++) {
+      (conductor as any).scheduleStep(s, 10.0 + s * 0.1);
+    }
+    expect(clackSpy).toHaveBeenCalledTimes(2);
+    expect(clackSpy).toHaveBeenNthCalledWith(1, 10.4, 'backbeat');
+    expect(clackSpy).toHaveBeenNthCalledWith(2, 11.2, 'backbeat');
+
+    // 2. cascade_fill: beat 2 (step 4) backbeat, turnaround fills on steps 13, 14, 15
+    conductor.setTallyCadence('cascade_fill');
+    clackSpy.mockClear();
+
+    for (let s = 0; s < 16; s++) {
+      (conductor as any).scheduleStep(s, 20.0 + s * 0.1);
+    }
+    expect(clackSpy).toHaveBeenCalledTimes(4);
+    expect(clackSpy).toHaveBeenNthCalledWith(1, 20.4, 'backbeat');
+    expect(clackSpy).toHaveBeenNthCalledWith(2, 21.3, 'fill');
+    expect(clackSpy).toHaveBeenNthCalledWith(3, 21.4, 'fill');
+    expect(clackSpy).toHaveBeenNthCalledWith(4, 21.5, 'fill');
+
+    // 3. syncopated_groove: step 4 backbeat, step 10 backbeat, step 14 ghost
+    conductor.setTallyCadence('syncopated_groove');
+    clackSpy.mockClear();
+
+    for (let s = 0; s < 16; s++) {
+      (conductor as any).scheduleStep(s, 30.0 + s * 0.1);
+    }
+    expect(clackSpy).toHaveBeenCalledTimes(3);
+    expect(clackSpy).toHaveBeenNthCalledWith(1, 30.4, 'backbeat');
+    expect(clackSpy).toHaveBeenNthCalledWith(2, 31.0, 'backbeat');
+    expect(clackSpy).toHaveBeenNthCalledWith(3, 31.4, 'ghost');
   });
 });
