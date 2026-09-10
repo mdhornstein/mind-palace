@@ -45,7 +45,7 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     expect(conductor.getBpm()).toBe(180);
   });
 
-  it('tracks station looping states for both coin press and ringing stone', () => {
+  it('tracks station looping states for all musical cadences', () => {
     const conductor = MintConductor.getInstance();
 
     conductor.setPressCadence('four_on_the_floor');
@@ -53,9 +53,19 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     expect(conductor.isStationLooping('mint_coin_press')).toBe(true);
     expect(conductor.isStationLooping('vault_coin_press')).toBe(true);
 
-    conductor.setStoneCadence('pentatonic_arp');
-    expect(conductor.getStoneCadence()).toBe('pentatonic_arp');
-    expect(conductor.isStationLooping('mint_ringing_stone')).toBe(true);
+    // Test all musical stone cadences
+    const cadences: Array<'quarter_chime' | 'offbeat' | 'root_drone' | 'pentatonic_arp'> = [
+      'quarter_chime',
+      'offbeat',
+      'root_drone',
+      'pentatonic_arp',
+    ];
+
+    for (const cad of cadences) {
+      conductor.setStoneCadence(cad);
+      expect(conductor.getStoneCadence()).toBe(cad);
+      expect(conductor.isStationLooping('mint_ringing_stone')).toBe(true);
+    }
 
     conductor.setPressCadence('off');
     expect(conductor.isStationLooping('mint_coin_press')).toBe(false);
@@ -79,10 +89,27 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     conductor.setPressCadence('off');
     expect(conductor.isRunning()).toBe(false);
 
-    // Engaging stone starts transport
+    // Engaging quarter chime starts transport
+    conductor.setStoneCadence('quarter_chime');
+    expect(conductor.isRunning()).toBe(true);
+    conductor.setStoneCadence('off');
+    expect(conductor.isRunning()).toBe(false);
+
+    // Engaging offbeats starts transport
+    conductor.setStoneCadence('offbeat');
+    expect(conductor.isRunning()).toBe(true);
+    conductor.setStoneCadence('off');
+    expect(conductor.isRunning()).toBe(false);
+
+    // Engaging root drone starts transport
+    conductor.setStoneCadence('root_drone');
+    expect(conductor.isRunning()).toBe(true);
+    conductor.setStoneCadence('off');
+    expect(conductor.isRunning()).toBe(false);
+
+    // Engaging pentatonic arp starts transport
     conductor.setStoneCadence('pentatonic_arp');
     expect(conductor.isRunning()).toBe(true);
-
     conductor.setStoneCadence('off');
     expect(conductor.isRunning()).toBe(false);
   });
@@ -153,16 +180,37 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     expect(getLastCrankTriggerTime()).toBe(6000);
   });
 
-  it('schedules Web Audio events with sample-accurate lookahead', () => {
+  it('schedules Web Audio events with sample-accurate lookahead and gates mint bus', () => {
     const audio = HearthAudio.getInstance();
+    const setMintBusActiveSpy = vi.spyOn(audio, 'setMintBusActive');
 
     const conductor = MintConductor.getInstance();
     conductor.setRoomActive(true);
     conductor.setPressCadence('four_on_the_floor');
-    conductor.setStoneCadence('pentatonic_arp');
+    conductor.setStoneCadence('quarter_chime');
+
+    expect(conductor.isRunning()).toBe(true);
+    expect(setMintBusActiveSpy).toHaveBeenCalledWith(true);
+
+    // Turning off both stops transport and silences mint bus
+    conductor.setPressCadence('off');
+    conductor.setStoneCadence('off');
+    expect(conductor.isRunning()).toBe(false);
+    expect(setMintBusActiveSpy).toHaveBeenCalledWith(false);
 
     // Both methods are registered on the audio instance
     expect(typeof audio.playScheduledPressKick).toBe('function');
     expect(typeof audio.playRingingStoneChime).toBe('function');
+  });
+
+  it('silences mint bus immediately when transitioning away from coins room', () => {
+    const audio = HearthAudio.getInstance();
+    const setMintBusActiveSpy = vi.spyOn(audio, 'setMintBusActive');
+
+    audio.setRoom('study');
+    expect(setMintBusActiveSpy).toHaveBeenCalledWith(false);
+
+    audio.setRoom('coins');
+    expect(setMintBusActiveSpy).toHaveBeenCalledWith(true);
   });
 });

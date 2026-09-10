@@ -13,7 +13,12 @@ import { HearthAudio } from '../../sound/audio';
  */
 
 export type PressCadence = 'off' | 'four_on_the_floor';
-export type StoneCadence = 'off' | 'pentatonic_arp';
+export type StoneCadence =
+  | 'off'
+  | 'quarter_chime'
+  | 'offbeat'
+  | 'root_drone'
+  | 'pentatonic_arp';
 
 export class MintConductor {
   private static instance: MintConductor | null = null;
@@ -130,6 +135,7 @@ export class MintConductor {
     this.currentArpNoteIndex = 0;
 
     const audio = HearthAudio.getInstance();
+    audio.setMintBusActive(true);
     const ctx = audio.getContext();
     if (ctx) {
       this.nextStepTime = ctx.currentTime + 0.05;
@@ -143,14 +149,23 @@ export class MintConductor {
       clearInterval(this.lookaheadTimer);
       this.lookaheadTimer = null;
     }
+    if ((globalThis as any).__MINT_CONDUCTOR_TIMER__) {
+      clearInterval((globalThis as any).__MINT_CONDUCTOR_TIMER__);
+      (globalThis as any).__MINT_CONDUCTOR_TIMER__ = null;
+    }
+    // Mute bus when stopped so lookahead audio tail doesn't linger
+    HearthAudio.getInstance().setMintBusActive(false);
   }
 
   private scheduleLoop(): void {
     if (this.lookaheadTimer !== null) {
       clearInterval(this.lookaheadTimer);
     }
+    if ((globalThis as any).__MINT_CONDUCTOR_TIMER__) {
+      clearInterval((globalThis as any).__MINT_CONDUCTOR_TIMER__);
+    }
 
-    this.lookaheadTimer = setInterval(() => {
+    const timer = setInterval(() => {
       if (!this.running || !this.inActiveRoom) return;
 
       const audio = HearthAudio.getInstance();
@@ -166,6 +181,9 @@ export class MintConductor {
         this.currentStep = (this.currentStep + 1) % 16;
       }
     }, this.lookaheadIntervalMs);
+
+    this.lookaheadTimer = timer;
+    (globalThis as any).__MINT_CONDUCTOR_TIMER__ = timer;
   }
 
   /**
@@ -179,10 +197,27 @@ export class MintConductor {
       audio.playScheduledPressKick(scheduledTime);
     }
 
-    // 2. Ringing Stone (Pentatonic Arp: 8th notes -> Even steps 0, 2, 4, 6, 8, 10, 12, 14)
-    if (this.stoneCadence === 'pentatonic_arp' && step % 2 === 0) {
+    // 2. Ringing Stone Musical Cadences
+    if (this.stoneCadence === 'quarter_chime' && step % 4 === 0) {
+      // Quarter note relaxed bell sequence on beats 1, 2, 3, 4 (571ms intervals)
+      // Notes: C6, E6, G6, A6 (warm, harmonious pentatonic movement)
+      const melodicNotes = [0, 2, 3, 4];
+      const noteIdx = melodicNotes[this.currentArpNoteIndex % melodicNotes.length];
+      audio.playRingingStoneChime(noteIdx, scheduledTime, 'quarter');
+      this.currentArpNoteIndex++;
+    } else if (this.stoneCadence === 'offbeat' && step % 4 === 2) {
+      // Syncopated upbeats on steps 2, 6, 10, 14 (locks in groove with 4-on-floor kicks)
+      const offbeatNotes = [3, 4];
+      const noteIdx = offbeatNotes[this.currentArpNoteIndex % offbeatNotes.length];
+      audio.playRingingStoneChime(noteIdx, scheduledTime, 'offbeat');
+      this.currentArpNoteIndex++;
+    } else if (this.stoneCadence === 'root_drone' && step === 0) {
+      // Whole-note downbeat once per measure (2.28s intervals) - deep sovereign gong
+      audio.playRingingStoneChime(0, scheduledTime, 'drone');
+    } else if (this.stoneCadence === 'pentatonic_arp' && step % 2 === 0) {
+      // 8th-notes on steps 0, 2, 4, 6, 8, 10, 12, 14 - crisp music box
       const noteIdx = this.currentArpNoteIndex;
-      audio.playRingingStoneChime(noteIdx, scheduledTime);
+      audio.playRingingStoneChime(noteIdx, scheduledTime, 'arp');
       this.currentArpNoteIndex = (this.currentArpNoteIndex + 1) % 7;
     }
   }
@@ -199,6 +234,7 @@ export class MintConductor {
     const now = Date.now();
     const quarterSeconds = 60.0 / this.bpm;
     const eighthSeconds = quarterSeconds / 2.0;
+    const barSeconds = quarterSeconds * 4.0;
 
     // Trigger visual kicks on beat intervals
     if (this.pressCadence === 'four_on_the_floor') {
@@ -207,8 +243,23 @@ export class MintConductor {
       }
     }
 
-    // Trigger visual stone strikes on 8th-note intervals
-    if (this.stoneCadence === 'pentatonic_arp') {
+    // Trigger visual stone strikes according to active cadence
+    if (this.stoneCadence === 'quarter_chime') {
+      if (now - this.lastStoneVisualTrigger >= quarterSeconds * 1000 * 0.95) {
+        this.lastStoneVisualTrigger = now;
+        this.visualNoteIndex = (this.visualNoteIndex + 1) % 4;
+      }
+    } else if (this.stoneCadence === 'offbeat') {
+      if (now - this.lastStoneVisualTrigger >= quarterSeconds * 1000 * 0.95) {
+        this.lastStoneVisualTrigger = now;
+        this.visualNoteIndex = (this.visualNoteIndex + 1) % 2;
+      }
+    } else if (this.stoneCadence === 'root_drone') {
+      if (now - this.lastStoneVisualTrigger >= barSeconds * 1000 * 0.95) {
+        this.lastStoneVisualTrigger = now;
+        this.visualNoteIndex = 0;
+      }
+    } else if (this.stoneCadence === 'pentatonic_arp') {
       if (now - this.lastStoneVisualTrigger >= eighthSeconds * 1000 * 0.95) {
         this.lastStoneVisualTrigger = now;
         this.visualNoteIndex = (this.visualNoteIndex + 1) % 7;
@@ -240,29 +291,24 @@ export class MintConductor {
 
   public handleRoomChange(room: string): void {
     const isCoins = room === 'coins' || room === 'mint';
-    this.inActiveRoom = isCoins;
-
-    if (isCoins) {
-      // Re-entering room: resume if stations have active loops
-      const hasActiveLoops = this.pressCadence !== 'off' || this.stoneCadence !== 'off';
-      if (hasActiveLoops && !this.running) {
-        this.start();
-      }
-    } else {
-      // Leaving room: pause audio scheduling while retaining configuration state
-      if (this.running) {
-        this.stop();
-      }
-    }
+    this.setRoomActive(isCoins);
   }
 
   public setRoomActive(active: boolean): void {
     if (this.inActiveRoom === active) return;
     this.inActiveRoom = active;
-    if (!active && this.running) {
-      this.stop();
-    } else if (active && (this.pressCadence !== 'off' || this.stoneCadence !== 'off') && !this.running) {
-      this.start();
+    if (!active) {
+      if (this.running) {
+        this.stop();
+      } else {
+        HearthAudio.getInstance().setMintBusActive(false);
+      }
+    } else {
+      HearthAudio.getInstance().setMintBusActive(true);
+      const hasActiveLoops = this.pressCadence !== 'off' || this.stoneCadence !== 'off';
+      if (hasActiveLoops && !this.running) {
+        this.start();
+      }
     }
   }
 }

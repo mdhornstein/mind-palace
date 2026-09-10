@@ -113,17 +113,27 @@ export const coinPressStation: WorldStation = {
     ctx.lineWidth = 2;
     ctx.strokeRect(baseX + 14, baseY + 18, 84, 52);
 
-    // Green indicator lamp for line-shaft clutch
+    // Indicator lamp for line-shaft clutch
+    ctx.fillStyle = isLooping ? '#22c55e' : '#292524';
+    ctx.beginPath();
+    ctx.arc(baseX + 22, baseY + 26, 2.5, 0, Math.PI * 2);
+    ctx.fill();
     if (isLooping) {
-      ctx.fillStyle = '#22c55e';
-      ctx.beginPath();
-      ctx.arc(baseX + 22, baseY + 26, 2.5, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.strokeStyle = '#4ade80';
+      ctx.lineWidth = 1;
+      ctx.stroke();
     }
 
-    // 3. Rotating Flywheel on Left (Spins faster when line shaft is engaged)
-    const rotSpeed = isLooping ? 0.007 : 0.003;
-    const rot = (timeMs * rotSpeed) % (Math.PI * 2);
+    // Manual crank timing state
+    const now = Date.now();
+    const lastCrank = getLastCrankTriggerTime();
+    const crankElapsed = now - lastCrank;
+    const crankRecoil = crankElapsed < 220 ? Math.max(0, 1 - crankElapsed / 220) : 0;
+
+    // 3. Rotating Flywheel on Left (Spins when line shaft engaged or on manual crank)
+    const rot = isLooping
+      ? (timeMs * 0.007) % (Math.PI * 2)
+      : (crankRecoil * Math.PI * 2) % (Math.PI * 2);
 
     // Outer flywheel rim
     ctx.strokeStyle = '#f59e0b';
@@ -153,11 +163,6 @@ export const coinPressStation: WorldStation = {
     }
 
     // 4. Stamping Piston Head (Vertical reciprocating motion + beat hit recoil + crank impact recoil)
-    const now = Date.now();
-    const lastCrank = getLastCrankTriggerTime();
-    const crankElapsed = now - lastCrank;
-    const crankRecoil = crankElapsed < 220 ? Math.max(0, 1 - crankElapsed / 220) : 0;
-
     let pistonY: number;
     let loopImpactGlow = 0;
 
@@ -180,8 +185,8 @@ export const coinPressStation: WorldStation = {
       }
       pistonY = baseY + 26 + strokeOffset + crankRecoil * 5;
     } else {
-      const pistonCycle = (Math.sin(timeMs * 0.006) + 1) / 2; // 0 to 1
-      pistonY = baseY + 26 + pistonCycle * 8 + crankRecoil * 5;
+      // Disengaged: machine rests completely at top neutral position (moves only on manual crank)
+      pistonY = baseY + 26 + crankRecoil * 10;
     }
 
     // Piston guide shaft
@@ -209,7 +214,9 @@ export const coinPressStation: WorldStation = {
 
     // Vibrating pressure needle (kicks hard on beat impact and manual crank)
     const impactPulse = Math.max(crankRecoil, loopImpactGlow * 0.85);
-    const needleJitter = (Math.sin(timeMs * 0.02) * 0.3 + 0.3) + impactPulse * 0.85;
+    const needleJitter = isLooping
+      ? (Math.sin(timeMs * 0.02) * 0.3 + 0.3) + impactPulse * 0.85
+      : crankRecoil * 0.9;
     ctx.strokeStyle = '#dc2626';
     ctx.lineWidth = 1.2;
     ctx.beginPath();
@@ -220,12 +227,16 @@ export const coinPressStation: WorldStation = {
     );
     ctx.stroke();
 
-    // Steam exhaust wisp & rhythmic puff burst
-    const steamAlpha = (Math.sin(timeMs * 0.005) + 1) * 0.25 + impactPulse * 0.65;
-    ctx.fillStyle = `rgba(241, 245, 249, ${Math.min(1, steamAlpha)})`;
-    ctx.beginPath();
-    ctx.arc(baseX + 88, baseY + 4 - (timeMs * 0.02 % 14), 4 + (timeMs * 0.01 % 5) + impactPulse * 5, 0, Math.PI * 2);
-    ctx.fill();
+    // Steam exhaust wisp & rhythmic puff burst (active only when looping or cranked)
+    const steamAlpha = isLooping
+      ? (Math.sin(timeMs * 0.005) + 1) * 0.25 + impactPulse * 0.65
+      : crankRecoil * 0.8;
+    if (steamAlpha > 0.05) {
+      ctx.fillStyle = `rgba(241, 245, 249, ${Math.min(1, steamAlpha)})`;
+      ctx.beginPath();
+      ctx.arc(baseX + 88, baseY + 4 - (timeMs * 0.02 % 14), 4 + (timeMs * 0.01 % 5) + impactPulse * 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     // 6. Polished Brass Ejection Chute (angled toward room floor)
     ctx.fillStyle = '#b45309';

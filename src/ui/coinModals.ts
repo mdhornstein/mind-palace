@@ -184,14 +184,14 @@ export function openCoinPressModal() {
       }
     } else {
       if (badgeEl) {
-        badgeEl.innerText = 'DRIVE: DISENGAGED';
+        badgeEl.innerText = 'DRIVE: DISENGAGED (IDLE)';
         badgeEl.style.background = '#292524';
         badgeEl.style.color = '#a8a29e';
         badgeEl.style.border = '1px solid #44403c';
       }
       if (btnOff) {
         btnOff.style.background = '#44403c';
-        btnOff.style.border = '1px solid #78716c';
+        btnOff.style.border = '1.5px solid #a8a29e';
         btnOff.style.color = '#f8fafc';
       }
       if (btnFour) {
@@ -544,7 +544,7 @@ export function openRingingStoneModal() {
       while debased pewter or lead counterfeits produce a dull, deadened thud.
     </div>
 
-    <!-- Clockwork Carillon Escapement (Automated Arpeggio) -->
+    <!-- Clockwork Carillon Escapement (Automated Rhythm & Music) -->
     <div style="background: rgba(0,0,0,0.4); border: 1.5px solid #78350f; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
         <div style="font-size: 0.8rem; font-weight: 700; color: #fef08a; text-transform: uppercase; letter-spacing: 0.04em;">
@@ -554,15 +554,27 @@ export function openRingingStoneModal() {
         </div>
       </div>
       <div style="font-size: 0.78rem; line-height: 1.4; color: #cbd5e1; margin-bottom: 10px;">
-        Engage the pinned barrel escapement to sound the basalt acoustic anvil in an automated melodic sequence.
+        Engage the pinned barrel escapement to sound the basalt acoustic anvil in an automated musical pattern.
       </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-        <button id="btn-stone-cadence-off" style="padding: 8px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease;">
-          ⏹ Disengaged (Manual)
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <button id="btn-stone-cadence-off" style="width: 100%; padding: 8px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease; text-align: left; display: flex; justify-content: space-between; align-items: center;">
+          <span>⏹ Disengaged (Manual Strikes Only)</span>
+          <span style="font-size: 0.68rem; opacity: 0.75;">Idle</span>
         </button>
-        <button id="btn-stone-cadence-arp" style="padding: 8px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease;">
-          ♪ Pentatonic Arp (8th-Notes)
-        </button>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+          <button id="btn-stone-cadence-quarter" style="padding: 8px 10px; border-radius: 6px; font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease; text-align: left;">
+            🔔 Quarter Bell<br/><span style="font-size: 0.68rem; opacity: 0.8; font-weight: normal;">Relaxed 1/4 note (571ms)</span>
+          </button>
+          <button id="btn-stone-cadence-offbeat" style="padding: 8px 10px; border-radius: 6px; font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease; text-align: left;">
+            ✨ Syncopated Ping<br/><span style="font-size: 0.68rem; opacity: 0.8; font-weight: normal;">Upbeats (Locks with kick)</span>
+          </button>
+          <button id="btn-stone-cadence-drone" style="padding: 8px 10px; border-radius: 6px; font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease; text-align: left;">
+            🧘 Sovereign Drone<br/><span style="font-size: 0.68rem; opacity: 0.8; font-weight: normal;">Whole note (Deep gong)</span>
+          </button>
+          <button id="btn-stone-cadence-arp" style="padding: 8px 10px; border-radius: 6px; font-size: 0.76rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease; text-align: left;">
+            🎶 Music Box Arp<br/><span style="font-size: 0.68rem; opacity: 0.8; font-weight: normal;">Crisp 1/8 note cascade</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -598,53 +610,95 @@ export function openRingingStoneModal() {
   // Carillon escapement controls
   const stoneBadgeEl = body.querySelector('#stone-cadence-badge') as HTMLElement;
   const btnStoneOff = body.querySelector('#btn-stone-cadence-off') as HTMLButtonElement;
+  const btnStoneQuarter = body.querySelector('#btn-stone-cadence-quarter') as HTMLButtonElement;
+  const btnStoneOffbeat = body.querySelector('#btn-stone-cadence-offbeat') as HTMLButtonElement;
+  const btnStoneDrone = body.querySelector('#btn-stone-cadence-drone') as HTMLButtonElement;
   const btnStoneArp = body.querySelector('#btn-stone-cadence-arp') as HTMLButtonElement;
+
+  const cadenceButtons: Record<string, HTMLButtonElement | null> = {
+    off: btnStoneOff,
+    quarter_chime: btnStoneQuarter,
+    offbeat: btnStoneOffbeat,
+    root_drone: btnStoneDrone,
+    pentatonic_arp: btnStoneArp,
+  };
 
   function updateStoneCadenceUI() {
     const cadence = conductor.getStoneCadence();
-    if (cadence === 'pentatonic_arp') {
-      if (stoneBadgeEl) {
-        stoneBadgeEl.innerText = 'ESCAPEMENT: 105 BPM ♪ PENTATONIC ARP';
-        stoneBadgeEl.style.background = 'rgba(2, 132, 199, 0.45)';
-        stoneBadgeEl.style.color = '#38bdf8';
-        stoneBadgeEl.style.border = '1px solid #0284c7';
-      }
-      if (btnStoneOff) {
-        btnStoneOff.style.background = 'rgba(0, 0, 0, 0.3)';
-        btnStoneOff.style.border = '1px solid #44403c';
-        btnStoneOff.style.color = '#94a3b8';
-      }
-      if (btnStoneArp) {
-        btnStoneArp.style.background = 'linear-gradient(180deg, #0284c7 0%, #0369a1 100%)';
-        btnStoneArp.style.border = '1px solid #38bdf8';
-        btnStoneArp.style.color = '#ffffff';
-        btnStoneArp.style.boxShadow = '0 0 12px rgba(56, 189, 248, 0.35)';
-      }
-    } else {
-      if (stoneBadgeEl) {
-        stoneBadgeEl.innerText = 'ESCAPEMENT: DISENGAGED';
-        stoneBadgeEl.style.background = '#292524';
-        stoneBadgeEl.style.color = '#a8a29e';
-        stoneBadgeEl.style.border = '1px solid #44403c';
-      }
-      if (btnStoneOff) {
-        btnStoneOff.style.background = '#44403c';
-        btnStoneOff.style.border = '1px solid #78716c';
-        btnStoneOff.style.color = '#f8fafc';
-      }
-      if (btnStoneArp) {
-        btnStoneArp.style.background = 'rgba(0, 0, 0, 0.3)';
-        btnStoneArp.style.border = '1px solid #451a03';
-        btnStoneArp.style.color = '#94a3b8';
-        btnStoneArp.style.boxShadow = 'none';
-      }
+
+    const badgeConfigs: Record<string, { text: string; bg: string; color: string; border: string }> = {
+      off: { text: 'ESCAPEMENT: DISENGAGED (IDLE)', bg: '#292524', color: '#a8a29e', border: '#44403c' },
+      quarter_chime: { text: 'ESCAPEMENT: 105 BPM ♩ QUARTER BELL', bg: 'rgba(217, 119, 6, 0.4)', color: '#fef08a', border: '#d97706' },
+      offbeat: { text: 'ESCAPEMENT: 105 BPM ♪ SYNCOPATED UPBEAT', bg: 'rgba(16, 185, 129, 0.35)', color: '#6ee7b7', border: '#10b981' },
+      root_drone: { text: 'ESCAPEMENT: 105 BPM 𝄝 SOVEREIGN DRONE', bg: 'rgba(139, 92, 246, 0.35)', color: '#c4b5fd', border: '#8b5cf6' },
+      pentatonic_arp: { text: 'ESCAPEMENT: 105 BPM ♫ MUSIC BOX ARP', bg: 'rgba(2, 132, 199, 0.45)', color: '#38bdf8', border: '#0284c7' },
+    };
+
+    const cfg = badgeConfigs[cadence] || badgeConfigs.off;
+    if (stoneBadgeEl) {
+      stoneBadgeEl.innerText = cfg.text;
+      stoneBadgeEl.style.background = cfg.bg;
+      stoneBadgeEl.style.color = cfg.color;
+      stoneBadgeEl.style.border = `1px solid ${cfg.border}`;
     }
+
+    Object.entries(cadenceButtons).forEach(([key, btn]) => {
+      if (!btn) return;
+      if (key === cadence) {
+        if (key === 'off') {
+          btn.style.background = '#44403c';
+          btn.style.border = '1.5px solid #a8a29e';
+          btn.style.color = '#f8fafc';
+          btn.style.boxShadow = 'none';
+        } else if (key === 'quarter_chime') {
+          btn.style.background = 'linear-gradient(180deg, #b45309 0%, #78350f 100%)';
+          btn.style.border = '1.5px solid #f59e0b';
+          btn.style.color = '#ffffff';
+          btn.style.boxShadow = '0 0 10px rgba(245, 158, 11, 0.35)';
+        } else if (key === 'offbeat') {
+          btn.style.background = 'linear-gradient(180deg, #059669 0%, #065f46 100%)';
+          btn.style.border = '1.5px solid #34d399';
+          btn.style.color = '#ffffff';
+          btn.style.boxShadow = '0 0 10px rgba(52, 211, 153, 0.35)';
+        } else if (key === 'root_drone') {
+          btn.style.background = 'linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%)';
+          btn.style.border = '1.5px solid #a78bfa';
+          btn.style.color = '#ffffff';
+          btn.style.boxShadow = '0 0 10px rgba(167, 139, 250, 0.35)';
+        } else {
+          btn.style.background = 'linear-gradient(180deg, #0284c7 0%, #0369a1 100%)';
+          btn.style.border = '1.5px solid #38bdf8';
+          btn.style.color = '#ffffff';
+          btn.style.boxShadow = '0 0 10px rgba(56, 189, 248, 0.35)';
+        }
+      } else {
+        btn.style.background = 'rgba(0, 0, 0, 0.3)';
+        btn.style.border = '1px solid #44403c';
+        btn.style.color = '#94a3b8';
+        btn.style.boxShadow = 'none';
+      }
+    });
   }
 
   updateStoneCadenceUI();
 
   btnStoneOff?.addEventListener('click', () => {
     conductor.setStoneCadence('off');
+    updateStoneCadenceUI();
+  });
+
+  btnStoneQuarter?.addEventListener('click', () => {
+    conductor.setStoneCadence('quarter_chime');
+    updateStoneCadenceUI();
+  });
+
+  btnStoneOffbeat?.addEventListener('click', () => {
+    conductor.setStoneCadence('offbeat');
+    updateStoneCadenceUI();
+  });
+
+  btnStoneDrone?.addEventListener('click', () => {
+    conductor.setStoneCadence('root_drone');
     updateStoneCadenceUI();
   });
 

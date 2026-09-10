@@ -15,6 +15,7 @@ import { registerApplicationActions } from './ui/appActions';
 import { GameLoop } from './core/gameLoop';
 import { HudManager } from './ui/hudManager';
 import { RoomVariantManager } from './rooms/variants/roomVariantManager';
+import { MintConductor } from './rooms/coins/mintConductor';
 
 class MindPalaceApp {
   private canvas: HTMLCanvasElement;
@@ -50,7 +51,11 @@ class MindPalaceApp {
 
     this.stateManager = StateManager.getInstance();
     const savedState = this.stateManager.getState();
-    this.currentRoom = RoomRegistry.getRoom(savedState.currentRoomId || 'study');
+    const currentRoomId = savedState.currentRoomId || 'study';
+    this.currentRoom = RoomRegistry.getRoom(currentRoomId);
+    HearthAudio.getInstance().setRoom(currentRoomId);
+    const isCoinsInit = currentRoomId === 'coins' || currentRoomId.startsWith('coins_');
+    MintConductor.getInstance().setRoomActive(isCoinsInit);
 
     this.player = new PlayerController(
       savedState.player.x,
@@ -75,6 +80,9 @@ class MindPalaceApp {
         this.activeTarget = null;
         this.pendingTarget = null;
         this.hudManager.clear();
+        HearthAudio.getInstance().setRoom(roomId);
+        const isCoins = roomId === 'coins' || roomId.startsWith('coins_');
+        MintConductor.getInstance().setRoomActive(isCoins);
       }
     });
 
@@ -276,11 +284,17 @@ class MindPalaceApp {
     this.pendingTarget = null;
     this.hudManager.clear();
     HearthAudio.getInstance().setRoom(roomId);
+    const isCoins = roomId === 'coins' || roomId.startsWith('coins_');
+    MintConductor.getInstance().setRoomActive(isCoins);
     this.lastTransitionTime = Date.now();
   }
 
   private update(dtSeconds: number, nowMs: number) {
     this.lastDtSeconds = dtSeconds;
+
+    // Ensure Mint Conductor audio state is continually synchronized with active room
+    const isCoinsRoom = this.currentRoom.id === 'coins' || this.currentRoom.id.startsWith('coins_');
+    MintConductor.getInstance().setRoomActive(isCoinsRoom);
 
     // If modal dialog is open, pause player walking updates
     if (!this.overlay.isOpen()) {

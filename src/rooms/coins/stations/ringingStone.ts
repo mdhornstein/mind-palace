@@ -62,12 +62,29 @@ export const ringingStoneStation: WorldStation = {
       strikeProgress = manualElapsed / 650;
       activeNoteIdx = getStoneNoteIndex('mint_ringing_stone');
     } else if (isLooping) {
-      // 8th-note cadence driven by conductor beat phase
+      const stoneCadence = conductor.getStoneCadence();
       const beatPhase = conductor.getBeatPhase(timeMs);
-      const eighthPhase = (beatPhase * 2) % 1;
       isStriking = true;
-      strikeProgress = eighthPhase;
-      activeNoteIdx = conductor.getVisualNoteIndex();
+
+      if (stoneCadence === 'quarter_chime') {
+        // Quarter note strikes once per quarter beat
+        strikeProgress = beatPhase;
+        activeNoteIdx = conductor.getVisualNoteIndex();
+      } else if (stoneCadence === 'offbeat') {
+        // Syncopated upbeat strikes halfway through the beat
+        strikeProgress = (beatPhase + 0.5) % 1;
+        activeNoteIdx = conductor.getVisualNoteIndex();
+      } else if (stoneCadence === 'root_drone') {
+        // Whole-note downbeat once per 4 beats (measure cycle)
+        const barDurationMs = (60.0 / conductor.getBpm()) * 4000;
+        strikeProgress = (timeMs % barDurationMs) / barDurationMs;
+        activeNoteIdx = 0;
+      } else {
+        // pentatonic_arp: 8th-note cadence
+        const eighthPhase = (beatPhase * 2) % 1;
+        strikeProgress = eighthPhase;
+        activeNoteIdx = conductor.getVisualNoteIndex();
+      }
     }
 
     // 1. Acoustic Shockwave Ripple expanding across the floor
@@ -171,9 +188,11 @@ export const ringingStoneStation: WorldStation = {
 
     // Clockwork Escapement Cam Wheel (Visible when carillon is engaged)
     if (isLooping) {
+      const stoneCadence = conductor.getStoneCadence();
       const camX = baseX + 14;
       const camY = baseY + 28;
-      const camRot = (timeMs * 0.006) % (Math.PI * 2);
+      const camSpeed = stoneCadence === 'pentatonic_arp' ? 0.006 : stoneCadence === 'root_drone' ? 0.0015 : 0.003;
+      const camRot = (timeMs * camSpeed) % (Math.PI * 2);
       ctx.fillStyle = '#78350f';
       ctx.beginPath();
       ctx.arc(camX, camY, 6.5, 0, Math.PI * 2);
