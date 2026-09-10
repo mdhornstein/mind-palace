@@ -813,7 +813,117 @@ describe('InteractionSystem', () => {
 
       expect(getLastStoneStrikeTime('mint_ringing_stone')).toBeGreaterThan(0);
     });
+
+    it('verifies The Gilded Chute (Galton Chute) station declaration and dual F/Space intent resolution', async () => {
+      const { v1MintConfig } = await import('../../src/rooms/coins/variants/v1_mint');
+      const plinkoStation = v1MintConfig.stations.find((s) => s.id === 'plinko_drop')!;
+      expect(plinkoStation).toBeDefined();
+      expect(plinkoStation.intent).toEqual({
+        type: 'modal',
+        modalId: 'plinko_game',
+      });
+      expect(plinkoStation.primaryAction).toBeDefined();
+      expect(plinkoStation.primaryAction?.label).toBe('Drop Sovereign');
+      expect(plinkoStation.primaryAction?.intent.type).toBe('custom');
+      if (plinkoStation.primaryAction?.intent.type === 'custom') {
+        expect(plinkoStation.primaryAction.intent.actionId).toBe('plinko_quick_drop');
+        expect(plinkoStation.primaryAction.intent.params?.stationId).toBe('plinko_drop');
+        expect(typeof plinkoStation.primaryAction.intent.params?.chuteX).toBe('number');
+        expect(typeof plinkoStation.primaryAction.intent.params?.chuteY).toBe('number');
+      }
+
+      // Dual intent grammar resolution
+      const target: InteractiveTarget = { kind: 'station', station: plinkoStation };
+      const fIntent = resolveInteractionIntent(target, 'primary');
+      expect(fIntent).toEqual(plinkoStation.primaryAction?.intent);
+
+      const spaceIntent = resolveInteractionIntent(target, 'inspect');
+      expect(spaceIntent).toEqual(plinkoStation.intent);
+    });
+
+    it('validates and parses parameters for plinko_quick_drop safely', async () => {
+      const { parsePlinkoQuickDropParams } = await import('../../src/ui/appActions');
+
+      // Valid parameters
+      const valid = parsePlinkoQuickDropParams({
+        stationId: 'plinko_drop',
+        chuteX: 250,
+        chuteY: 85,
+      });
+      expect(valid).toEqual({
+        stationId: 'plinko_drop',
+        chuteX: 250,
+        chuteY: 85,
+      });
+
+      // Accepts undefined
+      expect(parsePlinkoQuickDropParams(undefined)).toBeUndefined();
+
+      // Rejects non-string stationId
+      expect(() => parsePlinkoQuickDropParams({ stationId: 123 as any })).toThrow();
+      expect(() => parsePlinkoQuickDropParams({ stationId: '' })).toThrow();
+
+      // Rejects non-numeric coordinates
+      expect(() => parsePlinkoQuickDropParams({ chuteX: 'abc' as any })).toThrow();
+      expect(() => parsePlinkoQuickDropParams({ chuteY: 'def' as any })).toThrow();
+
+      // Rejects unexpected keys
+      expect(() => parsePlinkoQuickDropParams({ unknownProp: 'xyz' } as any)).toThrow();
+    });
+
+    it('manages quick drop cooldown and active visual tokens in galtonChuteActions', async () => {
+      const {
+        executeGaltonQuickDrop,
+        getActiveGaltonTokens,
+        resetGaltonChuteState,
+      } = await import('../../src/rooms/coins/galtonChuteActions');
+
+      resetGaltonChuteState('plinko_drop');
+
+      // First drop at t=1000
+      const d1 = executeGaltonQuickDrop({ stationId: 'plinko_drop' }, 1000);
+      expect(d1).toBe(true);
+
+      const tokens = getActiveGaltonTokens(1050);
+      expect(tokens.length).toBeGreaterThanOrEqual(1);
+      expect(tokens[0].path.length).toBeGreaterThan(1);
+
+      // Throttled drop within 120ms (t=1080)
+      const d2 = executeGaltonQuickDrop({ stationId: 'plinko_drop' }, 1080);
+      expect(d2).toBe(false);
+
+      // Subsequent drop after cooldown (t=1200)
+      const d3 = executeGaltonQuickDrop({ stationId: 'plinko_drop' }, 1200);
+      expect(d3).toBe(true);
+
+      resetGaltonChuteState('plinko_drop');
+    });
+
+    it('dispatches plinko_quick_drop via InteractionDispatcher', async () => {
+      const { InteractionDispatcher } = await import('../../src/ui/interactionDispatcher');
+      const { registerApplicationActions } = await import('../../src/ui/appActions');
+      const { resetGaltonChuteState, getLastGaltonDropTime } = await import(
+        '../../src/rooms/coins/galtonChuteActions'
+      );
+
+      registerApplicationActions();
+      resetGaltonChuteState('plinko_drop');
+
+      const dummyContext: any = { stateManager: {}, transitionToRoom: () => {} };
+
+      InteractionDispatcher.dispatch(
+        {
+          type: 'custom',
+          actionId: 'plinko_quick_drop',
+          params: { stationId: 'plinko_drop', chuteX: 250, chuteY: 85 },
+        },
+        dummyContext
+      );
+
+      expect(getLastGaltonDropTime('plinko_drop')).toBeGreaterThan(0);
+    });
   });
 });
+
 
 

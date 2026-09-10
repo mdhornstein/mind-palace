@@ -1,6 +1,7 @@
 import { InteractionDispatcher } from './interactionDispatcher';
 import { executeMintCrankPress, MintCrankParams } from '../rooms/coins/coinMachineActions';
 import { executeRingingStoneStrike, RingingStoneParams } from '../rooms/coins/ringingStoneActions';
+import { executeGaltonQuickDrop, GaltonQuickDropParams } from '../rooms/coins/galtonChuteActions';
 
 /**
  * Validates and normalizes parameters for the "mint_crank_press" custom action.
@@ -94,6 +95,55 @@ export function parseRingingStoneParams(
 }
 
 /**
+ * Validates and normalizes parameters for the "plinko_quick_drop" custom action.
+ */
+export function parsePlinkoQuickDropParams(
+  raw?: Record<string, string | number | boolean>
+): GaltonQuickDropParams | undefined {
+  if (!raw) return undefined;
+
+  const allowedKeys = ['stationId', 'chuteX', 'chuteY'];
+  for (const key of Object.keys(raw)) {
+    if (!allowedKeys.includes(key)) {
+      throw new Error(
+        `[appActions] Unknown parameter "${key}" for action "plinko_quick_drop"`
+      );
+    }
+  }
+
+  const params: GaltonQuickDropParams = {};
+
+  if (raw.stationId !== undefined) {
+    if (typeof raw.stationId !== 'string' || raw.stationId.trim().length === 0) {
+      throw new Error(
+        `[appActions] Invalid stationId parameter for "plinko_quick_drop": expected non-empty string`
+      );
+    }
+    params.stationId = raw.stationId;
+  }
+
+  if (raw.chuteX !== undefined) {
+    if (typeof raw.chuteX !== 'number' || !Number.isFinite(raw.chuteX)) {
+      throw new Error(
+        `[appActions] Invalid chuteX parameter for "plinko_quick_drop": expected finite number, got ${typeof raw.chuteX}`
+      );
+    }
+    params.chuteX = raw.chuteX;
+  }
+
+  if (raw.chuteY !== undefined) {
+    if (typeof raw.chuteY !== 'number' || !Number.isFinite(raw.chuteY)) {
+      throw new Error(
+        `[appActions] Invalid chuteY parameter for "plinko_quick_drop": expected finite number, got ${typeof raw.chuteY}`
+      );
+    }
+    params.chuteY = raw.chuteY;
+  }
+
+  return params;
+}
+
+/**
  * Registers application gameplay action handlers with the generic InteractionDispatcher.
  * Maintained in the application/composition layer so that room modules remain purely
  * declarative and free of UI imports.
@@ -108,5 +158,11 @@ export function registerApplicationActions(): void {
     const params = parseRingingStoneParams(intent.params);
     executeRingingStoneStrike(params);
   });
+
+  InteractionDispatcher.registerAction('plinko_quick_drop', (intent) => {
+    const params = parsePlinkoQuickDropParams(intent.params);
+    executeGaltonQuickDrop(params);
+  });
 }
+
 

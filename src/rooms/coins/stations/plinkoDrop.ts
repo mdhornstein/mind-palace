@@ -1,5 +1,6 @@
 import { WorldStation, DeepReadonly, WorldState } from '../../../core/types';
 import { TILE_SIZE } from '../../../core/constants';
+import { getActiveGaltonTokens } from '../galtonChuteActions';
 
 export const plinkoDropStation: WorldStation = {
   id: 'plinko_drop',
@@ -22,6 +23,18 @@ export const plinkoDropStation: WorldStation = {
   intent: {
     type: 'modal',
     modalId: 'plinko_game',
+  },
+  primaryAction: {
+    label: 'Drop Sovereign',
+    intent: {
+      type: 'custom',
+      actionId: 'plinko_quick_drop',
+      params: {
+        stationId: 'plinko_drop',
+        chuteX: 15.6 * TILE_SIZE,
+        chuteY: 5.2 * TILE_SIZE,
+      },
+    },
   },
   draw: (ctx: CanvasRenderingContext2D, timeMs: number, _state: DeepReadonly<WorldState>) => {
     const x = 14.2 * TILE_SIZE;
@@ -72,6 +85,38 @@ export const plinkoDropStation: WorldStation = {
         ctx.arc(pinX, pinY, 1.8, 0, Math.PI * 2);
         ctx.fill();
       }
+    }
+
+    // 3.5. Active Falling Sovereigns from in-world Quick Drops
+    const now = Date.now();
+    const activeTokens = getActiveGaltonTokens(now);
+    for (const tok of activeTokens) {
+      const elapsed = now - tok.startTime;
+      const progress = Math.min(1, Math.max(0, elapsed / tok.durationMs));
+      const py = glassY + 4 + progress * (glassH - 12);
+
+      // Interpolate horizontal deflection across rows
+      const rowIndex = progress * (tok.path.length - 1);
+      const r0 = Math.floor(rowIndex);
+      const r1 = Math.min(tok.path.length - 1, r0 + 1);
+      const rFrac = rowIndex - r0;
+      const offset = tok.path[r0] * (1 - rFrac) + tok.path[r1] * rFrac;
+      const px = glassX + glassW / 2 + offset * (glassW * 0.38);
+
+      // Gold coin with gleam
+      ctx.fillStyle = '#facc15';
+      ctx.beginPath();
+      ctx.arc(px, py, 2.8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#ca8a04';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Specular shine
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(px - 0.8, py - 0.8, 0.9, 0, Math.PI * 2);
+      ctx.fill();
     }
 
     // 4. Multiplier Chutes at bottom of glass
