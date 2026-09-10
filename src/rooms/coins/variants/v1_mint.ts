@@ -12,6 +12,7 @@ import { mintScaleStation } from '../stations/vaultScale';
 import { ringingStoneStation } from '../stations/ringingStone';
 import { tallyBoardStation } from '../stations/tallyBoard';
 import { CoinPhysicsEngine } from '../coinPhysics';
+import { MintConductor } from '../mintConductor';
 
 export const v1MintConfig: RoomConfig = {
   id: 'coins_v1',
@@ -53,8 +54,12 @@ export const v1MintConfig: RoomConfig = {
   },
   hasCompanion: false,
 
-  // Frame update hook: advances 2.5D coin trajectories, ground bouncing, and player pickup
+  // Frame update hook: advances conductor rhythm, 2.5D coin trajectories, and player pickup
   onUpdate: (dt: number, player: { x: number; y: number }) => {
+    const conductor = MintConductor.getInstance();
+    conductor.setRoomActive(true);
+    conductor.update(dt);
+
     CoinPhysicsEngine.getInstance().update(dt, player, {
       minX: 24,
       maxX: CANVAS_WIDTH - 24,

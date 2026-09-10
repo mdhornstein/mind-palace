@@ -1,6 +1,7 @@
 import { WorldStation, DeepReadonly, WorldState } from '../../../core/types';
 import { TILE_SIZE } from '../../../core/constants';
 import { getLastStoneStrikeTime, getStoneNoteIndex } from '../ringingStoneActions';
+import { MintConductor } from '../mintConductor';
 
 export const RINGING_STONE_TILE_X = 13.5;
 export const RINGING_STONE_TILE_Y = 6.8;
@@ -43,28 +44,53 @@ export const ringingStoneStation: WorldStation = {
     const cx = baseX + 1.25 * TILE_SIZE;
     const cy = baseY + 1.25 * TILE_SIZE;
 
+    const conductor = MintConductor.getInstance();
+    const isLooping = conductor.isStationLooping('mint_ringing_stone');
+
     // Check strike timing for dynamic physical animations
     const now = Date.now();
-    const lastStrike = getLastStoneStrikeTime('mint_ringing_stone');
-    const strikeElapsed = now - lastStrike;
-    const isStriking = strikeElapsed < 650;
-    const strikeProgress = isStriking ? strikeElapsed / 650 : 1;
+    const lastManualStrike = getLastStoneStrikeTime('mint_ringing_stone');
+    const manualElapsed = now - lastManualStrike;
+    const isManualStriking = manualElapsed < 650;
+
+    let isStriking = false;
+    let strikeProgress = 1;
+    let activeNoteIdx = 0;
+
+    if (isManualStriking) {
+      isStriking = true;
+      strikeProgress = manualElapsed / 650;
+      activeNoteIdx = getStoneNoteIndex('mint_ringing_stone');
+    } else if (isLooping) {
+      // 8th-note cadence driven by conductor beat phase
+      const beatPhase = conductor.getBeatPhase(timeMs);
+      const eighthPhase = (beatPhase * 2) % 1;
+      isStriking = true;
+      strikeProgress = eighthPhase;
+      activeNoteIdx = conductor.getVisualNoteIndex();
+    }
 
     // 1. Acoustic Shockwave Ripple expanding across the floor
     if (isStriking) {
-      const rippleRadius = strikeProgress * 38;
+      const maxRadius = isManualStriking ? 38 : 22;
+      const rippleRadius = strikeProgress * maxRadius;
       const rippleAlpha = Math.max(0, 1 - strikeProgress);
       ctx.save();
-      ctx.strokeStyle = `rgba(250, 204, 21, ${rippleAlpha * 0.75})`;
-      ctx.lineWidth = 2 * (1 - strikeProgress * 0.5);
+      const strokeCol = isManualStriking
+        ? `rgba(250, 204, 21, ${rippleAlpha * 0.75})`
+        : `rgba(56, 189, 248, ${rippleAlpha * 0.65})`;
+      ctx.strokeStyle = strokeCol;
+      ctx.lineWidth = (isManualStriking ? 2 : 1.5) * (1 - strikeProgress * 0.5);
       ctx.beginPath();
       ctx.ellipse(cx, cy + 10, rippleRadius, rippleRadius * 0.55, 0, 0, Math.PI * 2);
       ctx.stroke();
 
       // Secondary faint outer ripple
       if (strikeProgress > 0.15) {
-        const r2 = (strikeProgress - 0.15) * 35;
-        ctx.strokeStyle = `rgba(245, 158, 11, ${rippleAlpha * 0.4})`;
+        const r2 = (strikeProgress - 0.15) * (maxRadius * 0.9);
+        ctx.strokeStyle = isManualStriking
+          ? `rgba(245, 158, 11, ${rippleAlpha * 0.4})`
+          : `rgba(250, 204, 21, ${rippleAlpha * 0.35})`;
         ctx.beginPath();
         ctx.ellipse(cx, cy + 10, r2, r2 * 0.55, 0, 0, Math.PI * 2);
         ctx.stroke();
@@ -137,10 +163,32 @@ export const ringingStoneStation: WorldStation = {
     ctx.fill();
 
     // 5. Spring-Loaded Brass Striker Hammer (Left side)
-    const hammerRecoil = isStriking && strikeProgress < 0.25 ? Math.sin((strikeProgress / 0.25) * Math.PI) : 0;
+    const hammerThreshold = isManualStriking ? 0.25 : 0.35;
+    const hammerRecoil = isStriking && strikeProgress < hammerThreshold ? Math.sin((strikeProgress / hammerThreshold) * Math.PI) : 0;
     const hammerPivotX = cx - 26;
     const hammerPivotY = cy - 2;
     const hammerAngle = -0.4 - hammerRecoil * 0.65;
+
+    // Clockwork Escapement Cam Wheel (Visible when carillon is engaged)
+    if (isLooping) {
+      const camX = baseX + 14;
+      const camY = baseY + 28;
+      const camRot = (timeMs * 0.006) % (Math.PI * 2);
+      ctx.fillStyle = '#78350f';
+      ctx.beginPath();
+      ctx.arc(camX, camY, 6.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Pinned brass escapement pegs
+      for (let p = 0; p < 6; p++) {
+        const pAng = camRot + (p * Math.PI) / 3;
+        ctx.fillStyle = '#fef08a';
+        ctx.fillRect(camX + Math.cos(pAng) * 4 - 1, camY + Math.sin(pAng) * 4 - 1, 2, 2);
+      }
+    }
 
     ctx.save();
     ctx.translate(hammerPivotX, hammerPivotY);
@@ -212,9 +260,11 @@ export const ringingStoneStation: WorldStation = {
 
     if (isStriking) {
       // Parabolic flip arc up and down
-      coinElevation = Math.sin(strikeProgress * Math.PI) * 18;
+      const maxElev = isManualStriking ? 18 : 6;
+      const spinSpeed = isManualStriking ? 6 : 2;
+      coinElevation = Math.sin(strikeProgress * Math.PI) * maxElev;
       // High-speed tumble spinning
-      coinScaleX = Math.cos(strikeProgress * Math.PI * 6);
+      coinScaleX = Math.cos(strikeProgress * Math.PI * spinSpeed);
       coinScaleY = 1 + (1 - strikeProgress) * 0.2;
     } else {
       // Idle resting coin on stone
@@ -267,17 +317,18 @@ export const ringingStoneStation: WorldStation = {
 
     // 8. Floating Musical Note glyph on strike
     if (isStriking) {
-      const noteIdx = getStoneNoteIndex('mint_ringing_stone');
       const noteNames = ['C', 'D', 'E', 'G', 'A', 'C′', 'D′'];
-      const currentNote = noteNames[noteIdx % noteNames.length];
+      const currentNote = noteNames[activeNoteIdx % noteNames.length];
 
       const noteAlpha = Math.sin(strikeProgress * Math.PI);
       const noteY = cy - 14 - strikeProgress * 16;
       ctx.save();
       ctx.font = 'bold 11px system-ui, -apple-system, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillStyle = `rgba(254, 240, 138, ${noteAlpha})`;
-      ctx.shadowColor = '#f59e0b';
+      ctx.fillStyle = isManualStriking
+        ? `rgba(254, 240, 138, ${noteAlpha})`
+        : `rgba(56, 189, 248, ${noteAlpha})`;
+      ctx.shadowColor = isManualStriking ? '#f59e0b' : '#38bdf8';
       ctx.shadowBlur = 4;
       ctx.fillText(`♪ ${currentNote}`, cx, noteY);
       ctx.restore();

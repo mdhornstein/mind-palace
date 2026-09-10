@@ -4,6 +4,7 @@ import { CANVAS_WIDTH } from '../core/constants';
 import { ModalOverlay } from './overlay';
 import { executeRingingStoneStrike, getStoneNoteIndex } from '../rooms/coins/ringingStoneActions';
 import { executeTallyBoardPour } from '../rooms/coins/tallyBoardActions';
+import { MintConductor } from '../rooms/coins/mintConductor';
 
 function closeActiveModal() {
   ModalOverlay.getInstance().close();
@@ -87,6 +88,7 @@ function createModalContainer(
  */
 export function openCoinPressModal() {
   const engine = CoinPhysicsEngine.getInstance();
+  const conductor = MintConductor.getInstance();
   const { body } = createModalContainer(
     '⚙️ The Grand Minting Engine',
     'Industrial Steam Coining Press — Sovereign Stamping Station'
@@ -96,6 +98,28 @@ export function openCoinPressModal() {
     <div style="font-size: 0.88rem; line-height: 1.5; color: #e2e8f0; margin-bottom: 16px;">
       A massive Victorian flywheel rotates with polished bronze cams, driving an 80-ton stamping piston. 
       Raw metallurgical blanks enter the hopper and are struck with the sovereign seal, tumbling down the ejection chute.
+    </div>
+
+    <!-- Steam Line-Shaft Drive (Automated Rhythm) -->
+    <div style="background: rgba(0,0,0,0.4); border: 1.5px solid #78350f; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: #fef08a; text-transform: uppercase; letter-spacing: 0.04em;">
+          ⚙️ Steam Line-Shaft Drive
+        </div>
+        <div id="press-cadence-badge" style="font-size: 0.68rem; font-family: monospace; padding: 2px 8px; border-radius: 4px; font-weight: bold;">
+        </div>
+      </div>
+      <div style="font-size: 0.78rem; line-height: 1.4; color: #cbd5e1; margin-bottom: 10px;">
+        Engage the overhead leather line-shaft to drive the 80-ton stamping piston in an automated rhythmic cadence.
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <button id="btn-press-cadence-off" style="padding: 8px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease;">
+          ⏹ Disengaged (Manual)
+        </button>
+        <button id="btn-press-cadence-four" style="padding: 8px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease;">
+          🥁 Four-on-the-Floor (105 BPM)
+        </button>
+      </div>
     </div>
 
     <div style="background: rgba(0,0,0,0.35); border: 1px solid #451a03; border-radius: 6px; padding: 12px; margin-bottom: 18px; display: flex; justify-content: space-around; text-align: center;">
@@ -110,7 +134,7 @@ export function openCoinPressModal() {
       </div>
     </div>
 
-    <div style="font-size: 0.8rem; font-weight: 600; color: #fef08a; margin-bottom: 8px; text-transform: uppercase;">Stamping Actions</div>
+    <div style="font-size: 0.8rem; font-weight: 600; color: #fef08a; margin-bottom: 8px; text-transform: uppercase;">Manual Stamping Actions</div>
     <div style="display: flex; flex-direction: column; gap: 10px;">
       <button id="btn-stamp-batch" style="background: #b45309; border: 1px solid #f59e0b; color: #fff; padding: 10px 14px; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
         <span>🔨 Crank Batch Stamp (6 Coins)</span>
@@ -132,6 +156,64 @@ export function openCoinPressModal() {
       Tip: Coins bounce with real 2.5D physical trajectories. Walk across the room to collect them!
     </div>
   `;
+
+  // Update line-shaft drive UI state
+  const badgeEl = body.querySelector('#press-cadence-badge') as HTMLElement;
+  const btnOff = body.querySelector('#btn-press-cadence-off') as HTMLButtonElement;
+  const btnFour = body.querySelector('#btn-press-cadence-four') as HTMLButtonElement;
+
+  function updateCadenceUI() {
+    const cadence = conductor.getPressCadence();
+    if (cadence === 'four_on_the_floor') {
+      if (badgeEl) {
+        badgeEl.innerText = 'DRIVE: 105 BPM ♩ FOUR-ON-FLOOR';
+        badgeEl.style.background = 'rgba(22, 101, 52, 0.45)';
+        badgeEl.style.color = '#4ade80';
+        badgeEl.style.border = '1px solid #16a34a';
+      }
+      if (btnOff) {
+        btnOff.style.background = 'rgba(0, 0, 0, 0.3)';
+        btnOff.style.border = '1px solid #44403c';
+        btnOff.style.color = '#94a3b8';
+      }
+      if (btnFour) {
+        btnFour.style.background = 'linear-gradient(180deg, #b45309 0%, #78350f 100%)';
+        btnFour.style.border = '1px solid #f59e0b';
+        btnFour.style.color = '#ffffff';
+        btnFour.style.boxShadow = '0 0 12px rgba(245, 158, 11, 0.35)';
+      }
+    } else {
+      if (badgeEl) {
+        badgeEl.innerText = 'DRIVE: DISENGAGED';
+        badgeEl.style.background = '#292524';
+        badgeEl.style.color = '#a8a29e';
+        badgeEl.style.border = '1px solid #44403c';
+      }
+      if (btnOff) {
+        btnOff.style.background = '#44403c';
+        btnOff.style.border = '1px solid #78716c';
+        btnOff.style.color = '#f8fafc';
+      }
+      if (btnFour) {
+        btnFour.style.background = 'rgba(0, 0, 0, 0.3)';
+        btnFour.style.border = '1px solid #451a03';
+        btnFour.style.color = '#94a3b8';
+        btnFour.style.boxShadow = 'none';
+      }
+    }
+  }
+
+  updateCadenceUI();
+
+  btnOff?.addEventListener('click', () => {
+    conductor.setPressCadence('off');
+    updateCadenceUI();
+  });
+
+  btnFour?.addEventListener('click', () => {
+    conductor.setPressCadence('four_on_the_floor');
+    updateCadenceUI();
+  });
 
   // Stamping origin: in front of the press at tile (7, 4.5) -> (224px, 144px)
   const spawnX = 224;
@@ -453,11 +535,35 @@ export function openRingingStoneModal() {
     }
   );
 
+  const conductor = MintConductor.getInstance();
+
   body.innerHTML = `
     <div style="font-size: 0.86rem; line-height: 1.5; color: #cbd5e1; margin-bottom: 14px;">
       In the Royal Mint, assayers tested struck coins by sounding them against a polished basalt anvil.
       Genuine 22-karat crown gold and sterling silver ring with a sustained, piercing harmonic bell tone,
       while debased pewter or lead counterfeits produce a dull, deadened thud.
+    </div>
+
+    <!-- Clockwork Carillon Escapement (Automated Arpeggio) -->
+    <div style="background: rgba(0,0,0,0.4); border: 1.5px solid #78350f; border-radius: 8px; padding: 12px 14px; margin-bottom: 14px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: #fef08a; text-transform: uppercase; letter-spacing: 0.04em;">
+          🕰️ Clockwork Carillon Escapement
+        </div>
+        <div id="stone-cadence-badge" style="font-size: 0.68rem; font-family: monospace; padding: 2px 8px; border-radius: 4px; font-weight: bold;">
+        </div>
+      </div>
+      <div style="font-size: 0.78rem; line-height: 1.4; color: #cbd5e1; margin-bottom: 10px;">
+        Engage the pinned barrel escapement to sound the basalt acoustic anvil in an automated melodic sequence.
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <button id="btn-stone-cadence-off" style="padding: 8px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease;">
+          ⏹ Disengaged (Manual)
+        </button>
+        <button id="btn-stone-cadence-arp" style="padding: 8px 10px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s ease;">
+          ♪ Pentatonic Arp (8th-Notes)
+        </button>
+      </div>
     </div>
 
     <!-- Acoustic Waveform Visualizer -->
@@ -467,6 +573,7 @@ export function openRingingStoneModal() {
     </div>
 
     <!-- Sounding Buttons Grid -->
+    <div style="font-size: 0.8rem; font-weight: 600; color: #fef08a; margin-bottom: 8px; text-transform: uppercase;">Manual Diagnostic Strikes</div>
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px;">
       <button id="btn-sound-gold" style="background: linear-gradient(180deg, #854d0e 0%, #451a03 100%); border: 1px solid #d97706; color: #fef08a; padding: 9px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
         <span>👑</span> Crown Sovereign (Gold)
@@ -483,10 +590,68 @@ export function openRingingStoneModal() {
     </div>
 
     <div style="font-size: 0.76rem; color: #94a3b8; line-height: 1.45; border-top: 1px solid #332014; padding-top: 10px; display: flex; justify-content: space-between; align-items: center;">
-      <span>💡 Tip: Tap <b>F</b> near the stone in-room to strike the ascending pentatonic scale!</span>
+      <span>💡 Tip: Tap <b>F</b> near the stone in-room to strike live notes over active loops!</span>
       <span id="stone-note-indicator" style="font-family: monospace; color: #facc15; font-weight: bold;">Note: C6</span>
     </div>
   `;
+
+  // Carillon escapement controls
+  const stoneBadgeEl = body.querySelector('#stone-cadence-badge') as HTMLElement;
+  const btnStoneOff = body.querySelector('#btn-stone-cadence-off') as HTMLButtonElement;
+  const btnStoneArp = body.querySelector('#btn-stone-cadence-arp') as HTMLButtonElement;
+
+  function updateStoneCadenceUI() {
+    const cadence = conductor.getStoneCadence();
+    if (cadence === 'pentatonic_arp') {
+      if (stoneBadgeEl) {
+        stoneBadgeEl.innerText = 'ESCAPEMENT: 105 BPM ♪ PENTATONIC ARP';
+        stoneBadgeEl.style.background = 'rgba(2, 132, 199, 0.45)';
+        stoneBadgeEl.style.color = '#38bdf8';
+        stoneBadgeEl.style.border = '1px solid #0284c7';
+      }
+      if (btnStoneOff) {
+        btnStoneOff.style.background = 'rgba(0, 0, 0, 0.3)';
+        btnStoneOff.style.border = '1px solid #44403c';
+        btnStoneOff.style.color = '#94a3b8';
+      }
+      if (btnStoneArp) {
+        btnStoneArp.style.background = 'linear-gradient(180deg, #0284c7 0%, #0369a1 100%)';
+        btnStoneArp.style.border = '1px solid #38bdf8';
+        btnStoneArp.style.color = '#ffffff';
+        btnStoneArp.style.boxShadow = '0 0 12px rgba(56, 189, 248, 0.35)';
+      }
+    } else {
+      if (stoneBadgeEl) {
+        stoneBadgeEl.innerText = 'ESCAPEMENT: DISENGAGED';
+        stoneBadgeEl.style.background = '#292524';
+        stoneBadgeEl.style.color = '#a8a29e';
+        stoneBadgeEl.style.border = '1px solid #44403c';
+      }
+      if (btnStoneOff) {
+        btnStoneOff.style.background = '#44403c';
+        btnStoneOff.style.border = '1px solid #78716c';
+        btnStoneOff.style.color = '#f8fafc';
+      }
+      if (btnStoneArp) {
+        btnStoneArp.style.background = 'rgba(0, 0, 0, 0.3)';
+        btnStoneArp.style.border = '1px solid #451a03';
+        btnStoneArp.style.color = '#94a3b8';
+        btnStoneArp.style.boxShadow = 'none';
+      }
+    }
+  }
+
+  updateStoneCadenceUI();
+
+  btnStoneOff?.addEventListener('click', () => {
+    conductor.setStoneCadence('off');
+    updateStoneCadenceUI();
+  });
+
+  btnStoneArp?.addEventListener('click', () => {
+    conductor.setStoneCadence('pentatonic_arp');
+    updateStoneCadenceUI();
+  });
 
   const canvas = body.querySelector('#acoustic-oscilloscope') as HTMLCanvasElement;
   const ctx = canvas?.getContext('2d');
@@ -497,6 +662,7 @@ export function openRingingStoneModal() {
   let waveStartTime = 0;
   let waveDuration = 1400;
   let waveNoteIndex = 0;
+  let lastObservedStoneTrigger = 0;
 
   function triggerWave(type: 'gold' | 'silver' | 'counterfeit' | 'strike', noteIdx = 0) {
     waveType = type;
@@ -531,6 +697,16 @@ export function openRingingStoneModal() {
   // Animation render loop
   function renderOscilloscope(now: number) {
     if (!canvas || !ctx) return;
+
+    // React to automated carillon strikes if active
+    if (conductor.isStationLooping('mint_ringing_stone')) {
+      const stoneTrigger = conductor.getLastStoneVisualTrigger();
+      if (stoneTrigger !== lastObservedStoneTrigger && stoneTrigger > 0) {
+        lastObservedStoneTrigger = stoneTrigger;
+        triggerWave('strike', conductor.getVisualNoteIndex());
+      }
+    }
+
     const w = canvas.width;
     const h = canvas.height;
     const midY = h / 2;

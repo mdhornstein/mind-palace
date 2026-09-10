@@ -1,6 +1,7 @@
 import { WorldStation, DeepReadonly, WorldState } from '../../../core/types';
 import { TILE_SIZE } from '../../../core/constants';
 import { getLastCrankTriggerTime } from '../coinMachineActions';
+import { MintConductor } from '../mintConductor';
 
 // Established machine layout & chute aperture geometry
 export const COIN_PRESS_BASE_X = 7.0 * TILE_SIZE;
@@ -47,6 +48,50 @@ export const coinPressStation: WorldStation = {
   draw: (ctx: CanvasRenderingContext2D, timeMs: number, _state: DeepReadonly<WorldState>) => {
     const baseX = COIN_PRESS_BASE_X;
     const baseY = COIN_PRESS_BASE_Y;
+    const conductor = MintConductor.getInstance();
+    const isLooping = conductor.isStationLooping('mint_coin_press');
+
+    // 0. Overhead Line Shaft & Leather Drive Belt (When rhythmically engaged)
+    const flywheelCx = baseX + 24;
+    const flywheelCy = baseY + 36;
+    const flywheelR = 22;
+
+    if (isLooping) {
+      ctx.save();
+      // Moving dual leather belts connecting flywheel to overhead rafters
+      ctx.strokeStyle = '#78350f';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(flywheelCx - 16, flywheelCy);
+      ctx.lineTo(flywheelCx - 10, 0);
+      ctx.moveTo(flywheelCx + 16, flywheelCy);
+      ctx.lineTo(flywheelCx + 10, 0);
+      ctx.stroke();
+
+      // Scrolling belt texture hashes
+      ctx.strokeStyle = '#d97706';
+      ctx.lineWidth = 1.5;
+      const beltScroll = (timeMs * 0.08) % 14;
+      for (let by = 2; by < flywheelCy; by += 14) {
+        const yPos = (by + beltScroll) % flywheelCy;
+        const xLeft = flywheelCx - 10 - (yPos / flywheelCy) * 6;
+        const xRight = flywheelCx + 10 + (yPos / flywheelCy) * 6;
+        ctx.beginPath();
+        ctx.moveTo(xLeft - 2, yPos);
+        ctx.lineTo(xLeft + 2, yPos);
+        ctx.moveTo(xRight - 2, yPos);
+        ctx.lineTo(xRight + 2, yPos);
+        ctx.stroke();
+      }
+
+      // Overhead steel line-shaft bracket
+      ctx.fillStyle = '#292524';
+      ctx.fillRect(flywheelCx - 18, 0, 36, 5);
+      ctx.strokeStyle = '#d97706';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(flywheelCx - 18, 0, 36, 5);
+      ctx.restore();
+    }
 
     // 1. Cast-Iron Base & Stone Plinth
     ctx.fillStyle = '#1e1b18';
@@ -68,11 +113,17 @@ export const coinPressStation: WorldStation = {
     ctx.lineWidth = 2;
     ctx.strokeRect(baseX + 14, baseY + 18, 84, 52);
 
-    // 3. Rotating Flywheel on Left (Spokes rotate continuously)
-    const flywheelCx = baseX + 24;
-    const flywheelCy = baseY + 36;
-    const flywheelR = 22;
-    const rot = (timeMs * 0.003) % (Math.PI * 2);
+    // Green indicator lamp for line-shaft clutch
+    if (isLooping) {
+      ctx.fillStyle = '#22c55e';
+      ctx.beginPath();
+      ctx.arc(baseX + 22, baseY + 26, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 3. Rotating Flywheel on Left (Spins faster when line shaft is engaged)
+    const rotSpeed = isLooping ? 0.007 : 0.003;
+    const rot = (timeMs * rotSpeed) % (Math.PI * 2);
 
     // Outer flywheel rim
     ctx.strokeStyle = '#f59e0b';
@@ -101,14 +152,37 @@ export const coinPressStation: WorldStation = {
       ctx.stroke();
     }
 
-    // 4. Stamping Piston Head (Vertical reciprocating motion + crank impact recoil)
+    // 4. Stamping Piston Head (Vertical reciprocating motion + beat hit recoil + crank impact recoil)
     const now = Date.now();
     const lastCrank = getLastCrankTriggerTime();
     const crankElapsed = now - lastCrank;
     const crankRecoil = crankElapsed < 220 ? Math.max(0, 1 - crankElapsed / 220) : 0;
 
-    const pistonCycle = (Math.sin(timeMs * 0.006) + 1) / 2; // 0 to 1
-    const pistonY = baseY + 26 + pistonCycle * 8 + crankRecoil * 5;
+    let pistonY: number;
+    let loopImpactGlow = 0;
+
+    if (isLooping) {
+      // Precise beat phase from conductor (quarter note = 571ms at 105 BPM)
+      const beatPhase = conductor.getBeatPhase(timeMs);
+      let strokeOffset = 0;
+      if (beatPhase < 0.65) {
+        // Lift die block up smoothly
+        strokeOffset = -7 * Math.sin((beatPhase / 0.65) * (Math.PI / 2));
+      } else if (beatPhase < 0.88) {
+        // Downward power acceleration
+        const downT = (beatPhase - 0.65) / 0.23;
+        strokeOffset = -7 + 16 * downT; // punches down to +9px
+      } else {
+        // Impact recoil and settle
+        const recoilT = (beatPhase - 0.88) / 0.12;
+        strokeOffset = 9 - 4 * Math.sin(recoilT * Math.PI);
+        loopImpactGlow = 1 - recoilT;
+      }
+      pistonY = baseY + 26 + strokeOffset + crankRecoil * 5;
+    } else {
+      const pistonCycle = (Math.sin(timeMs * 0.006) + 1) / 2; // 0 to 1
+      pistonY = baseY + 26 + pistonCycle * 8 + crankRecoil * 5;
+    }
 
     // Piston guide shaft
     ctx.fillStyle = '#64748b';
@@ -116,8 +190,8 @@ export const coinPressStation: WorldStation = {
     ctx.strokeStyle = '#334155';
     ctx.strokeRect(baseX + 50, baseY + 14, 14, 34);
 
-    // Hardened tool-steel die block
-    ctx.fillStyle = crankRecoil > 0.4 ? '#fef08a' : '#f59e0b';
+    // Hardened tool-steel die block (Glows white-gold on beat impact or manual crank)
+    ctx.fillStyle = (crankRecoil > 0.4 || loopImpactGlow > 0.3) ? '#fef08a' : '#f59e0b';
     ctx.fillRect(baseX + 46, pistonY + 12, 22, 10);
     ctx.fillStyle = '#fef08a';
     ctx.fillRect(baseX + 48, pistonY + 14, 18, 2); // polished mirror face
@@ -133,8 +207,9 @@ export const coinPressStation: WorldStation = {
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // Vibrating pressure needle (kicks hard on crank)
-    const needleJitter = (Math.sin(timeMs * 0.02) * 0.4 + 0.3) + crankRecoil * 0.8;
+    // Vibrating pressure needle (kicks hard on beat impact and manual crank)
+    const impactPulse = Math.max(crankRecoil, loopImpactGlow * 0.85);
+    const needleJitter = (Math.sin(timeMs * 0.02) * 0.3 + 0.3) + impactPulse * 0.85;
     ctx.strokeStyle = '#dc2626';
     ctx.lineWidth = 1.2;
     ctx.beginPath();
@@ -145,11 +220,11 @@ export const coinPressStation: WorldStation = {
     );
     ctx.stroke();
 
-    // Steam exhaust wisp & crank puff burst
-    const steamAlpha = (Math.sin(timeMs * 0.005) + 1) * 0.25 + crankRecoil * 0.6;
+    // Steam exhaust wisp & rhythmic puff burst
+    const steamAlpha = (Math.sin(timeMs * 0.005) + 1) * 0.25 + impactPulse * 0.65;
     ctx.fillStyle = `rgba(241, 245, 249, ${Math.min(1, steamAlpha)})`;
     ctx.beginPath();
-    ctx.arc(baseX + 88, baseY + 4 - (timeMs * 0.02 % 14), 4 + (timeMs * 0.01 % 5) + crankRecoil * 4, 0, Math.PI * 2);
+    ctx.arc(baseX + 88, baseY + 4 - (timeMs * 0.02 % 14), 4 + (timeMs * 0.01 % 5) + impactPulse * 5, 0, Math.PI * 2);
     ctx.fill();
 
     // 6. Polished Brass Ejection Chute (angled toward room floor)

@@ -204,6 +204,11 @@ export class HearthAudio {
     return this.currentRoom;
   }
 
+  public getContext(): AudioContext | null {
+    this.initContext();
+    return this.ctx;
+  }
+
   public getRoomName(): string {
     if (this.currentRoom === 'escher') return 'Paradox Gallery';
     if (this.currentRoom === 'observatory') return 'Observatory';
@@ -867,10 +872,10 @@ export class HearthAudio {
    * Synthesizes the authentic circular-plate inharmonic overtones of 22k Crown Gold and Sterling Silver.
    * Cycles through an ascending pentatonic scale to create musical coin arpeggios on rapid strikes.
    */
-  public playRingingStoneChime(noteIndex: number = 0) {
+  public playRingingStoneChime(noteIndex: number = 0, atTime?: number) {
     this.initContext();
     if (!this.ctx) return;
-    const now = this.ctx.currentTime;
+    const now = atTime !== undefined ? atTime : this.ctx.currentTime;
 
     // Resonant harmonic frequencies: C6, D6, E6, G6, A6, C7, D7
     const scale = [1046.50, 1174.66, 1318.51, 1567.98, 1760.00, 2093.00, 2349.32];
@@ -965,6 +970,65 @@ export class HearthAudio {
     gain.connect(this.ctx.destination);
     osc.start(now);
     osc.stop(now + 0.1);
+  }
+
+  /**
+   * Heavy 80-ton industrial steam press kick thump for the automated 4/4 cadence.
+   * Delivers a deep, tactile sub-bass drop and pneumatic steam exhaust.
+   */
+  public playScheduledPressKick(atTime?: number) {
+    this.initContext();
+    if (!this.ctx) return;
+    const now = atTime !== undefined ? atTime : this.ctx.currentTime;
+
+    // 1. Sub-Bass Piston Thump (95 Hz -> 38 Hz)
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    const filter = this.ctx.createBiquadFilter();
+
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(95, now);
+    osc.frequency.exponentialRampToValueAtTime(38, now + 0.14);
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(220, now);
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.32, now + 0.008);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.20);
+
+    // 2. Mechanical Pneumatic Exhaust Hiss (gentle steam release)
+    const bufferSize = Math.floor(this.ctx.sampleRate * 0.08);
+    const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      output[i] = Math.random() * 2 - 1;
+    }
+
+    const whiteNoise = this.ctx.createBufferSource();
+    whiteNoise.buffer = noiseBuffer;
+
+    const noiseFilter = this.ctx.createBiquadFilter();
+    noiseFilter.type = 'bandpass';
+    noiseFilter.frequency.setValueAtTime(1200, now);
+    noiseFilter.Q.setValueAtTime(1.5, now);
+
+    const noiseGain = this.ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.001, now);
+    noiseGain.gain.linearRampToValueAtTime(0.045, now + 0.005);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+    whiteNoise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(this.ctx.destination);
+    whiteNoise.start(now);
+    whiteNoise.stop(now + 0.09);
   }
 
   /**
