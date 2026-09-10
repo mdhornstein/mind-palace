@@ -11,7 +11,7 @@ import { MintConductor } from './mintConductor';
  */
 
 const CLUTCH_COOLDOWN_MS = 250;
-let lastClutchTime = 0;
+let lastClutchTime: number | null = null;
 
 /**
  * Toggles the master clockwork transport lever.
@@ -20,7 +20,7 @@ let lastClutchTime = 0;
  * @returns true if transport was toggled; false if throttled.
  */
 export function executeToggleMasterClutch(now: number = Date.now()): boolean {
-  if (now - lastClutchTime < CLUTCH_COOLDOWN_MS) {
+  if (lastClutchTime !== null && now - lastClutchTime < CLUTCH_COOLDOWN_MS) {
     return false;
   }
 
@@ -40,12 +40,12 @@ export function executeToggleMasterClutch(now: number = Date.now()): boolean {
  * Queried by station canvas renderer for the physical lever throw and spring animation.
  */
 export function getLastMasterClutchTime(): number {
-  return lastClutchTime;
+  return lastClutchTime ?? 0;
 }
 
 /**
  * Resets clutch timing state (useful for unit tests).
  */
 export function resetMasterClutchState(): void {
-  lastClutchTime = 0;
+  lastClutchTime = null;
 }

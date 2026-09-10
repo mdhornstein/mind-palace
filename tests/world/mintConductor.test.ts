@@ -563,23 +563,23 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     const conductor = MintConductor.getInstance();
     conductor.setRoomActive(true);
 
-    // First throw at t=1000: toggles on
-    const success = executeToggleMasterClutch(1000);
+    // First throw at t=0 (testing null sentinel to avoid zero-collision): toggles on
+    const success = executeToggleMasterClutch(0);
     expect(success).toBe(true);
     expect(conductor.isRunning()).toBe(true);
     expect(leverSpy).toHaveBeenCalledWith(true);
-    expect(getLastMasterClutchTime()).toBe(1000);
+    expect(getLastMasterClutchTime()).toBe(0);
 
-    // Rapid second throw at t=1100 (< 250ms cooldown): throttled
-    const throttled = executeToggleMasterClutch(1100);
+    // Rapid second throw at t=100 (< 250ms cooldown): throttled
+    const throttled = executeToggleMasterClutch(100);
     expect(throttled).toBe(false);
 
-    // Third throw at t=1300 (> 250ms cooldown): toggles off
-    const success2 = executeToggleMasterClutch(1300);
+    // Third throw at t=300 (> 250ms cooldown): toggles off
+    const success2 = executeToggleMasterClutch(300);
     expect(success2).toBe(true);
     expect(conductor.isRunning()).toBe(false);
     expect(leverSpy).toHaveBeenCalledWith(false);
-    expect(getLastMasterClutchTime()).toBe(1300);
+    expect(getLastMasterClutchTime()).toBe(300);
   });
 
   it('engaging syncopated ping cadence starts vitrine and preserves stone cadence', () => {
@@ -597,5 +597,47 @@ describe('MintConductor (Master Rhythm Engine & Kinetic DAW)', () => {
     expect(conductor.getStoneCadence()).toBe('offbeat');
     expect(conductor.isStationLooping('mint_ringing_stone')).toBe(true);
     expect(conductor.isStationLooping('conductor_vitrine')).toBe(true);
+  });
+
+  it('disengageAll contract: resets all cadences to off, clears mutes, stops transport, and idles all machinery', () => {
+    const conductor = MintConductor.getInstance();
+    conductor.setRoomActive(true);
+
+    // Set all 4 stations active
+    conductor.setPressCadence('four_on_the_floor');
+    conductor.setTallyCadence('backbeat_snare');
+    conductor.setPlinkoCadence('sixteenth_shaker');
+    conductor.setStoneCadence('pentatonic_arp');
+
+    // Mute two channels
+    conductor.setChannelMute('press', true);
+    conductor.setChannelMute('stone', true);
+
+    expect(conductor.isRunning()).toBe(true);
+    expect(conductor.isChannelMuted('press')).toBe(true);
+    expect(conductor.isChannelMuted('stone')).toBe(true);
+    expect(conductor.isStationLooping('mint_coin_press')).toBe(true);
+    expect(conductor.isStationLooping('mint_tally_board')).toBe(true);
+    expect(conductor.isStationLooping('plinko_drop')).toBe(true);
+    expect(conductor.isStationLooping('mint_ringing_stone')).toBe(true);
+
+    // Call disengageAll
+    conductor.disengageAll();
+
+    // Verify full idle contract
+    expect(conductor.isRunning()).toBe(false);
+    expect(conductor.getPressCadence()).toBe('off');
+    expect(conductor.getTallyCadence()).toBe('off');
+    expect(conductor.getPlinkoCadence()).toBe('off');
+    expect(conductor.getStoneCadence()).toBe('off');
+    expect(conductor.isChannelMuted('press')).toBe(false);
+    expect(conductor.isChannelMuted('tally')).toBe(false);
+    expect(conductor.isChannelMuted('plinko')).toBe(false);
+    expect(conductor.isChannelMuted('stone')).toBe(false);
+    expect(conductor.isStationLooping('mint_coin_press')).toBe(false);
+    expect(conductor.isStationLooping('mint_tally_board')).toBe(false);
+    expect(conductor.isStationLooping('plinko_drop')).toBe(false);
+    expect(conductor.isStationLooping('mint_ringing_stone')).toBe(false);
+    expect(conductor.isStationLooping('conductor_vitrine')).toBe(false);
   });
 });
